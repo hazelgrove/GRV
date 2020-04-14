@@ -22,7 +22,7 @@ type exp
 type typ
 
 (* Constructors *)
-type exp_app
+type exp_app = UExpApp
 
 type typ_app
 
@@ -32,9 +32,9 @@ type ('ctor, 'sort) ctor_sort =
   | TypApp : (typ_app, typ) ctor_sort
 
 (*TODO*)
-type 'ctor ctor_vertex = Vertex : 'ctor ctor_vertex
+type 'ctor ctor_vertex = Vertex : Uuid.t * 'ctor -> 'ctor ctor_vertex
 
-and 'sort sort_vertex =
+type 'sort sort_vertex =
   (* Note that this packs up 'ctor as an existential *)
   | V : ('ctor, 'sort) ctor_sort * 'ctor ctor_vertex -> 'sort sort_vertex
 
@@ -43,15 +43,41 @@ type ('parent_ctor, 'child_sort) index =
   | ExpAppFun : (exp_app, exp) index
   | ExpAppArg : (exp_app, exp) index
 
-let get : ('ctor, 'sort) index -> 'ctor ctor_vertex -> 'sort sort_vertex =
-  failwith __LOC__
+type ('parent_ctor, 'child_sort) edge =
+  | Edge :
+      Uuid.t
+      * 'parent_ctor ctor_vertex
+      * ('parent_ctor, 'child_sort) index
+      * 'child_sort sort_vertex
+      -> ('parent_ctor, 'child_sort) edge
+
+let child :
+      'ctor 'sort. ('ctor, 'sort) index -> 'ctor ctor_vertex ->
+      ('ctor, 'sort) edge list =
+ fun _ -> failwith __LOC__
+
+(* let parent : 'ctor 'sort. 'sort vertex -> (?, 'sort) edge list =
+  failwith __LOC__ *)
+
+let target : 'ctor 'sort. ('ctor, 'sort) edge -> 'sort sort_vertex =
+ fun edge -> match edge with Edge (_, _, _, target_vertex) -> target_vertex
+
+let source : 'ctor 'sort. ('ctor, 'sort) edge -> 'ctor ctor_vertex =
+ fun edge -> match edge with Edge (_, source_vertex, _, _) -> source_vertex
+
+let get :
+      'ctor 'sort. ('ctor, 'sort) index -> 'ctor ctor_vertex ->
+      'sort sort_vertex list =
+ fun _ -> failwith __LOC__
 
 (* Example of traversal *)
 let rec check_exp (x : exp sort_vertex) : unit =
   match x with
   | V (ExpApp, (x : exp_app ctor_vertex)) ->
-      let f : exp sort_vertex = get ExpAppFun x in
-      check_exp f
+      let edge : (exp_app, exp) edge list = child ExpAppFun x in
+      let f : exp sort_vertex list = List.map target edge in
+      (*let f : exp sort_vertex list = get ExpAppFun x in*)
+      List.iter check_exp f
 
 and check_typ (x : typ sort_vertex) : unit =
   match x with V (TypApp, (_x : typ_app ctor_vertex)) -> failwith __LOC__

@@ -1,0 +1,51 @@
+*.annot
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+
+.merlin
+
+# Emacs?
+.tags
+.tags1
+
+# MacOS
+.DS_Store
+
+# ocamlbuild working directory
+_build/
+
+# ocamlbuild targets
+*.byte
+*.native
+
+# oasis generated files
+setup.data
+setup.log
+
+# vim files
+*.swn
+*.swo
+*.swp
+
+# coq
+*.aux
+*.glob
+*.vo
+*.vo.aux
+
+# atom reason language server
+*.lsp
+
+# IntelliJ
+.idea
+*.iml
+
+# Visual Studio Code
+.vscode
+.history

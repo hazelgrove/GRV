@@ -1,123 +1,159 @@
 module Uuid = struct
   type t = int
+
+  (* let set_seed : int -> int -> unit = failwith __LOC__ *)
 end
 
-(* type vertex_label
+(*
 
-type 'ctor vertex_id
+We use GADTs to encode the following types at the type level.
 
-type 'ctor 'sort ctor_sort =
-| CSApp : App Expr ctor_sort
-| CSLam : Lam Expr ctor_sort
+TODO: write a PPX that does this encoding for us (a useful template might be https://github.com/Astrocoders/lenses-ppx)
 
-type 'ctor 'index 'sort child_sort =
-| CSApp1 : App Fun Exp child_sort
+module%type_encode Sorts = struct
+  type root =
+  | Root of exp
 
-type 'src_ctor 'child_index 'txt_ctor edge_id
-| App : Uuid.t -> 'tgt_ctor 'tgt_sort ctor_sort -> 'src_ctor 'child_index 'tgt_sort child -> 'src_ctor 'child_index 'tgt_ctor edge_id *)
+  type id =
+  | Id of string[@not_encoded]
 
-(* Sorts *)
-type exp
+  type exp =
+  | Lam of id[@name param] * typ[@name param_type] * exp[@body]
+  | App of exp * exp
+  | Var of id
 
-type typ
+  type typ =
+  | App of typ typ
+  | Var of id
+end
+*)
 
-(* Constructors *)
-type exp_app = UExpApp
+(* TODO: is where a way to modularize these? Exhaustiveness checks failed when I
+tried this. *)
 
-type typ_app
+type root (* TODO?: = Root *)
 
-(* Constructor sorts *)
-type ('ctor, 'sort) ctor_sort =
-  | ExpApp : (exp_app, exp) ctor_sort
-  | TypApp : (typ_app, typ) ctor_sort
+type root_root = Root_root
 
-(*TODO*)
-type 'ctor ctor_vertex = Vertex : Uuid.t * 'ctor -> 'ctor ctor_vertex
+type id (* TODO?: = Id *)
+
+type id_id = Id_id of string
+
+type exp (* TODO?: = Exp *)
+
+type exp_lam = Exp_lam
+
+type exp_app = Exp_app
+
+type exp_var = Exp_var
+
+type typ (* TODO?: = Typ *)
+
+type typ_app = Typ_app
+
+type typ_var = Typ_var
+
+(* TODO: some way to "kind-check" uses of ctor versus sort *)
+
+(* Connecting constructors to sorts *)
+(* TODO: maybe one constructor per sort and have type in sort to further specifics *)
+type ('ctor, 'sort) sort_of_ctor =
+  | Root_root : (root_root, root) sort_of_ctor
+  | Id_id : (id_id, id) sort_of_ctor
+  | Exp_lam : (exp_lam, exp) sort_of_ctor
+  | Exp_app : (exp_app, exp) sort_of_ctor
+  | Exp_var : (exp_var, exp) sort_of_ctor
+  | Typ_app : (typ_app, typ) sort_of_ctor
+  | Typ_var : (typ_var, typ) sort_of_ctor
+
+(* Connecting constructors to the sorts of their children *)
+(* NOTE: this also serves as the `index` of child edges *)
+type ('ctor, 'sort) sort_of_child =
+  | Root_root_root : (root_root, root) sort_of_child
+  (* id_id has no children *)
+  | Exp_lam_param : (exp_lam, id) sort_of_child
+  | Exp_lam_param_type : (exp_lam, typ) sort_of_child
+  | Exp_lam_body : (exp_lam, exp) sort_of_child
+  | Exp_app_fun : (exp_app, exp) sort_of_child
+  | Exp_app_arg : (exp_app, exp) sort_of_child
+  | Exp_var_id : (exp_var, id) sort_of_child
+  (* TODO: more Exp *)
+  | Typ_app_fun : (typ_app, typ) sort_of_child
+
+(**************************** *)
+
+type 'ctor ctor_vertex = Ctor_vertex : Uuid.t * 'ctor -> 'ctor ctor_vertex
 
 type 'sort sort_vertex =
   (* Note that this packs up 'ctor as an existential *)
-  | V : ('ctor, 'sort) ctor_sort * 'ctor ctor_vertex -> 'sort sort_vertex
+  | Sort_vertex : {
+      ctor : ('ctor, 'sort) sort_of_ctor;
+      vertex : 'ctor ctor_vertex;
+    }
+      -> 'sort sort_vertex
 
-(* Indexes *)
-type ('parent_ctor, 'child_sort) index =
-  | ExpAppFun : (exp_app, exp) index
-  | ExpAppArg : (exp_app, exp) index
+(* Edge *)
+type 'target_sort edge =
+  | Edge : {
+      id : Uuid.t;
+      source : 'source_ctor ctor_vertex;
+      index : ('source_ctor, 'target_sort) sort_of_child;
+      target : 'target_sort sort_vertex;
+    }
+      -> 'target_sort edge
 
-type ('parent_ctor, 'child_sort) edge =
-  | Edge :
-      Uuid.t
-      * 'parent_ctor ctor_vertex
-      * ('parent_ctor, 'child_sort) index
-      * 'child_sort sort_vertex
-      -> ('parent_ctor, 'child_sort) edge
-
-let child :
-      'ctor 'sort. ('ctor, 'sort) index -> 'ctor ctor_vertex ->
-      ('ctor, 'sort) edge list =
+let edges_from :
+      'ctor 'sort. 'ctor ctor_vertex -> ('ctor, 'sort) sort_of_child ->
+      'sort edge list =
  fun _ -> failwith __LOC__
 
-(* let parent : 'ctor 'sort. 'sort vertex -> (?, 'sort) edge list =
-  failwith __LOC__ *)
+let edges_to : 'ctor 'sort. 'sort sort_vertex -> 'sort edge list =
+ fun _ -> failwith __LOC__
 
-let target : 'ctor 'sort. ('ctor, 'sort) edge -> 'sort sort_vertex =
- fun edge -> match edge with Edge (_, _, _, target_vertex) -> target_vertex
+let target : 'ctor 'sort. 'sort edge -> 'sort sort_vertex =
+ fun (Edge { target; _ }) -> target
 
-let source : 'ctor 'sort. ('ctor, 'sort) edge -> 'ctor ctor_vertex =
- fun edge -> match edge with Edge (_, source_vertex, _, _) -> source_vertex
+(* There is no `source` function to match `target`, since that would require an
+existential for the parent's constructor.  Instead, use a pattern match on
+`Edge`. *)
+(* let source : 'ctor 'sort. 'sort edge -> ('ctor, 'sort) sort_of_child * 'ctor ctor_vertex
+    =
+ fun _ -> failwith __LOC__ *)
 
-let get :
-      'ctor 'sort. ('ctor, 'sort) index -> 'ctor ctor_vertex ->
+let vertexes_from :
+      'ctor 'sort. 'ctor ctor_vertex -> ('ctor, 'sort) sort_of_child ->
       'sort sort_vertex list =
- fun _ -> failwith __LOC__
+ fun vertex index -> List.map target (edges_from vertex index)
 
 (* Example of traversal *)
 let rec check_exp (x : exp sort_vertex) : unit =
   match x with
-  | V (ExpApp, (x : exp_app ctor_vertex)) ->
-      let edge : (exp_app, exp) edge list = child ExpAppFun x in
+  | Sort_vertex { ctor = Exp_app; vertex : exp_app ctor_vertex } ->
+      let edge : exp edge list = edges_from vertex Exp_app_fun in
       let f : exp sort_vertex list = List.map target edge in
-      (*let f : exp sort_vertex list = get ExpAppFun x in*)
       List.iter check_exp f
+  | _ -> failwith __LOC__
 
 and check_typ (x : typ sort_vertex) : unit =
-  match x with V (TypApp, (_x : typ_app ctor_vertex)) -> failwith __LOC__
+  match x with
+  | Sort_vertex { ctor = Typ_app; vertex : typ_app ctor_vertex = _ } ->
+      failwith __LOC__
+  | Sort_vertex { ctor = Typ_var; vertex : typ_var ctor_vertex = _ } ->
+      failwith __LOC__
+
+(* TODO *)
+type 'ctor vertex_info =
+  | Vertex_info : {
+      vertex : 'ctor ctor_vertex;
+      parents : 'sort edge list;
+          (* TODO: children: ...
+             Need something indexed by sort_of_child instead of array *)
+    }
+      -> 'ctor vertex_info
+
+(* TODO: replace list with set *)
 
 (*
-
-
-type var
-type exp
-type typ
-
-type 'src 'tgt edge_info =
-| LamTyp : 'src 'tgt edge_info
-
-type 'a list =
-| IntCons : int -> 'a list -> int list
-| StringCons : 'a -> 'a list -> string list
-| Nil : 'a list
-
-let f (x: int list) =
-  match x with
-  | IntCons =>
-  | NilCons => 
-  end
-
-let v1 : exp vertex = { ...}
-let v2 : typ vertex = {...}
-let e : exp typ edge = ....
-
-val target : src tgt edge -> tgt vertex = ...;
-
-
-(**
-  Lam: var typ expr
- *)
-
-type constructor =
-  | Lam
-  | Apply
-  | Var;;
 
 type index = int;;
 

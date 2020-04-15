@@ -82,8 +82,10 @@ type ('ctor, 'sort) sort_of_child =
 
 (**************************** *)
 
+(* Vertex with constructor type *)
 type 'ctor ctor_vertex = Ctor_vertex : Uuid.t * 'ctor -> 'ctor ctor_vertex
 
+(* Vertex with sort type *)
 type 'sort sort_vertex =
   (* Note that this packs up 'ctor as an existential *)
   | Sort_vertex :

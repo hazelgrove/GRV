@@ -86,10 +86,8 @@ type 'ctor ctor_vertex = Ctor_vertex : Uuid.t * 'ctor -> 'ctor ctor_vertex
 
 type 'sort sort_vertex =
   (* Note that this packs up 'ctor as an existential *)
-  | Sort_vertex : {
-      ctor : ('ctor, 'sort) sort_of_ctor;
-      vertex : 'ctor ctor_vertex;
-    }
+  | Sort_vertex :
+      ('ctor, 'sort) sort_of_ctor * 'ctor ctor_vertex
       -> 'sort sort_vertex
 
 (* Edge *)
@@ -128,7 +126,7 @@ let vertexes_from :
 (* Example of traversal *)
 let rec check_exp (x : exp sort_vertex) : unit =
   match x with
-  | Sort_vertex { ctor = Exp_app; vertex : exp_app ctor_vertex } ->
+  | Sort_vertex (Exp_app, (vertex : exp_app ctor_vertex)) ->
       let edge : exp edge list = edges_from vertex Exp_app_fun in
       let f : exp sort_vertex list = List.map target edge in
       List.iter check_exp f
@@ -136,10 +134,8 @@ let rec check_exp (x : exp sort_vertex) : unit =
 
 and check_typ (x : typ sort_vertex) : unit =
   match x with
-  | Sort_vertex { ctor = Typ_app; vertex : typ_app ctor_vertex = _ } ->
-      failwith __LOC__
-  | Sort_vertex { ctor = Typ_var; vertex : typ_var ctor_vertex = _ } ->
-      failwith __LOC__
+  | Sort_vertex (Typ_app, _) -> failwith __LOC__
+  | Sort_vertex (Typ_var, _) -> failwith __LOC__
 
 (* TODO *)
 type 'ctor vertex_info =

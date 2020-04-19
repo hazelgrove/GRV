@@ -27,7 +27,7 @@ win-firefox:
 	"/mnt/c/Program Files (x86)/Mozilla Firefox/firefox.exe" "$(HTML_DIR)/index.html"
 
 repl:
-	dune utop src
+	dune utop src/grvcore
 
 clean:
 	dune clean

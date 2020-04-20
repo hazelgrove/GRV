@@ -1,1 +1,1 @@
-type t = Action [@@deriving sexp_of]
+type t = Increment [@@deriving sexp_of]

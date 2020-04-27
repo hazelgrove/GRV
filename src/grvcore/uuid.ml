@@ -1,5 +1,7 @@
 type t = int
 
+let compare : t -> t -> int = Int.compare
+
 let seed : int ref = ref 0
 
 (* TODO: let set_seed : int -> int -> unit = failwith __LOC__ *)

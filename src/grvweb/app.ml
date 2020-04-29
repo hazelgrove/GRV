@@ -16,4 +16,4 @@ let create (model : Model.t Incr.t) ~old_model:(_ : Model.t Incr.t)
   let open Incr.Let_syntax in
   let%map model = model in
   let view = View.view ~inject model in
-  Component.create model view ~apply_action:(Apply_action.apply_action model)
+  Component.create model view ~apply_action:(Action.apply model)

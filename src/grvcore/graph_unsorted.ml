@@ -21,65 +21,69 @@ type index =
   | Typ_app_fun
 [@@deriving compare]
 
-type vertex = { id : Uuid.t; ctor : ctor } [@@deriving compare]
+module Vertex = struct
+  type t = ctor Uuid.t
 
-type edge = { id : Uuid.t; source : vertex; index : index; target : vertex }
-[@@deriving compare]
-
-type edge_state = Created | Destroyed
-
-module UuidMap = Map.Make (Uuid)
-
-module UuidIndexOrderedType = struct
-  type t = Uuid.t * index
-
-  let compare ((u1, i1) : t) ((u2, i2) : t) : int =
-    match compare u1 u2 with 0 -> compare_index i1 i2 | cmp -> cmp
+  let compare : t -> t -> int = Uuid.compare
 end
 
-module EdgeOrderedType = struct
-  type t = edge
+module Edge = struct
+  type t = t' Uuid.t
 
-  let compare : t -> t -> int = compare_edge
+  and t' = { source : Vertex.t; index : index; target : Vertex.t }
+
+  let compare : t -> t -> int = Uuid.compare
 end
 
-module UuidIndexMap = Map.Make (UuidIndexOrderedType)
-module EdgeSet = Set.Make (EdgeOrderedType)
+type edge_state = Created | Destroyed [@@deriving compare]
+
+(* module UuidMap = Map.Make (Uuid.OrderedType) *)
+module EdgeMap = Map.Make (Edge)
+module VertexMap = Map.Make (Vertex)
+
+module VertexIndexMap = Map.Make (struct
+  type t = Vertex.t * index
+
+  let compare ((v1, i1) : t) ((v2, i2) : t) : int =
+    match Uuid.compare v1 v2 with 0 -> compare_index i1 i2 | cmp -> cmp
+end)
+
+module EdgeSet = Set.Make (struct
+  type t = Edge.t
+
+  let compare : t -> t -> int = Edge.compare
+end)
 
 type graph = {
   (* Maps Edge id to edge *)
-  edges : edge UuidMap.t;
+  (* edges : Edge.t UuidMap.t; *)
   (* Note: edges not in the table have not been created yet and are `\bot` *)
-  edge_state : edge_state UuidMap.t;
+  edge_state : edge_state EdgeMap.t;
   (* Maps Vertex id to parent edge *)
-  edges_to : EdgeSet.t UuidMap.t;
+  edges_to : EdgeSet.t VertexMap.t;
   (* Maps Vertex id and Child index to set of edges *)
-  edges_from : EdgeSet.t UuidIndexMap.t;
+  edges_from : EdgeSet.t VertexIndexMap.t;
 }
 
 let init : graph =
   {
-    edges = UuidMap.empty;
-    edge_state = UuidMap.empty;
-    edges_to = UuidMap.empty;
-    edges_from = UuidIndexMap.empty;
+    (* edges = UuidMap.empty; *)
+    edge_state = EdgeMap.empty;
+    edges_to = VertexMap.empty;
+    edges_from = VertexIndexMap.empty;
   }
 
-let edges_from : graph -> Uuid.t -> index -> EdgeSet.t =
- fun graph vertex index ->
-  match UuidIndexMap.find_opt (vertex, index) graph.edges_from with
-  | None -> EdgeSet.empty
-  | Some edges -> edges
+let edges_from (graph : graph) (vertex : Vertex.t) (index : index) : EdgeSet.t =
+  Option.value
+    (VertexIndexMap.find_opt (vertex, index) graph.edges_from)
+    ~default:EdgeSet.empty
 
-let edges_to : graph -> Uuid.t -> EdgeSet.t =
- fun graph vertex ->
-  match UuidMap.find_opt vertex graph.edges_to with
-  | None -> EdgeSet.empty
-  | Some edges -> edges
+let edges_to (graph : graph) (vertex : Vertex.t) : EdgeSet.t =
+  Option.value (VertexMap.find_opt vertex graph.edges_to) ~default:EdgeSet.empty
 
-let update_edge : graph -> edge -> edge_state -> graph =
- fun graph edge edge_state ->
-  let old_state = UuidMap.find_opt edge.id graph.edge_state in
+let update_edge (graph : graph) (edge : Edge.t) (edge_state : edge_state) :
+    graph =
+  let old_state = EdgeMap.find_opt edge graph.edge_state in
   let action : edge_state option =
     match old_state with
     | Some Destroyed -> None
@@ -91,64 +95,66 @@ let update_edge : graph -> edge -> edge_state -> graph =
   | None -> graph
   | Some Created ->
       (* TODO: assert not already exists? *)
-      let edges : edge UuidMap.t = UuidMap.add edge.id edge graph.edges in
-      let edge_state : edge_state UuidMap.t =
-        UuidMap.add edge.id edge_state graph.edge_state
+      (* let edges : edge UuidMap.t = UuidMap.add edge.id edge graph.edges in *)
+      let edge_state : edge_state EdgeMap.t =
+        EdgeMap.add edge edge_state graph.edge_state
       in
       let old_edges_to : EdgeSet.t =
         Option.value
-          (UuidMap.find_opt edge.target.id graph.edges_to)
+          (VertexMap.find_opt (Uuid.unwrap edge).target graph.edges_to)
           ~default:EdgeSet.empty
       in
-      let edges_to : EdgeSet.t UuidMap.t =
-        UuidMap.add edge.target.id
+      let edges_to : EdgeSet.t VertexMap.t =
+        VertexMap.add (Uuid.unwrap edge).target
           (EdgeSet.add edge old_edges_to)
           graph.edges_to
       in
       let old_edges_from : EdgeSet.t =
         Option.value
-          (UuidIndexMap.find_opt (edge.source.id, edge.index) graph.edges_from)
+          (VertexIndexMap.find_opt
+             ((Uuid.unwrap edge).source, (Uuid.unwrap edge).index)
+             graph.edges_from)
           ~default:EdgeSet.empty
       in
-      let edges_from : EdgeSet.t UuidIndexMap.t =
-        UuidIndexMap.add
-          (edge.source.id, edge.index)
+      let edges_from : EdgeSet.t VertexIndexMap.t =
+        VertexIndexMap.add
+          ((Uuid.unwrap edge).source, (Uuid.unwrap edge).index)
           (EdgeSet.add edge old_edges_from)
           graph.edges_from
       in
       (* TODO: short circuit if deleting a non-existant *)
-      { edges; edge_state; edges_to; edges_from }
+      { (* edges; *) edge_state; edges_to; edges_from }
   | Some Destroyed -> (
-      let edge_state : edge_state UuidMap.t =
-        UuidMap.add edge.id Destroyed graph.edge_state
+      let edge_state : edge_state EdgeMap.t =
+        EdgeMap.add edge Destroyed graph.edge_state
       in
       match old_state with
       | None -> { graph with edge_state }
       | _ ->
           let old_edges_to : EdgeSet.t =
             Option.value
-              (UuidMap.find_opt edge.target.id graph.edges_to)
+              (VertexMap.find_opt (Uuid.unwrap edge).target graph.edges_to)
               ~default:EdgeSet.empty
           in
           let old_edges_to' : EdgeSet.t =
             EdgeSet.filter (( == ) edge) old_edges_to
           in
           let edges_to =
-            UuidMap.add edge.target.id old_edges_to' graph.edges_to
+            VertexMap.add (Uuid.unwrap edge).target old_edges_to' graph.edges_to
           in
           let old_edges_from : EdgeSet.t =
             Option.value
-              (UuidIndexMap.find_opt
-                 (edge.source.id, edge.index)
+              (VertexIndexMap.find_opt
+                 ((Uuid.unwrap edge).source, (Uuid.unwrap edge).index)
                  graph.edges_from)
               ~default:EdgeSet.empty
           in
           let old_edges_from' : EdgeSet.t =
             EdgeSet.filter (( == ) edge) old_edges_from
           in
-          let edges_from : EdgeSet.t UuidIndexMap.t =
-            UuidIndexMap.add
-              (edge.target.id, edge.index)
+          let edges_from : EdgeSet.t VertexIndexMap.t =
+            VertexIndexMap.add
+              ((Uuid.unwrap edge).target, (Uuid.unwrap edge).index)
               old_edges_from' graph.edges_from
           in
           { graph with edges_to; edges_from } )

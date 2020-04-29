@@ -58,7 +58,7 @@ type graph = {
   (* Maps Edge id to edge *)
   (* edges : Edge.t UuidMap.t; *)
   (* Note: edges not in the table have not been created yet and are `\bot` *)
-  edge_state : edge_state EdgeMap.t;
+  edge_states : edge_state EdgeMap.t;
   (* Maps Vertex id to parent edge *)
   edges_to : EdgeSet.t VertexMap.t;
   (* Maps Vertex id and Child index to set of edges *)
@@ -68,7 +68,7 @@ type graph = {
 let init : graph =
   {
     (* edges = UuidMap.empty; *)
-    edge_state = EdgeMap.empty;
+    edge_states = EdgeMap.empty;
     edges_to = VertexMap.empty;
     edges_from = VertexIndexMap.empty;
   }
@@ -83,7 +83,7 @@ let edges_to (graph : graph) (vertex : Vertex.t) : EdgeSet.t =
 
 let update_edge (graph : graph) (edge : Edge.t) (edge_state : edge_state) :
     graph =
-  let old_state = EdgeMap.find_opt edge graph.edge_state in
+  let old_state = EdgeMap.find_opt edge graph.edge_states in
   let action : edge_state option =
     match old_state with
     | Some Destroyed -> None
@@ -96,8 +96,8 @@ let update_edge (graph : graph) (edge : Edge.t) (edge_state : edge_state) :
   | Some Created ->
       (* TODO: assert not already exists? *)
       (* let edges : edge UuidMap.t = UuidMap.add edge.id edge graph.edges in *)
-      let edge_state : edge_state EdgeMap.t =
-        EdgeMap.add edge edge_state graph.edge_state
+      let edge_states : edge_state EdgeMap.t =
+        EdgeMap.add edge edge_state graph.edge_states
       in
       let old_edges_to : EdgeSet.t =
         Option.value
@@ -123,13 +123,13 @@ let update_edge (graph : graph) (edge : Edge.t) (edge_state : edge_state) :
           graph.edges_from
       in
       (* TODO: short circuit if deleting a non-existant *)
-      { (* edges; *) edge_state; edges_to; edges_from }
+      { (* edges; *) edge_states; edges_to; edges_from }
   | Some Destroyed -> (
-      let edge_state : edge_state EdgeMap.t =
-        EdgeMap.add edge Destroyed graph.edge_state
+      let edge_states : edge_state EdgeMap.t =
+        EdgeMap.add edge Destroyed graph.edge_states
       in
       match old_state with
-      | None -> { graph with edge_state }
+      | None -> { graph with edge_states }
       | _ ->
           let old_edges_to : EdgeSet.t =
             Option.value

@@ -24,7 +24,7 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
     [
       text (of_hexp model.ast (Some model.cursor));
       br [];
-      button [ on_click (fun _ -> inject App) ] [ text "App" ];
+      button [ on_click (fun _ -> inject Create) ] [ text "App" ];
       button [ on_click (fun _ -> inject @@ Move `In) ] [ text "In" ];
       button [ on_click (fun _ -> inject @@ Move `Out) ] [ text "Out" ];
       button [ on_click (fun _ -> inject @@ Move `Left) ] [ text "Left" ];

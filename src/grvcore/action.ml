@@ -2,7 +2,7 @@
 
 module HExp = Ast.HExp
 
-type t = App | Move of direction [@@deriving sexp_of]
+type t = Create | Move of direction [@@deriving sexp_of]
 
 and direction = [ `In | `Out | `Left | `Right ] [@@deriving sexp_of]
 
@@ -30,7 +30,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
     | Some `Right | None -> model.cursor
   in
   match action with
-  | App -> { model with ast = make_app () }
+  | Create -> { model with ast = make_app () }
   | Move `In -> { model with cursor = move_in () }
   | Move `Out -> { model with cursor = move_out () }
   | Move `Left -> { model with cursor = move_left () }

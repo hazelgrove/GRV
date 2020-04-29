@@ -4,7 +4,7 @@ module HExp = Ast.HExp
 
 type t = App | Move of direction [@@deriving sexp_of]
 
-and direction = In | Out | Left | Right [@@deriving sexp_of]
+and direction = [ `In | `Out | `Left | `Right ] [@@deriving sexp_of]
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
@@ -31,7 +31,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   in
   match action with
   | App -> { model with ast = make_app () }
-  | Move In -> { model with cursor = move_in () }
-  | Move Out -> { model with cursor = move_out () }
-  | Move Left -> { model with cursor = move_left () }
-  | Move Right -> { model with cursor = move_right () }
+  | Move `In -> { model with cursor = move_in () }
+  | Move `Out -> { model with cursor = move_out () }
+  | Move `Left -> { model with cursor = move_left () }
+  | Move `Right -> { model with cursor = move_right () }

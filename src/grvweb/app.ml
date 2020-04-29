@@ -16,9 +16,4 @@ let create (model : Model.t Incr.t) ~old_model:(_ : Model.t Incr.t)
   let open Incr.Let_syntax in
   let%map model = model in
   let view = View.view ~inject model in
-  Component.create model
-    ~apply_action:(Apply_action.apply_action model)
-    (* ?update_visibility:(schedule_action:('action -> unit) -> 'model) *)
-    (* ?on_display:('state -> schedule_action:('action -> unit) -> unit) *)
-    (* extra: 'extra *)
-    view
+  Component.create model view ~apply_action:(Apply_action.apply_action model)

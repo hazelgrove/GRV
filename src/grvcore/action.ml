@@ -1,20 +1,19 @@
 (* TODO: factor App and other ast constructor insertions into a constructor *)
 
-module HExp = Ast.HExp
-
 type t = Create | Move of direction [@@deriving sexp_of]
 
 and direction = [ `In | `Out | `Left | `Right ] [@@deriving sexp_of]
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
-  let wrap, unwrap = Ast.(wrap, unwrap) in
+  let open Ast in
+  let open Ast.HExp in
   let make_app () =
-    HExp.apply_at model.ast model.cursor (fun exp ->
-        wrap @@ HExp.App (exp, wrap HExp.EmptyHole))
+    apply_at model.ast model.cursor (fun exp ->
+        Uuid.wrap @@ App (exp, Uuid.wrap EmptyHole))
   in
   let move_in () =
-    match unwrap (HExp.walk_to model.ast model.cursor) with
+    match Uuid.unwrap (walk_to model.ast model.cursor) with
     | App _ -> Cursor.push `Left model.cursor
     | EmptyHole -> model.cursor
   in

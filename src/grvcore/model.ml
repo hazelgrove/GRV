@@ -1,13 +1,11 @@
 open Ast
 open Ast.HExp
+module G = Graph_unsorted
 
-type t = { graph : Graph_unsorted.graph; ast : HExp.t; cursor : Cursor.t }
+type t = { graph : G.graph; ast : HExp.t; cursor : Cursor.t }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
-let init () : t =
-  {
-    graph = Graph_unsorted.init;
-    ast = Uuid.wrap EmptyHole;
-    cursor = Cursor.Here;
-  }
+let model graph ast cursor : t = { graph; ast; cursor }
+
+let empty : t = model G.init (Uuid.wrap EmptyHole) Cursor.Here

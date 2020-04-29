@@ -1,3 +1,1 @@
-type t = State
-
-let init () = State
+type t = unit

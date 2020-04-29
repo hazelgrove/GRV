@@ -1,5 +1,3 @@
-open Cursor
-
 let unwrap, wrap = (Uuid.unwrap, Uuid.wrap)
 
 module HExp = struct
@@ -12,8 +10,8 @@ module HExp = struct
     | Here -> exp
     | To (side, cursor') -> (
         match (side, unwrap exp) with
-        | Left, App (e1, _e2) -> walk_to e1 cursor'
-        | Right, App (_e1, e2) -> walk_to e2 cursor'
+        | `Left, App (e1, _e2) -> walk_to e1 cursor'
+        | `Right, App (_e1, e2) -> walk_to e2 cursor'
         | _ ->
             Printf.printf "error: invalid cursor position";
             exp )
@@ -22,11 +20,10 @@ module HExp = struct
     match cursor with
     | Here -> f exp
     | To (side, cursor') ->
-        let open Cursor in
         let recur () =
           match (side, unwrap exp) with
-          | Left, App (e1, e2) -> App (apply_at e1 cursor' f, e2)
-          | Right, App (e1, e2) -> App (e1, apply_at e2 cursor' f)
+          | `Left, App (e1, e2) -> App (apply_at e1 cursor' f, e2)
+          | `Right, App (e1, e2) -> App (e1, apply_at e2 cursor' f)
           | _ ->
               Printf.printf "error: invalid cursor position";
               unwrap exp

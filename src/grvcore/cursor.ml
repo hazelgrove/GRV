@@ -12,11 +12,11 @@ let rec pop (cursor : t) : t =
   | Here | To (_, Here) -> Here
   | To (side', cursor') -> To (side', pop cursor')
 
-let rec unwind (cursor : t) (side : side) : t =
+let rec extend (cursor : t) (side : side) : t =
   match cursor with
   | Here -> Here
   | To (_, Here) -> To (side, Here)
-  | To (side', cursor') -> To (side', unwind cursor' side)
+  | To (side', cursor') -> To (side', extend cursor' side)
 
 let rec last : t -> t = function
   | (To (_, Here) | Here) as cursor -> cursor

@@ -4,9 +4,7 @@ module HExp = struct
   and t' = App of t * t | EmptyHole
 end
 
-type hexp = HExp.t
-
-let rec walk_to (exp : hexp) (cursor : Cursor.t) : hexp =
+let rec walk_to (exp : HExp.t) (cursor : Cursor.t) : HExp.t =
   match cursor with
   | Here -> exp
   | To (side, cursor') ->
@@ -18,7 +16,8 @@ let rec walk_to (exp : hexp) (cursor : Cursor.t) : hexp =
               Printf.printf "error: invalid cursor position";
               exp)
 
-let rec apply_at (exp : hexp) (cursor : Cursor.t) (f : hexp -> hexp) : hexp =
+let rec apply_at (exp : HExp.t) (cursor : Cursor.t) (f : HExp.t -> HExp.t) :
+    HExp.t =
   match cursor with
   | Here -> f exp
   | To (side, cursor') ->

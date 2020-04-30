@@ -92,10 +92,10 @@ module Graph = struct
 
   let empty : t =
     {
-      edges = UuidMap.empty;
-      edge_states = EdgeMap.empty;
-      edges_to = VertexMap.empty;
-      edges_from = VertexIndexMap.empty;
+      edges : Edge.t UuidMap.t = UuidMap.empty;
+      edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
+      edges_to : EdgeSet.t VertexMap.t = VertexMap.empty;
+      edges_from : EdgeSet.t VertexIndexMap.t = VertexIndexMap.empty;
     }
 end
 

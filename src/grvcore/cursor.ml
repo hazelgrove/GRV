@@ -12,11 +12,11 @@ let rec pop (cursor : t) : t =
   | Here | To (_, Here) -> Here
   | To (side', cursor') -> To (side', pop cursor')
 
-let rec look_to (side : side) (cursor : t) : t =
+let rec unwind (side : side) (cursor : t) : t =
   match cursor with
   | Here -> Here
   | To (_, Here) -> To (side, Here)
-  | To (side', cursor') -> To (side', look_to side cursor')
+  | To (side', cursor') -> To (side', unwind side cursor')
 
 let rec last_side_of : t -> side option = function
   | Here -> None

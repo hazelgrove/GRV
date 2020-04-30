@@ -99,6 +99,39 @@ module Graph = struct
     }
 end
 
+let add_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
+  let target = Edge.target edge in
+  let source = (Edge.source edge, Edge.index edge) in
+  {
+    graph with
+    (* add to target's parents *)
+    edges_to : EdgeSet.t VertexMap.t =
+      (let parents = VertexMap.obtain target graph.edges_to in
+       VertexMap.add target (EdgeSet.add edge parents) graph.edges_to);
+    (* add to source's children *)
+    edges_from : EdgeSet.t VertexIndexMap.t =
+      (let children = VertexIndexMap.obtain source graph.edges_from in
+       VertexIndexMap.add source (EdgeSet.add edge children) graph.edges_from);
+  }
+
+let drop_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
+  let target = Edge.target edge in
+  let source = (Edge.source edge, Edge.index edge) in
+  {
+    graph with
+    (* drop from target's parents *)
+    edges_to : EdgeSet.t VertexMap.t =
+      (let parents = VertexMap.obtain target graph.edges_to in
+       VertexMap.add target
+         (EdgeSet.filter (Edge.equal edge) parents)
+         graph.edges_to);
+    (* drop from source's children *)
+    edges_from : EdgeSet.t VertexIndexMap.t =
+      (let children = VertexIndexMap.obtain source graph.edges_from in
+       VertexIndexMap.add source
+         (EdgeSet.filter (Edge.equal edge) children)
+         graph.edges_from);
+  }
 let update_edge (graph : Graph.t) (edge : Edge.t) (edge_state : Edge.state) :
     Graph.t =
   let old_state = EdgeMap.find_opt edge graph.edge_states in
@@ -115,45 +148,11 @@ let update_edge (graph : Graph.t) (edge : Edge.t) (edge_state : Edge.state) :
       (* TODO: assert not already exists? *)
 
       (* TODO: short circuit if deleting a non-existant *)
-      {
-        (* add to edges *)
-        edges : Edge.t UuidMap.t = UuidMap.add edge.uuid edge graph.edges;
-        (* add to edge_states *)
-        edge_states : Edge.state EdgeMap.t =
-          EdgeMap.add edge edge_state graph.edge_states;
-        (* add to target's parents *)
-        edges_to : EdgeSet.t VertexMap.t =
-          (let target = Edge.target edge in
-           let edges' = VertexMap.obtain target graph.edges_to in
-           VertexMap.add target (EdgeSet.add edge edges') graph.edges_to);
-        (* add to source's children *)
-        edges_from : EdgeSet.t VertexIndexMap.t =
-          (let source = (Edge.source edge, Edge.index edge) in
-           let edges' = VertexIndexMap.obtain source graph.edges_from in
-           VertexIndexMap.add source (EdgeSet.add edge edges') graph.edges_from);
-      }
+      add_edge graph edge
   | Some Destroyed -> (
       let edge_states : Edge.state EdgeMap.t =
         EdgeMap.add edge Edge.Destroyed graph.edge_states
       in
       match old_state with
       | None -> { graph with edge_states }
-      | _ ->
-          {
-            graph with
-            edge_states;
-            (* drop from target's parents *)
-            edges_to : EdgeSet.t VertexMap.t =
-              (let target = Edge.target edge in
-               let edges' = VertexMap.obtain target graph.edges_to in
-               VertexMap.add target
-                 (EdgeSet.filter (Edge.equal edge) edges')
-                 graph.edges_to);
-            (* drop from source's children *)
-            edges_from : EdgeSet.t VertexIndexMap.t =
-              (let source = (Edge.source edge, Edge.index edge) in
-               let edges' = VertexIndexMap.obtain source graph.edges_from in
-               VertexIndexMap.add source
-                 (EdgeSet.filter (Edge.equal edge) edges')
-                 graph.edges_from);
-          } )
+      | _ -> drop_edge { graph with edge_states } edge )

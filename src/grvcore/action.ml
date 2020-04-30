@@ -19,14 +19,14 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   in
   let move_out () = Cursor.pop model.cursor in
   let move_left () =
-    match Cursor.last_side_of model.cursor with
-    | Some Right -> Cursor.unwind model.cursor Left
-    | Some Left | None -> model.cursor
+    match Cursor.last model.cursor with
+    | To (Right, _) -> Cursor.unwind model.cursor Left
+    | To (Left, _) | Here -> model.cursor
   in
   let move_right () =
-    match Cursor.last_side_of model.cursor with
-    | Some Left -> Cursor.unwind model.cursor Right
-    | Some Right | None -> model.cursor
+    match Cursor.last model.cursor with
+    | To (Left, _) -> Cursor.unwind model.cursor Right
+    | To (Right, _) | Here -> model.cursor
   in
   match action with
   | Create -> { model with ast = make_app () }

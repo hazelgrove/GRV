@@ -18,7 +18,6 @@ let rec unwind (cursor : t) (side : side) : t =
   | To (_, Here) -> To (side, Here)
   | To (side', cursor') -> To (side', unwind cursor' side)
 
-let rec last_side_of : t -> side option = function
-  | Here -> None
-  | To (side, Here) -> Some side
-  | To (_, cursor') -> last_side_of cursor'
+let rec last : t -> t = function
+  | (To (_, Here) | Here) as cursor -> cursor
+  | To (_, cursor') -> last cursor'

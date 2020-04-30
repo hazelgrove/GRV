@@ -26,13 +26,3 @@ let bind (u : 'a t) ~(f : 'a -> 'b t) : 'b t =
   { u with value = (f u.value).value }
 
 let map (x : 'a t) ~(f : 'a -> 'b) : 'b t = { x with value = f x.value }
-
-module Let_syntax = struct
-  module Let_syntax = struct
-    let return = return
-
-    let bind = bind
-
-    let map = map
-  end
-end

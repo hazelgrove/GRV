@@ -10,7 +10,7 @@ let rec push (side : side) (cursor : t) : t =
 let rec pop (cursor : t) : t =
   match cursor with
   | Here | To (_, Here) -> Here
-  | To (side', cursor') -> To (side', pop cursor')
+  | To (side, cursor') -> To (side, pop cursor')
 
 let rec extend (cursor : t) (side : side) : t =
   match cursor with
@@ -20,4 +20,4 @@ let rec extend (cursor : t) (side : side) : t =
 
 let rec last : t -> t = function
   | (To (_, Here) | Here) as cursor -> cursor
-  | To (_, cursor') -> last cursor'
+  | To (_, cursor) -> last cursor

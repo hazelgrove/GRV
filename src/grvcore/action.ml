@@ -8,29 +8,32 @@ let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   let open Ast in
   let open Ast.HExp in
-  let make_app () =
-    apply_at model.ast model.cursor (fun exp ->
-        Uuid.wrap @@ App (exp, Uuid.wrap EmptyHole))
-  in
-  let move_in () =
-    match Uuid.unwrap (walk_to model.ast model.cursor) with
-    | App _ -> Cursor.push Left model.cursor
-    | EmptyHole -> model.cursor
-  in
-  let move_out () = Cursor.pop model.cursor in
-  let move_left () =
-    match Cursor.last model.cursor with
-    | To (Right, _) -> Cursor.extend model.cursor Left
-    | To (Left, _) | Here -> model.cursor
-  in
-  let move_right () =
-    match Cursor.last model.cursor with
-    | To (Left, _) -> Cursor.extend model.cursor Right
-    | To (Right, _) | Here -> model.cursor
-  in
   match action with
-  | Create -> { model with ast = make_app () }
-  | Move In -> { model with cursor = move_in () }
-  | Move Out -> { model with cursor = move_out () }
-  | Move Left -> { model with cursor = move_left () }
-  | Move Right -> { model with cursor = move_right () }
+  | Create ->
+      let ast =
+        apply_at model.ast model.cursor (fun exp ->
+            Uuid.wrap @@ App (exp, Uuid.wrap EmptyHole))
+      in
+      { model with ast }
+  | Move In ->
+      let cursor =
+        match Uuid.unwrap (walk_to model.ast model.cursor) with
+        | App _ -> Cursor.push Left model.cursor
+        | EmptyHole -> model.cursor
+      in
+      { model with cursor }
+  | Move Out -> { model with cursor = Cursor.pop model.cursor }
+  | Move Left ->
+      let cursor =
+        match Cursor.last model.cursor with
+        | To (Right, _) -> Cursor.extend model.cursor Left
+        | To (Left, _) | Here -> model.cursor
+      in
+      { model with cursor }
+  | Move Right ->
+      let cursor =
+        match Cursor.last model.cursor with
+        | To (Left, _) -> Cursor.extend model.cursor Right
+        | To (Right, _) | Here -> model.cursor
+      in
+      { model with cursor }

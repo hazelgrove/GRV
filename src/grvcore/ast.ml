@@ -12,8 +12,8 @@ let rec walk_to (exp : hexp) (cursor : Cursor.t) : hexp =
   | To (side, cursor') ->
       Uuid.bind exp ~f:(fun e ->
           match (side, e) with
-          | `Left, App (e1, _e2) -> walk_to e1 cursor'
-          | `Right, App (_e1, e2) -> walk_to e2 cursor'
+          | Left, App (e1, _e2) -> walk_to e1 cursor'
+          | Right, App (_e1, e2) -> walk_to e2 cursor'
           | _ ->
               Printf.printf "error: invalid cursor position";
               exp)
@@ -25,9 +25,8 @@ let rec apply_at (exp : hexp) (cursor : Cursor.t) (f : hexp -> hexp) : hexp =
       let open HExp in
       Uuid.bind exp ~f:(fun e ->
           match (side, e) with
-          | `Left, App (e1, e2) -> Uuid.return @@ App (apply_at e1 cursor' f, e2)
-          | `Right, App (e1, e2) ->
-              Uuid.return @@ App (e1, apply_at e2 cursor' f)
+          | Left, App (e1, e2) -> Uuid.return @@ App (apply_at e1 cursor' f, e2)
+          | Right, App (e1, e2) -> Uuid.return @@ App (e1, apply_at e2 cursor' f)
           | _ ->
               Printf.printf "error: invalid cursor position";
               exp)

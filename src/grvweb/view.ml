@@ -12,8 +12,8 @@ let rec of_hexp (hexp : Ast.HExp.t) (cursor_opt : Cursor.t option) : string =
       match hexp.value with
       | EmptyHole -> "__"
       | App (e1, e2) ->
-          let e1' = of_hexp e1 (if k == `Left then Some cursor else None)
-          and e2' = of_hexp e2 (if k == `Right then Some cursor else None) in
+          let e1' = of_hexp e1 (if k == Left then Some cursor else None)
+          and e2' = of_hexp e2 (if k == Right then Some cursor else None) in
           sprintf "(%s %s)" e1' e2' )
 
 let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
@@ -25,8 +25,8 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
       text (of_hexp model.ast (Some model.cursor));
       br [];
       button [ on_click (fun _ -> inject Create) ] [ text "App" ];
-      button [ on_click (fun _ -> inject @@ Move `In) ] [ text "In" ];
-      button [ on_click (fun _ -> inject @@ Move `Out) ] [ text "Out" ];
-      button [ on_click (fun _ -> inject @@ Move `Left) ] [ text "Left" ];
-      button [ on_click (fun _ -> inject @@ Move `Right) ] [ text "Right" ];
+      button [ on_click (fun _ -> inject @@ Move In) ] [ text "In" ];
+      button [ on_click (fun _ -> inject @@ Move Out) ] [ text "Out" ];
+      button [ on_click (fun _ -> inject @@ Move Left) ] [ text "Left" ];
+      button [ on_click (fun _ -> inject @@ Move Right) ] [ text "Right" ];
     ]

@@ -1,6 +1,6 @@
 type t = Here | To of side * t
 
-and side = [ `Left | `Right ]
+and side = Left | Right
 
 let rec push (side : side) (cursor : t) : t =
   match cursor with

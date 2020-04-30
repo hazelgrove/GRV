@@ -1,5 +1,4 @@
 open Ast
-module Graph = Graph_unsorted.Graph
 
 type t = { graph : Graph.t; ast : HExp.t; cursor : Cursor.t }
 

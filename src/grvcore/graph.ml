@@ -78,28 +78,26 @@ end
 
 (* Graph *)
 
-module Graph = struct
-  type t = {
-    (* Maps Edge id to edge *)
-    edges : Edge.t UuidMap.t;
-    (* Note: edges not in the table have not been created yet and are `\bot` *)
-    edge_states : Edge.state EdgeMap.t;
-    (* Maps Vertex id to parent edge *)
-    edges_to : EdgeSet.t VertexMap.t;
-    (* Maps Vertex id and Child index to set of edges *)
-    edges_from : EdgeSet.t VertexIndexMap.t;
+type t = {
+  (* Maps Edge id to edge *)
+  edges : Edge.t UuidMap.t;
+  (* Note: edges not in the table have not been created yet and are `\bot` *)
+  edge_states : Edge.state EdgeMap.t;
+  (* Maps Vertex id to parent edge *)
+  edges_to : EdgeSet.t VertexMap.t;
+  (* Maps Vertex id and Child index to set of edges *)
+  edges_from : EdgeSet.t VertexIndexMap.t;
+}
+
+let empty : t =
+  {
+    edges : Edge.t UuidMap.t = UuidMap.empty;
+    edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
+    edges_to : EdgeSet.t VertexMap.t = VertexMap.empty;
+    edges_from : EdgeSet.t VertexIndexMap.t = VertexIndexMap.empty;
   }
 
-  let empty : t =
-    {
-      edges : Edge.t UuidMap.t = UuidMap.empty;
-      edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
-      edges_to : EdgeSet.t VertexMap.t = VertexMap.empty;
-      edges_from : EdgeSet.t VertexIndexMap.t = VertexIndexMap.empty;
-    }
-end
-
-let add_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
+let add_edge (graph : t) (edge : Edge.t) : t =
   let target = Edge.target edge in
   let source = (Edge.source edge, Edge.index edge) in
   {
@@ -114,7 +112,7 @@ let add_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
        VertexIndexMap.add source (EdgeSet.add edge children) graph.edges_from);
   }
 
-let drop_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
+let drop_edge (graph : t) (edge : Edge.t) : t =
   let target = Edge.target edge in
   let source = (Edge.source edge, Edge.index edge) in
   {
@@ -132,8 +130,8 @@ let drop_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
          (EdgeSet.filter (Edge.equal edge) children)
          graph.edges_from);
   }
-let update_edge (graph : Graph.t) (edge : Edge.t) (edge_state : Edge.state) :
-    Graph.t =
+
+let update_edge (graph : t) (edge : Edge.t) (edge_state : Edge.state) : t =
   let old_state = EdgeMap.find_opt edge graph.edge_states in
   let action : Edge.state option =
     match old_state with

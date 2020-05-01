@@ -68,12 +68,16 @@ module EdgeSet = Set.Make (struct
   let compare : t -> t -> int = Edge.compare
 end)
 
-(* VertexMap *)
+(* Parents *)
 
-module VertexMap = struct
-  include Map.Make (Vertex)
+module VertexMap = Map.Make (Vertex)
 
-  let obtain (key : Vertex.t) (map : EdgeSet.t t) : EdgeSet.t =
+module Parents = struct
+  include VertexMap
+
+  type t = EdgeSet.t VertexMap.t
+
+  let obtain (key : Vertex.t) (map : t) : EdgeSet.t =
     Option.value (find_opt key map) ~default:EdgeSet.empty
 end
 
@@ -114,7 +118,7 @@ type t = {
   (* Note: edges not in the table have not been created yet and are `\bot` *)
   edge_states : Edge.state EdgeMap.t;
   (* Maps Vertex id to parent edge *)
-  edges_to : EdgeSet.t VertexMap.t;
+  edges_to : Parents.t;
   (* Maps Vertex id and Child index to set of edges *)
   edges_from : EdgeSet.t VertexIndexMap.t;
 }
@@ -125,7 +129,7 @@ let empty : t =
       UuidMap.singleton Vertex.root.uuid Vertex.root;
     edges : Edge.t UuidMap.t = UuidMap.empty;
     edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
-    edges_to : EdgeSet.t VertexMap.t = VertexMap.empty;
+    edges_to : Parents.t = Parents.empty;
     edges_from : EdgeSet.t VertexIndexMap.t = VertexIndexMap.empty;
   }
 
@@ -154,19 +158,15 @@ let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
 
 let connect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
-  let parents = VertexMap.obtain target graph.edges_to in
-  let edges_to =
-    VertexMap.add target (EdgeSet.add edge parents) graph.edges_to
-  in
+  let parents = Parents.obtain target graph.edges_to in
+  let edges_to = Parents.add target (EdgeSet.add edge parents) graph.edges_to in
   { graph with edges_to }
 
 let disconnect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
-  let parents = VertexMap.obtain target graph.edges_to in
+  let parents = Parents.obtain target graph.edges_to in
   let edges_to =
-    VertexMap.add target
-      (EdgeSet.filter (Edge.equal edge) parents)
-      graph.edges_to
+    Parents.add target (EdgeSet.filter (Edge.equal edge) parents) graph.edges_to
   in
   { graph with edges_to }
 

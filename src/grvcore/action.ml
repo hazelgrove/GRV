@@ -23,8 +23,8 @@ let apply (model : Model.t) (action : t) (_state : State.t)
       let graph =
         let vertex = Vertex.(mk Exp_app) in
         let source = Graph.find_vertex model.cursor_ref.vertex model.graph in
-        let edge = Graph.edge source model.cursor_ref.index vertex in
-        Graph.update_edge model.graph edge Graph.Edge.Created
+        let edge = Edge.mk source model.cursor_ref.index vertex in
+        Graph.update_edge model.graph edge Edge.Created
       in
       { model with ast; graph }
   | Move In ->

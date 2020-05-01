@@ -2,6 +2,7 @@
 
 (library
  (name grvcore)
+ (public_name GRV.core)
  (preprocess
   (pps ppx_compare ppx_let ppx_sexp_conv ppx_deriving.show))
  (wrapped false))

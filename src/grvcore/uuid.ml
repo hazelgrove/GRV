@@ -1,12 +1,25 @@
 (** Universally unique identifiers *)
 
+(* TODO narrow open scope *)
 open Format
 
 (** A type that can be ordered and uniquely identified. *)
 module Id = struct
   type t = int
 
-  let compare = Int.compare
+  let compare : t -> t -> int = Int.compare
+
+  (**/**)
+
+  (* TODO: let set_seed : int -> int -> unit = failwith __LOC__ *)
+
+  let seed : t ref = ref 0
+
+  (**/**)
+
+  let next () =
+    seed := !seed + 1;
+    !seed
 end
 
 type 'a t = { id : Id.t; value : 'a }
@@ -15,21 +28,8 @@ type 'a t = { id : Id.t; value : 'a }
 (** [Uuid]s are compared by comparing their [id]s. *)
 let compare (u1 : 'a t) (u2 : 'a t) : int = Id.compare u1.id u2.id
 
-(**/**)
-
-let seed : int ref = ref 0
-
-(* TODO: let set_seed : int -> int -> unit = failwith __LOC__ *)
-
-(**/**)
-
 (** Tags a value with a fresh [id]. *)
-let wrap (a : 'a) : 'a t =
-  let next () =
-    seed := !seed + 1;
-    !seed
-  in
-  { id = next (); value = a }
+let wrap (a : 'a) : 'a t = { id = Id.next (); value = a }
 
 (** Strips the [id] from a tagged value. *)
 let unwrap (u : 'a t) : 'a = u.value
@@ -49,4 +49,4 @@ let pp (pp' : formatter -> 'a -> unit) (fmt : formatter) (u : 'a t) : unit =
 (** {1 Collections } *)
 
 module Map = Map.Make (Id)
-(** A map with [Id] keys *)
+(** An abstract map with [Id]s for keys. *)

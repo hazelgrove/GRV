@@ -113,11 +113,11 @@ let child (vertex : Vertex.t) (index : index) : Children.key = { vertex; index }
 
 (* Graph *)
 
-(* Note: edges not in edge_states have not been created yet and are `\bot` *)
+(* Note: edges not in the states field have not been created yet and are `\bot` *)
 type t = {
   vertices : Vertex.t UuidMap.t;
   edges : Edge.t UuidMap.t;
-  edge_states : Edge.state EdgeMap.t;
+  states : Edge.state EdgeMap.t;
   parents : Parents.t;
   children : Children.t;
 }
@@ -127,7 +127,7 @@ let empty : t =
     vertices : Vertex.t UuidMap.t =
       UuidMap.singleton Vertex.root.uuid Vertex.root;
     edges : Edge.t UuidMap.t = UuidMap.empty;
-    edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
+    states : Edge.state EdgeMap.t = EdgeMap.empty;
     parents : Parents.t = Parents.empty;
     children : Children.t = Children.empty;
   }
@@ -140,15 +140,15 @@ let pp_vertices (fmt : formatter) (graph : t) : unit =
 let pp_edges (fmt : formatter) (graph : t) : unit =
   UuidMap.iter (fun id e -> fprintf fmt "%d = %a\n" id Edge.pp e) graph.edges
 
-let pp_edge_states (fmt : formatter) (graph : t) : unit =
+let pp_states (fmt : formatter) (graph : t) : unit =
   EdgeMap.iter
     (fun edge state -> fprintf fmt "%d = %a\n" edge.uuid Edge.pp_state state)
-    graph.edge_states
+    graph.states
 
 let pp_graph (fmt : formatter) (graph : t) : unit =
   fprintf fmt "Vertices:\n%a\n" pp_vertices graph;
   fprintf fmt "Edges:\n%a\n" pp_edges graph;
-  fprintf fmt "Edge States:\n%a@." pp_edge_states graph
+  fprintf fmt "Edge States:\n%a@." pp_states graph
 
 (* Graph Operations *)
 
@@ -201,7 +201,7 @@ let update_edge (graph : t) (edge : Edge.t) (edge_state : Edge.state) : t =
     |> UuidMap.add target.uuid target
     |> UuidMap.add source.uuid source
   in
-  let old_state = EdgeMap.find_opt edge graph.edge_states in
+  let old_state = EdgeMap.find_opt edge graph.states in
   let action : Edge.state option =
     match old_state with
     | Some Destroyed -> None
@@ -217,9 +217,9 @@ let update_edge (graph : t) (edge : Edge.t) (edge_state : Edge.state) : t =
       (* TODO: short circuit if deleting a non-existant *)
       add_edge { graph with vertices } edge
   | Some Destroyed -> (
-      let edge_states : Edge.state EdgeMap.t =
-        EdgeMap.add edge Edge.Destroyed graph.edge_states
+      let states : Edge.state EdgeMap.t =
+        EdgeMap.add edge Edge.Destroyed graph.states
       in
       match old_state with
-      | None -> { graph with vertices; edge_states }
-      | _ -> drop_edge { graph with vertices; edge_states } edge )
+      | None -> { graph with vertices; states }
+      | _ -> drop_edge { graph with vertices; states } edge )

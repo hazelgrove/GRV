@@ -134,21 +134,16 @@ let empty : t =
 
 (* Graph Pretty Printing *)
 
-let pp_vertices (fmt : formatter) (graph : t) : unit =
-  UuidMap.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) graph.vertices
-
-let pp_edges (fmt : formatter) (graph : t) : unit =
-  UuidMap.iter (fun id e -> fprintf fmt "%d = %a\n" id Edge.pp e) graph.edges
-
-let pp_states (fmt : formatter) (graph : t) : unit =
+let pp_graph (fmt : formatter) (graph : t) : unit =
+  fprintf fmt "Vertices\n";
+  UuidMap.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) graph.vertices;
+  fprintf fmt "\nEdges\n";
+  UuidMap.iter (fun id e -> fprintf fmt "%d = %a\n" id Edge.pp e) graph.edges;
+  fprintf fmt "\nStates\n";
   EdgeMap.iter
     (fun edge state -> fprintf fmt "%d = %a\n" edge.uuid Edge.pp_state state)
-    graph.states
-
-let pp_graph (fmt : formatter) (graph : t) : unit =
-  fprintf fmt "Vertices:\n%a\n" pp_vertices graph;
-  fprintf fmt "Edges:\n%a\n" pp_edges graph;
-  fprintf fmt "Edge States:\n%a@." pp_states graph
+    graph.states;
+  fprintf fmt "@?"
 
 (* Graph Operations *)
 

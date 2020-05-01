@@ -53,7 +53,7 @@ type t = {
 let empty : t =
   {
     vertices : Vertex.t Uuid.Map.t =
-      Uuid.Map.singleton Vertex.root.uuid Vertex.root;
+      Uuid.Map.singleton Vertex.root.id Vertex.root;
     edges : Edge.t Uuid.Map.t = Uuid.Map.empty;
     states : Edge.state Edge.Map.t = Edge.Map.empty;
     parents : Parents.t = Parents.empty;
@@ -63,7 +63,7 @@ let empty : t =
 (* Graph Operations *)
 
 let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
-  Uuid.Map.find vertex.uuid graph.vertices
+  Uuid.Map.find vertex.id graph.vertices
 
 let connect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
@@ -108,8 +108,8 @@ let update_edge (graph : t) (edge : Edge.t) (edge_state : Edge.state) : t =
     let target = Edge.target edge in
     let source = Edge.source edge in
     graph.vertices
-    |> Uuid.Map.add target.uuid target
-    |> Uuid.Map.add source.uuid source
+    |> Uuid.Map.add target.id target
+    |> Uuid.Map.add source.id source
   in
   let old_state = Edge.Map.find_opt edge graph.states in
   let action : Edge.state option =
@@ -144,6 +144,6 @@ let pp_graph (fmt : Format.formatter) (graph : t) : unit =
   Uuid.Map.iter (fun id e -> fprintf fmt "%d = %a\n" id Edge.pp e) graph.edges;
   fprintf fmt "\nStates\n";
   Edge.Map.iter
-    (fun edge state -> fprintf fmt "%d = %a\n" edge.uuid Edge.pp_state state)
+    (fun edge state -> fprintf fmt "%d = %a\n" edge.id Edge.pp_state state)
     graph.states;
   fprintf fmt "@?"

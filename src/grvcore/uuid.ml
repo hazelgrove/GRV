@@ -23,11 +23,8 @@ let wrap (a : 'a) : 'a t =
   in
   { uuid = next (); value = a }
 
+let bind (u : 'a t) ~(f : int * 'a -> 'b t) : 'b t = f (u.uuid, u.value)
+
 let return = wrap
-
-let bind (u : 'a t) ~(f : 'a -> 'b t) : 'b t =
-  { u with value = (f u.value).value }
-
-let map (x : 'a t) ~(f : 'a -> 'b) : 'b t = { x with value = f x.value }
 
 module Map = Map.Make (Int)

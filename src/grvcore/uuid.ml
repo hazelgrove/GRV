@@ -37,7 +37,7 @@ let unwrap (u : 'a t) : 'a = u.value
 (** {1 Monadic API} *)
 
 (** Transforms the fields of one [Uuid] into another. *)
-let bind (u : 'a t) ~(f : int * 'a -> 'b t) : 'b t = f (u.id, u.value)
+let bind (u : 'a t) (f : int * 'a -> 'b t) : 'b t = f (u.id, u.value)
 
 let return = wrap
 

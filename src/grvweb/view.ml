@@ -24,9 +24,20 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
     [
       text (of_hexp model.ast (Some model.cursor));
       br [];
+      br [];
       button [ on_click (fun _ -> inject Create) ] [ text "App" ];
       button [ on_click (fun _ -> inject @@ Move In) ] [ text "In" ];
       button [ on_click (fun _ -> inject @@ Move Out) ] [ text "Out" ];
       button [ on_click (fun _ -> inject @@ Move Left) ] [ text "Left" ];
       button [ on_click (fun _ -> inject @@ Move Right) ] [ text "Right" ];
+      br [];
+      br [];
+      text "Cursor";
+      br [];
+      pre []
+        [ text @@ Format.asprintf "%a@." Graph.VertexIndex.pp model.cursor_ref ];
+      br [];
+      text "Graph";
+      br [];
+      pre [] [ text @@ Format.asprintf "%a@." Graph.pp_graph model.graph ];
     ]

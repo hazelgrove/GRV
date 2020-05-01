@@ -10,11 +10,23 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   let open Ast.HExp in
   match action with
   | Create ->
+      (* TODO:
+           - Make movement actions work on cursor
+           - Take existing children of the cursor:
+               1. Remove edges pointing to children
+               2. Add edges making them children of v
+      *)
       let ast =
         apply_at model.ast model.cursor (fun exp ->
             Uuid.wrap @@ App (exp, Uuid.wrap EmptyHole))
       in
-      { model with ast }
+      let graph =
+        let vertex = Graph.(vertex Vertex.Exp_app) in
+        let source = Graph.find_vertex model.cursor_ref.vertex model.graph in
+        let edge = Graph.edge source model.cursor_ref.index vertex in
+        Graph.update_edge model.graph edge Graph.Edge.Created
+      in
+      { model with ast; graph }
   | Move In ->
       let cursor =
         match Uuid.unwrap (walk_to model.ast model.cursor) with

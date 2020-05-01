@@ -1,6 +1,11 @@
+open Format
+
 type 'a t = { uuid : int; value : 'a }
 
 let compare (u1 : 'a t) (u2 : 'a t) : int = Int.compare u1.uuid u2.uuid
+
+let pp (pp' : formatter -> 'a -> unit) (fmt : formatter) (u : 'a t) : unit =
+  fprintf fmt "%d=%a" u.uuid pp' u.value
 
 module OrderedType = Int
 

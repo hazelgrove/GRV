@@ -5,7 +5,7 @@ all: dev
 deps:
 	opam install \
 		dune utop ocamlformat \
-		incr_dom js_of_ocaml ppx_let ppx_sexp_conv sexplib
+		incr_dom js_of_ocaml ppx_deriving ppx_let ppx_sexp_conv sexplib
 
 dev:
 	dune build @src/fmt --auto-promote || true

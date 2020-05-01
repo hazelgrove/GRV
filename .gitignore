@@ -49,3 +49,6 @@ setup.log
 # Visual Studio Code
 .vscode
 .history
+
+# opam package files
+*.opam

@@ -77,7 +77,7 @@ module Parents = struct
 
   type t = EdgeSet.t VertexMap.t
 
-  let obtain (key : Vertex.t) (map : t) : EdgeSet.t =
+  let find (key : Vertex.t) (map : t) : EdgeSet.t =
     Option.value (find_opt key map) ~default:EdgeSet.empty
 end
 
@@ -105,7 +105,7 @@ module Children = struct
 
   type t = EdgeSet.t VertexIndexMap.t
 
-  let obtain (key : key) (map : t) : EdgeSet.t =
+  let find (key : key) (map : t) : EdgeSet.t =
     Option.value (find_opt key map) ~default:EdgeSet.empty
 end
 
@@ -161,13 +161,13 @@ let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
 
 let connect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
-  let parents = Parents.obtain target graph.edges_to in
+  let parents = Parents.find target graph.edges_to in
   let edges_to = Parents.add target (EdgeSet.add edge parents) graph.edges_to in
   { graph with edges_to }
 
 let disconnect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
-  let parents = Parents.obtain target graph.edges_to in
+  let parents = Parents.find target graph.edges_to in
   let edges_to =
     Parents.add target (EdgeSet.filter (Edge.equal edge) parents) graph.edges_to
   in
@@ -175,7 +175,7 @@ let disconnect_parents (edge : Edge.t) (graph : t) : t =
 
 let connect_children (edge : Edge.t) (graph : t) : t =
   let source = child (Edge.source edge) (Edge.index edge) in
-  let children = Children.obtain source graph.edges_from in
+  let children = Children.find source graph.edges_from in
   let edges_from =
     Children.add source (EdgeSet.add edge children) graph.edges_from
   in
@@ -183,7 +183,7 @@ let connect_children (edge : Edge.t) (graph : t) : t =
 
 let disconnect_children (edge : Edge.t) (graph : t) : t =
   let source = child (Edge.source edge) (Edge.index edge) in
-  let children = Children.obtain source graph.edges_from in
+  let children = Children.find source graph.edges_from in
   let edges_from =
     Children.add source
       (EdgeSet.filter (Edge.equal edge) children)

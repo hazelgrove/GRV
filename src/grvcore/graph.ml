@@ -1,5 +1,3 @@
-open Format
-
 module Parents = struct
   include Vertex.Map
 
@@ -19,7 +17,8 @@ module Child = struct
     | 0 -> Index.compare child1.index child2.index
     | i -> i
 
-  let pp (fmt : formatter) (child : t) : unit =
+  let pp (fmt : Format.formatter) (child : t) : unit =
+    let open Format in
     fprintf fmt "{\n";
     fprintf fmt "  vertex: %a\n" Vertex.pp child.parent;
     fprintf fmt "   index: %a\n" Index.pp child.index;
@@ -137,7 +136,8 @@ let update_edge (graph : t) (edge : Edge.t) (edge_state : Edge.state) : t =
 
 (* Pretty Printing *)
 
-let pp_graph (fmt : formatter) (graph : t) : unit =
+let pp_graph (fmt : Format.formatter) (graph : t) : unit =
+  let open Format in
   fprintf fmt "Vertices\n";
   Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) graph.vertices;
   fprintf fmt "\nEdges\n";

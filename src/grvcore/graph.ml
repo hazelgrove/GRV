@@ -81,7 +81,7 @@ module Parents = struct
     Option.value (find_opt key map) ~default:EdgeSet.empty
 end
 
-(* VertexIndexMap *)
+(* Children *)
 
 module VertexIndex = struct
   type t = { vertex : Vertex.t; index : index }
@@ -98,15 +98,18 @@ module VertexIndex = struct
     fprintf fmt "} "
 end
 
-let child (vertex : Vertex.t) (index : index) : VertexIndex.t =
-  { vertex; index }
+module VertexIndexMap = Map.Make (VertexIndex)
 
-module VertexIndexMap = struct
-  include Map.Make (VertexIndex)
+module Children = struct
+  include VertexIndexMap
 
-  let obtain (key : VertexIndex.t) (map : EdgeSet.t t) : EdgeSet.t =
+  type t = EdgeSet.t VertexIndexMap.t
+
+  let obtain (key : key) (map : t) : EdgeSet.t =
     Option.value (find_opt key map) ~default:EdgeSet.empty
 end
+
+let child (vertex : Vertex.t) (index : index) : Children.key = { vertex; index }
 
 (* Graph *)
 
@@ -120,7 +123,7 @@ type t = {
   (* Maps Vertex id to parent edge *)
   edges_to : Parents.t;
   (* Maps Vertex id and Child index to set of edges *)
-  edges_from : EdgeSet.t VertexIndexMap.t;
+  edges_from : Children.t;
 }
 
 let empty : t =
@@ -130,7 +133,7 @@ let empty : t =
     edges : Edge.t UuidMap.t = UuidMap.empty;
     edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
     edges_to : Parents.t = Parents.empty;
-    edges_from : EdgeSet.t VertexIndexMap.t = VertexIndexMap.empty;
+    edges_from : Children.t = Children.empty;
   }
 
 (* Graph Pretty Printing *)
@@ -172,17 +175,17 @@ let disconnect_parents (edge : Edge.t) (graph : t) : t =
 
 let connect_children (edge : Edge.t) (graph : t) : t =
   let source = child (Edge.source edge) (Edge.index edge) in
-  let children = VertexIndexMap.obtain source graph.edges_from in
+  let children = Children.obtain source graph.edges_from in
   let edges_from =
-    VertexIndexMap.add source (EdgeSet.add edge children) graph.edges_from
+    Children.add source (EdgeSet.add edge children) graph.edges_from
   in
   { graph with edges_from }
 
 let disconnect_children (edge : Edge.t) (graph : t) : t =
   let source = child (Edge.source edge) (Edge.index edge) in
-  let children = VertexIndexMap.obtain source graph.edges_from in
+  let children = Children.obtain source graph.edges_from in
   let edges_from =
-    VertexIndexMap.add source
+    Children.add source
       (EdgeSet.filter (Edge.equal edge) children)
       graph.edges_from
   in

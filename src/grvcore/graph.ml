@@ -113,17 +113,13 @@ let child (vertex : Vertex.t) (index : index) : Children.key = { vertex; index }
 
 (* Graph *)
 
+(* Note: edges not in edge_states have not been created yet and are `\bot` *)
 type t = {
-  (* Maps vertex id to vertex *)
   vertices : Vertex.t UuidMap.t;
-  (* Maps edge id to edge *)
   edges : Edge.t UuidMap.t;
-  (* Note: edges not in the table have not been created yet and are `\bot` *)
   edge_states : Edge.state EdgeMap.t;
-  (* Maps Vertex id to parent edge *)
-  edges_to : Parents.t;
-  (* Maps Vertex id and Child index to set of edges *)
-  edges_from : Children.t;
+  parents : Parents.t;
+  children : Children.t;
 }
 
 let empty : t =
@@ -132,8 +128,8 @@ let empty : t =
       UuidMap.singleton Vertex.root.uuid Vertex.root;
     edges : Edge.t UuidMap.t = UuidMap.empty;
     edge_states : Edge.state EdgeMap.t = EdgeMap.empty;
-    edges_to : Parents.t = Parents.empty;
-    edges_from : Children.t = Children.empty;
+    parents : Parents.t = Parents.empty;
+    children : Children.t = Children.empty;
   }
 
 (* Graph Pretty Printing *)
@@ -161,35 +157,35 @@ let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
 
 let connect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
-  let parents = Parents.find target graph.edges_to in
-  let edges_to = Parents.add target (EdgeSet.add edge parents) graph.edges_to in
-  { graph with edges_to }
+  let parents = Parents.find target graph.parents in
+  let parents = Parents.add target (EdgeSet.add edge parents) graph.parents in
+  { graph with parents }
 
 let disconnect_parents (edge : Edge.t) (graph : t) : t =
   let target = Edge.target edge in
-  let parents = Parents.find target graph.edges_to in
-  let edges_to =
-    Parents.add target (EdgeSet.filter (Edge.equal edge) parents) graph.edges_to
+  let parents = Parents.find target graph.parents in
+  let parents =
+    Parents.add target (EdgeSet.filter (Edge.equal edge) parents) graph.parents
   in
-  { graph with edges_to }
+  { graph with parents }
 
 let connect_children (edge : Edge.t) (graph : t) : t =
   let source = child (Edge.source edge) (Edge.index edge) in
-  let children = Children.find source graph.edges_from in
-  let edges_from =
-    Children.add source (EdgeSet.add edge children) graph.edges_from
+  let children = Children.find source graph.children in
+  let children =
+    Children.add source (EdgeSet.add edge children) graph.children
   in
-  { graph with edges_from }
+  { graph with children }
 
 let disconnect_children (edge : Edge.t) (graph : t) : t =
   let source = child (Edge.source edge) (Edge.index edge) in
-  let children = Children.find source graph.edges_from in
-  let edges_from =
+  let children = Children.find source graph.children in
+  let children =
     Children.add source
       (EdgeSet.filter (Edge.equal edge) children)
-      graph.edges_from
+      graph.children
   in
-  { graph with edges_from }
+  { graph with children }
 
 let add_edge (graph : t) (edge : Edge.t) : t =
   graph |> connect_parents edge |> connect_children edge

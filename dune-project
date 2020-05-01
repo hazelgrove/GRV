@@ -5,5 +5,4 @@
 
 (authors "Michael" "Eric")
 
-(package
- (name GRV))
+(package (name GRV))

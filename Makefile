@@ -11,7 +11,7 @@ deps:
 dev:
 	dune build @src/fmt --auto-promote || true
 	dune build --profile dev
-	dune build @src/doc
+	dune build @doc
 
 release:
 	dune build --profile release

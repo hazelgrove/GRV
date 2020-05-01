@@ -12,16 +12,16 @@ end
 (* Children *)
 
 module Child = struct
-  type t = { vertex : Vertex.t; index : Index.t }
+  type t = { parent : Vertex.t; index : Index.t }
 
   let compare (child1 : t) (child2 : t) : int =
-    match Vertex.compare child1.vertex child2.vertex with
+    match Vertex.compare child1.parent child2.parent with
     | 0 -> Index.compare child1.index child2.index
     | i -> i
 
   let pp (fmt : formatter) (child : t) : unit =
     fprintf fmt "{\n";
-    fprintf fmt "  vertex: %a\n" Vertex.pp child.vertex;
+    fprintf fmt "  vertex: %a\n" Vertex.pp child.parent;
     fprintf fmt "   index: %a\n" Index.pp child.index;
     fprintf fmt "} "
 end
@@ -37,8 +37,8 @@ module Children = struct
     Option.value (find_opt key map) ~default:Edge.Set.empty
 end
 
-let child (vertex : Vertex.t) (index : Index.t) : Children.key =
-  { vertex; index }
+let child (parent : Vertex.t) (index : Index.t) : Children.key =
+  { parent; index }
 
 (* Graph *)
 

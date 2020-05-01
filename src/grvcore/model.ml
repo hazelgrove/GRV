@@ -4,7 +4,7 @@ type t = {
   graph : Graph.t;
   ast : HExp.t;
   cursor : Cursor.t;
-  cursor_ref : Graph.VertexIndex.t;
+  cursor_ref : Graph.Child.t;
 }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2

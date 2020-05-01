@@ -34,8 +34,7 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
       br [];
       text "Cursor";
       br [];
-      pre []
-        [ text @@ Format.asprintf "%a@." Graph.VertexIndex.pp model.cursor_ref ];
+      pre [] [ text @@ Format.asprintf "%a@." Graph.Child.pp model.cursor_ref ];
       br [];
       text "Graph";
       br [];

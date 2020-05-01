@@ -11,7 +11,7 @@ end
 
 (* Children *)
 
-module VertexIndex = struct
+module Child = struct
   type t = { vertex : Vertex.t; index : Index.t }
 
   let compare (child1 : t) (child2 : t) : int =
@@ -26,12 +26,12 @@ module VertexIndex = struct
     fprintf fmt "} "
 end
 
-module VertexIndexMap = Map.Make (VertexIndex)
+module ChildMap = Map.Make (Child)
 
 module Children = struct
-  include VertexIndexMap
+  include ChildMap
 
-  type t = Edge.Set.t VertexIndexMap.t
+  type t = Edge.Set.t ChildMap.t
 
   let find (key : key) (map : t) : Edge.Set.t =
     Option.value (find_opt key map) ~default:Edge.Set.empty

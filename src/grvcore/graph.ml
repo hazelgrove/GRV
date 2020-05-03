@@ -68,6 +68,9 @@ let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
 let find_children (child : Child.t) (graph : t) : Edge.Set.t =
   Children.find child graph.children
 
+let find_parents (vertex : Vertex.t) (graph : t) : Edge.Set.t =
+  Parents.find vertex graph.parents
+
 (* Pretty Printing *)
 
 let pp_graph (fmt : Format.formatter) (graph : t) : unit =

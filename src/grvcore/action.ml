@@ -44,24 +44,56 @@ let apply (model : Model.t) (action : t) (_state : State.t)
       in
       { model with ast; graph }
   | Move In ->
+      let cursor_ref =
+        match
+          Edge.Set.elements (Graph.find_children model.cursor_ref model.graph)
+        with
+        | [ edge ] -> (
+            let parent = Edge.target edge in
+            match Index.down parent.value with
+            | None -> model.cursor_ref
+            | Some index -> { parent; index }
+            (* TODO: how to choose between ambiguous children *) )
+        | _ -> model.cursor_ref
+      in
       let cursor =
         match Uuid.unwrap (walk_to model.ast model.cursor) with
         | App _ -> Cursor.push Left model.cursor
         | EmptyHole -> model.cursor
       in
-      { model with cursor }
-  | Move Out -> { model with cursor = Cursor.pop model.cursor }
+      { model with cursor; cursor_ref }
+  | Move Out ->
+      let cursor_ref =
+        match
+          Edge.Set.elements
+            (Graph.find_parents model.cursor_ref.parent model.graph)
+        with
+        | [ edge ] ->
+            { Graph.Child.parent = Edge.source edge; index = Edge.index edge }
+        | _ -> model.cursor_ref
+      in
+      { model with cursor = Cursor.pop model.cursor; cursor_ref }
   | Move Left ->
+      let cursor_ref =
+        match Index.left model.cursor_ref.index with
+        | None -> model.cursor_ref
+        | Some index -> { model.cursor_ref with index }
+      in
       let cursor =
         match Cursor.last model.cursor with
         | To (Right, _) -> Cursor.extend model.cursor Left
         | To (Left, _) | Here -> model.cursor
       in
-      { model with cursor }
+      { model with cursor; cursor_ref }
   | Move Right ->
+      let cursor_ref =
+        match Index.right model.cursor_ref.index with
+        | None -> model.cursor_ref
+        | Some index -> { model.cursor_ref with index }
+      in
       let cursor =
         match Cursor.last model.cursor with
         | To (Left, _) -> Cursor.extend model.cursor Right
         | To (Right, _) | Here -> model.cursor
       in
-      { model with cursor }
+      { model with cursor; cursor_ref }

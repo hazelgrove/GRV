@@ -16,23 +16,29 @@ let rec of_hexp (hexp : Ast.HExp.t) (cursor_opt : Cursor.t option) : string =
           and e2' = of_hexp e2 (if k == Right then Some cursor else None) in
           sprintf "(%s %s)" e1' e2' )
 
-let rec of_vertex (graph : Graph.t) (cursor : Graph.Child.t)
+let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
     (child : Graph.Child.t) : string =
   let string =
     match Edge.Set.elements (Graph.find_children child graph) with
     | [] -> "__"
-    | [ edge ] -> (
-        match (Edge.target edge).value with
-        | Exp_app ->
-            Printf.sprintf "(%s %s)"
-              (of_vertex graph cursor
-                 { parent = Edge.target edge; index = Exp_app_fun })
-              (of_vertex graph cursor
-                 { parent = Edge.target edge; index = Exp_app_arg })
-        | _ -> "TODO" )
-    | _ -> "TODO"
+    | [ edge ] -> of_vertex graph cursor (Edge.target edge)
+    | edges ->
+        Printf.sprintf "{ %s }"
+          (String.concat " | "
+             (List.map
+                (fun edge -> of_vertex graph cursor (Edge.target edge))
+                edges))
   in
   if cursor = child then Printf.sprintf "<%s>" string else string
+
+and of_vertex (graph : Graph.t) (cursor : Graph.Child.t) (vertex : Vertex.t) :
+    string =
+  match vertex.value with
+  | Exp_app ->
+      Printf.sprintf "(%s %s)"
+        (of_index graph cursor { parent = vertex; index = Exp_app_fun })
+        (of_index graph cursor { parent = vertex; index = Exp_app_arg })
+  | _ -> "TODO"
 
 let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
   let open Action in
@@ -43,7 +49,7 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
       text (of_hexp model.ast (Some model.cursor));
       br [];
       br [];
-      text (of_vertex model.graph model.cursor_ref Graph.Child.root);
+      text (of_index model.graph model.cursor_ref Graph.Child.root);
       br [];
       br [];
       button [ on_click (fun _ -> inject Create) ] [ text "App" ];

@@ -1,31 +1,28 @@
-module Edge = struct
-  type t = t' Uuid.t [@@deriving show]
+type t = t' Uuid.Wrap.t [@@deriving show]
 
-  and t' = { source : Vertex.t; index : Index.t; target : Vertex.t }
+and t' = { source : Vertex.t; index : Index.t; target : Vertex.t }
 
-  type state = Created | Destroyed [@@deriving show]
+type state = Created | Destroyed [@@deriving show]
 
-  let mk (source : Vertex.t) (index : Index.t) (target : Vertex.t) : t =
-    let e' : t' = { source; index; target } in
-    Uuid.wrap e'
+let mk (source : Vertex.t) (index : Index.t) (target : Vertex.t) : t =
+  Uuid.Wrap.mk { source; index; target }
 
-  let compare : t -> t -> int = Uuid.compare
+let compare : t -> t -> int = Uuid.Wrap.compare
 
-  let equal (edge1 : t) (edge2 : t) : bool = compare edge1 edge2 = 0
+let equal (edge1 : t) (edge2 : t) : bool = compare edge1 edge2 = 0
 
-  let source (edge : t) : Vertex.t = (Uuid.unwrap edge).source
+let source (edge : t) : Vertex.t = (Uuid.Wrap.unmk edge).source
 
-  let target (edge : t) : Vertex.t = (Uuid.unwrap edge).target
+(* TODO rearrange edge field accessors *)
+let index (edge : t) : Index.t = (Uuid.Wrap.unmk edge).index
 
-  (* TODO rearrange edge field accessors *)
-  let index (edge : t) : Index.t = (Uuid.unwrap edge).index
+let target (edge : t) : Vertex.t = (Uuid.Wrap.unmk edge).target
+
+module OrderedType = struct
+  type nonrec t = t
+
+  let compare = compare
 end
 
-include Edge
-module Map = Map.Make (Edge)
-
-module Set = Set.Make (struct
-  type t = Edge.t
-
-  let compare : t -> t -> int = Edge.compare
-end)
+module Map = Map.Make (OrderedType)
+module Set = Set.Make (OrderedType)

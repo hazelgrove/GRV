@@ -2,25 +2,27 @@
 
     A [Vertex] encodes an {!Ast.HExp} constructor sort and type. *)
 
-module Vertex = struct
-  (** Indicates the sort and type of an [HExp] constructor. *)
+(** Indicates the sort and type of an [HExp] constructor. *)
 
-  type t = Constructor.t Uuid.t
+type t = Constructor.t Uuid.Wrap.t
 
-  let mk (ctor : Constructor.t) : t = Uuid.wrap ctor
+let mk : Constructor.t -> t = Uuid.Wrap.mk
 
-  (** [Vertex]es are compared by comparing their {!field:Uuid.t.id}s *)
-  let compare : t -> t -> int = Uuid.compare
+(** [Vertex]es are compared by comparing their {!field:Uuid.t.id}s *)
+let compare : t -> t -> int = Uuid.Wrap.compare
 
-  (** The root [Vertex] of all graphs. *)
-  let root : t = { id = 0; value = Root_root }
+(** The root [Vertex] of all graphs. *)
+let root : t = Uuid.Wrap.well_known 0 Constructor.Root_root
 
-  (** {1 Pretty Printing} *)
+(** {1 Pretty Printing} *)
 
-  let pp : Format.formatter -> t -> unit = Uuid.pp Constructor.pp
+let pp : Format.formatter -> t -> unit = Uuid.Wrap.pp Constructor.pp
+
+module OrderedType = struct
+  type nonrec t = t
+
+  let compare = compare
 end
 
-include Vertex
-
 (** An abstract map with [Vertex]es for keys *)
-module Map = Map.Make (Vertex)
+module Map = Map.Make (OrderedType)

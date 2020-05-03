@@ -23,7 +23,7 @@ and of_vertex (graph : Graph.t) (cursor : Graph.Child.t) (vertex : Vertex.t) :
           (of_index graph cursor { parent = vertex; index = Exp_app_arg })
     | _ -> "TODO"
   in
-  Printf.sprintf "%d:%s" vertex.id result
+  Printf.sprintf "%s:%s" (Uuid.Id.show vertex.id) result
 
 let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
   let open Action in

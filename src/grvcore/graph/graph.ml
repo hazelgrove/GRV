@@ -83,9 +83,12 @@ let pp_graph (fmt : Format.formatter) (graph : t) : unit =
   fprintf fmt "Vertices\n";
   Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) graph.vertices;
   fprintf fmt "\nEdges\n";
-  Uuid.Map.iter (fun id e -> fprintf fmt "%d = %a\n" id Edge.pp e) graph.edges;
+  Uuid.Map.iter
+    (fun id e -> fprintf fmt "%s = %a\n" (Uuid.Id.show id) Edge.pp e)
+    graph.edges;
   fprintf fmt "\nStates\n";
   Edge.Map.iter
-    (fun edge state -> fprintf fmt "%d = %a\n" edge.id Edge.pp_state state)
+    (fun edge state ->
+      fprintf fmt "%s = %a\n" (Uuid.Id.show edge.id) Edge.pp_state state)
     graph.states;
   fprintf fmt "@?"

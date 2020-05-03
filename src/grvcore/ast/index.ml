@@ -11,9 +11,21 @@ type t =
   | Typ_var_id
 [@@deriving compare, show]
 
+(* Specifies where the existing node goes when a node is wrapped by the given constructor *)
+let wrap (ctor : Constructor.t) : t option =
+  match ctor with
+  | Root_root -> (* NOTE: Can't actually happen *) Some Root_root_root
+  | Id_id _ -> None
+  | Exp_lam -> Some Exp_lam_param
+  | Exp_app -> Some Exp_app_fun
+  | Exp_var -> Some Exp_var_id
+  | Typ_app -> Some Typ_app_fun
+  | Typ_var -> Some Typ_var_id
+
+(* Specifies where to go when the cursor moves down *)
 let down (ctor : Constructor.t) : t option =
   match ctor with
-  | Root_root -> Some Root_root_root
+  | Root_root -> (* NOTE: Can't actually happen *) Some Root_root_root
   | Id_id _ -> None
   | Exp_lam -> Some Exp_lam_param
   | Exp_app -> Some Exp_app_fun

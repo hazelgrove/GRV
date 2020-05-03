@@ -64,14 +64,17 @@ let empty : t =
 
 (* Graph Operations *)
 
+let edge_is_live (graph : t) (edge : Edge.t) : bool =
+  Some Edge.Created = Edge.Map.find_opt edge graph.states
+
 let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
   Uuid.Map.find vertex.id graph.vertices
 
 let find_children (child : Child.t) (graph : t) : Edge.Set.t =
-  Children.find child graph.children
+  Edge.Set.filter (edge_is_live graph) (Children.find child graph.children)
 
 let find_parents (vertex : Vertex.t) (graph : t) : Edge.Set.t =
-  Parents.find vertex graph.parents
+  Edge.Set.filter (edge_is_live graph) (Parents.find vertex graph.parents)
 
 (* Pretty Printing *)
 

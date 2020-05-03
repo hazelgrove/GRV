@@ -7,28 +7,32 @@ and direction = In | Out | Left | Right [@@deriving sexp_of]
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   match action with
-  | Create ->
-      let graph_actions =
-        let new_vertex = Vertex.(mk Exp_app) in
-        let old_parent = Graph.find_vertex model.cursor.parent model.graph in
-        let old_children = Graph.find_children model.cursor model.graph in
-        let edge = Edge.mk old_parent model.cursor.index new_vertex in
-        [ { Graph_action.state = Edge.Created; edge } ]
-        @ List.map
-            (fun (old_edge : Edge.t) ->
-              let edge =
-                Edge.mk new_vertex (Edge.index old_edge) (Edge.target old_edge)
-              in
-              { Graph_action.state = Edge.Created; edge })
-            (Edge.Set.elements old_children)
-        @ List.map
-            (fun edge -> { Graph_action.state = Edge.Destroyed; edge })
-            (Edge.Set.elements old_children)
-      in
-      let graph =
-        List.fold_right Graph_action.apply graph_actions model.graph
-      in
-      { model with graph }
+  | Create -> (
+      let constructor = Constructor.Exp_app in
+      match Index.wrap constructor with
+      | None -> model
+      | Some new_index ->
+          let new_vertex = Vertex.mk constructor in
+          let old_parent = Graph.find_vertex model.cursor.parent model.graph in
+          let old_children = Graph.find_children model.cursor model.graph in
+          let edge = Edge.mk old_parent model.cursor.index new_vertex in
+          let graph_actions =
+            [ { Graph_action.state = Edge.Created; edge } ]
+            @ List.map
+                (fun (old_edge : Edge.t) ->
+                  let edge =
+                    Edge.mk new_vertex new_index (Edge.target old_edge)
+                  in
+                  { Graph_action.state = Edge.Created; edge })
+                (Edge.Set.elements old_children)
+            @ List.map
+                (fun edge -> { Graph_action.state = Edge.Destroyed; edge })
+                (Edge.Set.elements old_children)
+          in
+          let graph =
+            List.fold_right Graph_action.apply graph_actions model.graph
+          in
+          { model with graph } )
   | Move In ->
       let cursor =
         match

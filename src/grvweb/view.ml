@@ -1,6 +1,6 @@
 let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
     (child : Graph.Child.t) : string =
-  let string =
+  let result =
     match Edge.Set.elements (Graph.find_children child graph) with
     | [] -> "__"
     | [ edge ] -> of_vertex graph cursor (Edge.target edge)
@@ -11,16 +11,19 @@ let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
                 (fun edge -> of_vertex graph cursor (Edge.target edge))
                 edges))
   in
-  if cursor = child then Printf.sprintf "<%s>" string else string
+  if cursor = child then Printf.sprintf "<%s>" result else result
 
 and of_vertex (graph : Graph.t) (cursor : Graph.Child.t) (vertex : Vertex.t) :
     string =
-  match vertex.value with
-  | Exp_app ->
-      Printf.sprintf "(%s %s)"
-        (of_index graph cursor { parent = vertex; index = Exp_app_fun })
-        (of_index graph cursor { parent = vertex; index = Exp_app_arg })
-  | _ -> "TODO"
+  let result =
+    match vertex.value with
+    | Exp_app ->
+        Printf.sprintf "(%s %s)"
+          (of_index graph cursor { parent = vertex; index = Exp_app_fun })
+          (of_index graph cursor { parent = vertex; index = Exp_app_arg })
+    | _ -> "TODO"
+  in
+  Printf.sprintf "%d:%s" vertex.id result
 
 let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
   let open Action in

@@ -1,21 +1,3 @@
-let rec of_hexp (hexp : Ast.HExp.t) (cursor_opt : Cursor.t option) : string =
-  let open Ast.HExp in
-  let open Cursor in
-  let open Printf in
-  match cursor_opt with
-  | None -> (
-      match hexp.value with
-      | EmptyHole -> "__"
-      | App (e1, e2) -> sprintf "(%s %s)" (of_hexp e1 None) (of_hexp e2 None) )
-  | Some Here -> sprintf "<%s>" (of_hexp hexp None)
-  | Some (To (k, cursor)) -> (
-      match hexp.value with
-      | EmptyHole -> "__"
-      | App (e1, e2) ->
-          let e1' = of_hexp e1 (if k == Left then Some cursor else None)
-          and e2' = of_hexp e2 (if k == Right then Some cursor else None) in
-          sprintf "(%s %s)" e1' e2' )
-
 let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
     (child : Graph.Child.t) : string =
   let string =
@@ -46,9 +28,6 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
   let open Virtual_dom.Vdom.Attr in
   div []
     [
-      text (of_hexp model.ast (Some model.cursor));
-      br [];
-      br [];
       text (of_index model.graph model.cursor_ref Graph.Child.root);
       br [];
       br [];

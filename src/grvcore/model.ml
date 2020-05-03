@@ -1,16 +1,5 @@
-open Ast
-
-type t = {
-  graph : Graph.t;
-  ast : HExp.t;
-  cursor : Cursor.t;
-  cursor_ref : Graph.Child.t;
-}
+type t = { graph : Graph.t; cursor_ref : Graph.Child.t }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
-let model (graph : Graph.t) (ast : HExp.t) (cursor : Cursor.t) : t =
-  let cursor_ref = Graph.child Vertex.root Index.Root_root_root in
-  { graph; ast; cursor; cursor_ref }
-
-let empty : t = model Graph.empty (Uuid.wrap HExp.EmptyHole) Cursor.Here
+let empty : t = { graph = Graph.empty; cursor_ref = Graph.Child.root }

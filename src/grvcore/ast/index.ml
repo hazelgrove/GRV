@@ -1,3 +1,5 @@
+(* TODO: rename to "field", "child_index"? *)
+
 type t =
   | Root_root_root
   | Exp_lam_param
@@ -10,6 +12,8 @@ type t =
   | Typ_app_arg
   | Typ_var_id
 [@@deriving compare, show]
+
+(* TODO: programatically generate these *)
 
 (* Specifies where the existing node goes when a node is wrapped by the given constructor *)
 let wrap (ctor : Constructor.t) : t option =

@@ -44,6 +44,7 @@ let child (parent : Vertex.t) (index : Index.t) : Children.key =
 (* Graph *)
 
 (* Note: edges not in the states field have not been created yet and are `\bot` *)
+(* TODO: split live_parents and live_children from all_parents and all_children fields *)
 type t = {
   vertices : Vertex.t Uuid.Map.t;
   edges : Edge.t Uuid.Map.t;

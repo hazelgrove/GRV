@@ -1,3 +1,4 @@
+(* TODO: use a fmt for efficiency? *)
 let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
     (child : Graph.Child.t) : string =
   let result =

@@ -1,4 +1,4 @@
-type t = { edge : Edge.t; state : Edge.state }
+type t = { edge : Edge.t; state : Edge.state } [@@deriving show]
 
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
@@ -46,6 +46,7 @@ let drop_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
 let apply (edge_action : t) (graph : Graph.t) : Graph.t =
   let edge = edge_action.edge in
   let edge_state = edge_action.state in
+  let edges = Uuid.Map.add edge.id edge graph.edges in
   let vertices =
     let target = Edge.target edge in
     let source = Edge.source edge in
@@ -67,11 +68,12 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
       (* TODO: assert not already exists? *)
 
       (* TODO: short circuit if deleting a non-existant *)
-      add_edge { graph with vertices } edge
+      let states = Edge.Map.add edge Edge.Created graph.states in
+      add_edge { graph with edges; vertices; states } edge
   | Some Destroyed -> (
       let states : Edge.state Edge.Map.t =
         Edge.Map.add edge Edge.Destroyed graph.states
       in
       match old_state with
-      | None -> { graph with vertices; states }
-      | _ -> drop_edge { graph with vertices; states } edge )
+      | None -> { graph with edges; vertices; states }
+      | _ -> drop_edge { graph with edges; vertices; states } edge )

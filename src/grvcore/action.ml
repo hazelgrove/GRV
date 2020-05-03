@@ -20,11 +20,27 @@ let apply (model : Model.t) (action : t) (_state : State.t)
         apply_at model.ast model.cursor (fun exp ->
             Uuid.wrap @@ App (exp, Uuid.wrap EmptyHole))
       in
+      let graph_actions =
+        let new_vertex = Vertex.(mk Exp_app) in
+        let old_parent =
+          Graph.find_vertex model.cursor_ref.parent model.graph
+        in
+        let old_children = Graph.find_children model.cursor_ref model.graph in
+        let edge = Edge.mk old_parent model.cursor_ref.index new_vertex in
+        [ { Graph_action.state = Edge.Created; edge } ]
+        @ List.map
+            (fun (old_edge : Edge.t) ->
+              let edge =
+                Edge.mk new_vertex (Edge.index old_edge) (Edge.target old_edge)
+              in
+              { Graph_action.state = Edge.Created; edge })
+            (Edge.Set.elements old_children)
+        @ List.map
+            (fun edge -> { Graph_action.state = Edge.Destroyed; edge })
+            (Edge.Set.elements old_children)
+      in
       let graph =
-        let target = Vertex.(mk Exp_app) in
-        let source = Graph.find_vertex model.cursor_ref.parent model.graph in
-        let edge = Edge.mk source model.cursor_ref.index target in
-        Graph_action.apply { edge; state = Edge.Created } model.graph
+        List.fold_right Graph_action.apply graph_actions model.graph
       in
       { model with ast; graph }
   | Move In ->

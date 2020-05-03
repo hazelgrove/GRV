@@ -65,6 +65,9 @@ let empty : t =
 let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
   Uuid.Map.find vertex.id graph.vertices
 
+let find_children (child : Child.t) (graph : t) : Edge.Set.t =
+  Children.find child graph.children
+
 (* Pretty Printing *)
 
 let pp_graph (fmt : Format.formatter) (graph : t) : unit =

@@ -31,5 +31,5 @@ end
 
 include Vertex
 
-module Map = Map.Make (Vertex)
 (** An abstract map with [Vertex]es for keys *)
+module Map = Map.Make (Vertex)

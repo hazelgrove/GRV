@@ -22,8 +22,8 @@ module Id = struct
     !seed
 end
 
-type 'a t = { id : Id.t; value : 'a }
 (** A value tagged with an [Id]. *)
+type 'a t = { id : Id.t; value : 'a }
 
 (** [Uuid]s are compared by comparing their [id]s. *)
 let compare (u1 : 'a t) (u2 : 'a t) : int = Id.compare u1.id u2.id
@@ -48,5 +48,5 @@ let pp (pp' : formatter -> 'a -> unit) (fmt : formatter) (u : 'a t) : unit =
 
 (** {1 Collections } *)
 
-module Map = Map.Make (Id)
 (** An abstract map with [Id]s for keys. *)
+module Map = Map.Make (Id)

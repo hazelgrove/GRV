@@ -24,7 +24,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
         let target = Vertex.(mk Exp_app) in
         let source = Graph.find_vertex model.cursor_ref.parent model.graph in
         let edge = Edge.mk source model.cursor_ref.index target in
-        Graph.update_edge model.graph edge Edge.Created
+        Graph_action.apply { edge; state = Edge.Created } model.graph
       in
       { model with ast; graph }
   | Move In ->

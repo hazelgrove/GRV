@@ -12,6 +12,8 @@ end
 module Child = struct
   type t = { parent : Vertex.t; index : Index.t }
 
+  let root = { parent = Vertex.root; index = Root_root_root }
+
   let compare (child1 : t) (child2 : t) : int =
     match Vertex.compare child1.parent child2.parent with
     | 0 -> Index.compare child1.index child2.index

@@ -10,11 +10,9 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   | Create ->
       let graph_actions =
         let new_vertex = Vertex.(mk Exp_app) in
-        let old_parent =
-          Graph.find_vertex model.cursor_ref.parent model.graph
-        in
-        let old_children = Graph.find_children model.cursor_ref model.graph in
-        let edge = Edge.mk old_parent model.cursor_ref.index new_vertex in
+        let old_parent = Graph.find_vertex model.cursor.parent model.graph in
+        let old_children = Graph.find_children model.cursor model.graph in
+        let edge = Edge.mk old_parent model.cursor.index new_vertex in
         [ { Graph_action.state = Edge.Created; edge } ]
         @ List.map
             (fun (old_edge : Edge.t) ->
@@ -32,41 +30,40 @@ let apply (model : Model.t) (action : t) (_state : State.t)
       in
       { model with graph }
   | Move In ->
-      let cursor_ref =
+      let cursor =
         match
-          Edge.Set.elements (Graph.find_children model.cursor_ref model.graph)
+          Edge.Set.elements (Graph.find_children model.cursor model.graph)
         with
         | [ edge ] -> (
             let parent = Edge.target edge in
             match Index.down parent.value with
-            | None -> model.cursor_ref
+            | None -> model.cursor
             | Some index -> { parent; index }
             (* TODO: how to choose between ambiguous children *) )
-        | _ -> model.cursor_ref
+        | _ -> model.cursor
       in
-      { model with cursor_ref }
+      { model with cursor }
   | Move Out ->
-      let cursor_ref =
+      let cursor =
         match
-          Edge.Set.elements
-            (Graph.find_parents model.cursor_ref.parent model.graph)
+          Edge.Set.elements (Graph.find_parents model.cursor.parent model.graph)
         with
         | [ edge ] ->
             { Graph.Child.parent = Edge.source edge; index = Edge.index edge }
-        | _ -> model.cursor_ref
+        | _ -> model.cursor
       in
-      { model with cursor_ref }
+      { model with cursor }
   | Move Left ->
-      let cursor_ref =
-        match Index.left model.cursor_ref.index with
-        | None -> model.cursor_ref
-        | Some index -> { model.cursor_ref with index }
+      let cursor =
+        match Index.left model.cursor.index with
+        | None -> model.cursor
+        | Some index -> { model.cursor with index }
       in
-      { model with cursor_ref }
+      { model with cursor }
   | Move Right ->
-      let cursor_ref =
-        match Index.right model.cursor_ref.index with
-        | None -> model.cursor_ref
-        | Some index -> { model.cursor_ref with index }
+      let cursor =
+        match Index.right model.cursor.index with
+        | None -> model.cursor
+        | Some index -> { model.cursor with index }
       in
-      { model with cursor_ref }
+      { model with cursor }

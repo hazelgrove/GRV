@@ -28,7 +28,7 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
   let open Virtual_dom.Vdom.Attr in
   div []
     [
-      text (of_index model.graph model.cursor_ref Graph.Child.root);
+      text (of_index model.graph model.cursor Graph.Child.root);
       br [];
       br [];
       button [ on_click (fun _ -> inject Create) ] [ text "App" ];
@@ -40,7 +40,7 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
       br [];
       text "Cursor";
       br [];
-      pre [] [ text @@ Format.asprintf "%a@." Graph.Child.pp model.cursor_ref ];
+      pre [] [ text @@ Format.asprintf "%a@." Graph.Child.pp model.cursor ];
       br [];
       text "Graph";
       br [];

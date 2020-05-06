@@ -1,4 +1,3 @@
 # The `ast` directory
 
-This folder contains code specific to the particular language being modeled
-(e.g., ASTs and AST constructors).
+This folder contains code specific to the AST representation of the code.

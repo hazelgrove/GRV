@@ -1,4 +1,4 @@
-type t = { edge : Edge.t; state : Edge.state } [@@deriving show]
+type t = { edge : Edge.t; state : Edge_state.t } [@@deriving show]
 
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
@@ -55,7 +55,7 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
     |> Uuid.Map.add source.id source
   in
   let old_state = Edge.Map.find_opt edge graph.states in
-  let action : Edge.state option =
+  let action : Edge_state.t option =
     match old_state with
     | Some Destroyed -> None
     | Some Created -> (
@@ -68,11 +68,11 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
       (* TODO: assert not already exists? *)
 
       (* TODO: short circuit if deleting a non-existant *)
-      let states = Edge.Map.add edge Edge.Created graph.states in
+      let states = Edge.Map.add edge Edge_state.Created graph.states in
       add_edge { graph with edges; vertices; states } edge
   | Some Destroyed -> (
-      let states : Edge.state Edge.Map.t =
-        Edge.Map.add edge Edge.Destroyed graph.states
+      let states : Edge_state.t Edge.Map.t =
+        Edge.Map.add edge Edge_state.Destroyed graph.states
       in
       match old_state with
       | None -> { graph with edges; vertices; states }

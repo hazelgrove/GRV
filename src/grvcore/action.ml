@@ -17,16 +17,17 @@ let apply (model : Model.t) (action : t) (_state : State.t)
           let old_children = Graph.find_children model.cursor model.graph in
           let edge = Edge.mk old_parent model.cursor.index new_vertex in
           let graph_actions =
-            [ { Graph_action.state = Edge.Created; edge } ]
+            [ { Graph_action.state = Edge_state.Created; edge } ]
             @ List.map
                 (fun (old_edge : Edge.t) ->
                   let edge =
                     Edge.mk new_vertex new_index (Edge.target old_edge)
                   in
-                  { Graph_action.state = Edge.Created; edge })
+                  { Graph_action.state = Edge_state.Created; edge })
                 (Edge.Set.elements old_children)
             @ List.map
-                (fun edge -> { Graph_action.state = Edge.Destroyed; edge })
+                (fun edge ->
+                  { Graph_action.state = Edge_state.Destroyed; edge })
                 (Edge.Set.elements old_children)
           in
           let graph =

@@ -48,7 +48,7 @@ let child (parent : Vertex.t) (index : Index.t) : Children.key =
 type t = {
   vertices : Vertex.t Uuid.Map.t;
   edges : Edge.t Uuid.Map.t;
-  states : Edge.state Edge.Map.t;
+  states : Edge_state.t Edge.Map.t;
   parents : Parents.t;
   children : Children.t;
 }
@@ -58,7 +58,7 @@ let empty : t =
     vertices : Vertex.t Uuid.Map.t =
       Uuid.Map.singleton Vertex.root.id Vertex.root;
     edges : Edge.t Uuid.Map.t = Uuid.Map.empty;
-    states : Edge.state Edge.Map.t = Edge.Map.empty;
+    states : Edge_state.t Edge.Map.t = Edge.Map.empty;
     parents : Parents.t = Parents.empty;
     children : Children.t = Children.empty;
   }
@@ -66,7 +66,7 @@ let empty : t =
 (* Graph Operations *)
 
 let edge_is_live (graph : t) (edge : Edge.t) : bool =
-  Some Edge.Created = Edge.Map.find_opt edge graph.states
+  Some Edge_state.Created = Edge.Map.find_opt edge graph.states
 
 let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
   Uuid.Map.find vertex.id graph.vertices
@@ -90,6 +90,6 @@ let pp_graph (fmt : Format.formatter) (graph : t) : unit =
   fprintf fmt "\nStates\n";
   Edge.Map.iter
     (fun edge state ->
-      fprintf fmt "%s = %a\n" (Uuid.Id.show edge.id) Edge.pp_state state)
+      fprintf fmt "%s = %a\n" (Uuid.Id.show edge.id) Edge_state.pp state)
     graph.states;
   fprintf fmt "@?"

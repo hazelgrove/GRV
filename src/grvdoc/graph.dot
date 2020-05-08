@@ -1,0 +1,35 @@
+digraph G {
+  rankdir=LR
+  compound=true
+  splines=true
+  concentrate=true
+
+  node [shape=box]
+
+  Verte [label="Vertex"]
+  Edg [label="Edge"]
+  Uuid
+
+  edge [arrowhead="vee"]
+
+  subgraph cluster_graph {
+    label="Graph"
+
+    node [shape=none]
+
+    vertices; edges; states; parents; children
+  }
+
+  Uuid -> vertices
+  Uuid -> edges
+
+  vertices -> Verte
+  edges -> Edg
+  states -> Edge_state
+  parents -> Parents
+  children -> Children
+
+  Verte -> Parents -> Edg
+  Child -> Children -> Edg
+
+}

@@ -1,0 +1,55 @@
+graph G {
+  rankdir=LR
+  compound=true
+  splines=true
+  concentrate=true
+
+  node [shape=none]
+
+  {rank=same; Async_kernel; Incr_dom}
+
+  node [shape=box]
+
+  Grap [label="Graph"]
+  Edg [label="Edge"]
+  Verte [label="Vertex"]
+
+  subgraph cluster_web {
+    label="grvweb"
+    App; Main; View
+  }
+
+  subgraph cluster_whole_core {
+
+  subgraph cluster_mid {
+    style="invis"
+    {rank=min; Action; Model; State}
+    Action -- {Model; State}
+  }
+
+  subgraph cluster_core {
+    label="grvcore"
+    style="dashed,rounded"
+    {rank=min; Graph_action; Edge_state}
+    Grap; Edg; Edge_state; Graph_action; Verte; Constructor; Index
+  }
+  
+  }
+
+  {Async_kernel; Incr_dom} -- Main [lhead=cluster_web]
+  View -- {Action; Model} [ltail=cluster_web; lhead=cluster_mid]
+  Action -- Graph_action [ltail=cluster_mid; lhead=cluster_core]
+
+  Main -- App -- View
+
+  Grap -- {Verte; Index; Edg; Edge_state}
+
+  Verte -- Constructor
+
+  Index -- Constructor
+
+  Edg -- {Verte; Index}
+
+  Graph_action -- {Edg; Edge_state; Grap}
+
+}

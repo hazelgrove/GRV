@@ -1,0 +1,13 @@
+(library
+ (name grvdoc)
+ (public_name GRV.doc))
+
+(documentation)
+
+(rule
+ (targets overview.svg graph.svg)
+ (deps
+  (:dots
+   (glob_files *.dot)))
+ (action
+  (run make)))

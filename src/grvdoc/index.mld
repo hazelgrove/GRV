@@ -1,0 +1,65 @@
+{0 GRV - Multi-User Grove Editor Simulation}
+
+{%html:
+<a href="../../../src/grvdoc/overview.svg">
+  <img
+     src="../../../src/grvdoc/overview.svg"
+     alt="the high-level architecture"
+     style="max-width:100%">
+</a>
+%}
+
+The application is split across two libraries:
+
+- {!grvweb} - HTML, CSS, and Javascript generation
+
+- {!grvcore} - everything else
+
+{%html:<!-- 
+{1 grvweb}
+
+{!grvweb} has two external dependencies and three modules.
+
+{ul
+
+ {- It produces a Javascript file that starts an {!Incr_dom} application
+    instance.}
+
+ {- It also has an {!index.html} file that loads and runs the application in a
+    Web browser.}}
+
+ -->%}
+
+{1 grvcore}
+
+The {!grvcore} library has many modules.
+
+Some are {!grvweb}-facing helpers:
+
+- {!Action}
+- {!Model}
+- {!State}
+
+Most are pieces for modeling program as {!Graph}s:
+
+- {!Constructor}
+- {!Edge}
+- {!Edge_state}
+- {!Graph_action}
+- {!Index}
+- {!Vertex}
+
+Not shown:
+
+- {!Uuid}
+
+{2 The Graph}
+
+{%html:
+<a href="../../../src/grvdoc/graph.svg">
+  <img
+     src="../../../src/grvdoc/graph.svg"
+     alt="Graph.t"
+     style="max-width:100%">
+</a>
+%}

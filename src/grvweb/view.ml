@@ -30,7 +30,19 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
   let open Action in
   let open Virtual_dom.Vdom.Node in
   let open Virtual_dom.Vdom.Attr in
-  div []
+  let make_key_action event =
+    if Js_of_ocaml.Js.to_bool event##.ctrlKey then NoOp
+    else
+      match Js_of_ocaml.Dom_html.Keyboard_code.of_event event with
+      | Space -> Create
+      | ArrowUp -> Move In
+      | ArrowDown -> Move Out
+      | ArrowLeft -> Move Left
+      | ArrowRight -> Move Right
+      | _ -> NoOp
+  in
+  div
+    [ on_keydown (fun event -> inject @@ make_key_action event) ]
     [
       text (of_index model.graph model.cursor Graph.Child.root);
       br [];

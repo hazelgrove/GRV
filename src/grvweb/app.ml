@@ -8,7 +8,7 @@ module State = State
 
 let on_startup ~schedule_action:(_ : Action.t -> unit) (_ : Model.t) :
     State.t Deferred.t =
-  Deferred.return ()
+  Deferred.return @@ ref false
 
 let create (model : Model.t Incr.t) ~old_model:(_ : Model.t Incr.t)
     ~(inject : Action.t -> Vdom.Event.t) :

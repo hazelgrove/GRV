@@ -4,8 +4,16 @@ type t = Create | Move of direction | NoOp [@@deriving sexp_of]
 
 and direction = In | Out | Left | Right [@@deriving sexp_of]
 
-let apply (model : Model.t) (action : t) (_state : State.t)
+let rec apply (model : Model.t) (action : t) (locked : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
+  if !locked then model
+  else (
+    locked := true;
+    let new_model = unsafe_apply model action in
+    locked := false;
+    new_model )
+
+and unsafe_apply (model : Model.t) (action : t) : Model.t =
   match action with
   | Create -> (
       let constructor = Constructor.Exp_app in

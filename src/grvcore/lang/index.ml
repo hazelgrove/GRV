@@ -16,6 +16,7 @@ type t =
 (* TODO: programatically generate these *)
 
 (* Specifies where the existing node goes when a node is wrapped by the given constructor *)
+(* TODO: rename *)
 let wrap (ctor : Constructor.t) : t option =
   match ctor with
   | Root_root -> (* NOTE: Can't actually happen *) Some Root_root_root

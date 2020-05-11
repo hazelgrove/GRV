@@ -1,10 +1,17 @@
 (* TODO: factor App and other ast constructor insertions into a constructor *)
 
-type t = Create | Send | Move of direction | NoOp [@@deriving sexp_of]
+(* TODO: add button to insert Var so we can test conflicts *)
+type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-and direction = In | Out | Left | Right [@@deriving sexp_of]
+type t' = Create | Send | Move of direction | NoOp [@@deriving sexp_of]
 
-let apply_instance (model : Model.Instance.t) (action : t) (_state : State.t)
+(* TODO: rename instance to instance_id *)
+
+open Sexplib0.Sexp_conv
+
+type t = { instance : int; action : t' } [@@deriving sexp_of]
+
+let apply_instance (model : Model.Instance.t) (action : t') (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.Instance.t =
   match action with
   | Create -> (
@@ -31,10 +38,7 @@ let apply_instance (model : Model.Instance.t) (action : t) (_state : State.t)
                 (Edge.Set.elements old_children)
           in
           { model with actions = model.actions @ graph_actions } )
-  | Send ->
-      let actions = model.actions in
-      let graph = List.fold_right Graph_action.apply actions model.graph in
-      { model with graph; actions = [] }
+  | Send -> failwith __LOC__
   | Move In ->
       let cursor =
         match
@@ -77,6 +81,19 @@ let apply_instance (model : Model.Instance.t) (action : t) (_state : State.t)
 
 let apply (model : Model.t) (action : t) (state : State.t)
     ~(schedule_action : t -> unit) : Model.t =
-  List.map
-    (fun instance -> apply_instance instance action state ~schedule_action)
-    model
+  match action with
+  (* | Send -> (
+      match model with
+      | [ i1; i2 ] ->
+          let graph = List.fold_right Graph_action.apply i1.actions i2.graph in
+          [ { i1 with actions = [] }; { i2 with graph } ]
+      | _ -> failwith __LOC__ ) *)
+  | _ ->
+      Model.MapInt.update action.instance
+        (fun opt ->
+          match opt with
+          | Some instance ->
+              Some
+                (apply_instance instance action.action state ~schedule_action)
+          | None -> None)
+        model

@@ -26,12 +26,13 @@ and of_vertex (graph : Graph.t) (cursor : Graph.Child.t) (vertex : Vertex.t) :
   in
   Printf.sprintf "%s:%s" (Uuid.Id.show vertex.id) result
 
-let view_instance ~(inject : Action.t -> Virtual_dom.Vdom.Event.t)
-    (model : Model.Instance.t) : Virtual_dom.Vdom.Node.t =
+let view_instance (instance : int)
+    ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.Instance.t)
+    : Virtual_dom.Vdom.Node.t =
   let open Action in
   let open Virtual_dom.Vdom.Node in
   let open Virtual_dom.Vdom.Attr in
-  let make_key_action event =
+  let _make_key_action event =
     if Js_of_ocaml.Js.to_bool event##.ctrlKey then NoOp
     else
       match Js_of_ocaml.Dom_html.Keyboard_code.of_event event with
@@ -42,18 +43,29 @@ let view_instance ~(inject : Action.t -> Virtual_dom.Vdom.Event.t)
       | ArrowRight -> Move Right
       | _ -> NoOp
   in
-  div
-    [ on_keydown (fun event -> inject @@ make_key_action event) ]
+  div [ (*on_keydown (fun event -> inject @@ make_key_action event)*) ]
     [
       text (of_index model.graph model.cursor Graph.Child.root);
       br [];
       br [];
-      button [ on_click (fun _ -> inject Create) ] [ text "App" ];
-      button [ on_click (fun _ -> inject Send) ] [ text "Send" ];
-      button [ on_click (fun _ -> inject @@ Move In) ] [ text "In" ];
-      button [ on_click (fun _ -> inject @@ Move Out) ] [ text "Out" ];
-      button [ on_click (fun _ -> inject @@ Move Left) ] [ text "Left" ];
-      button [ on_click (fun _ -> inject @@ Move Right) ] [ text "Right" ];
+      button
+        [ on_click (fun _ -> inject { instance; action = Create }) ]
+        [ text "App" ];
+      button
+        [ on_click (fun _ -> inject { instance; action = Send }) ]
+        [ text "Send" ];
+      button
+        [ on_click (fun _ -> inject @@ { instance; action = Move In }) ]
+        [ text "In" ];
+      button
+        [ on_click (fun _ -> inject @@ { instance; action = Move Out }) ]
+        [ text "Out" ];
+      button
+        [ on_click (fun _ -> inject @@ { instance; action = Move Left }) ]
+        [ text "Left" ];
+      button
+        [ on_click (fun _ -> inject @@ { instance; action = Move Right }) ]
+        [ text "Right" ];
       br [];
       br [];
       pre []
@@ -79,4 +91,7 @@ let view_instance ~(inject : Action.t -> Virtual_dom.Vdom.Event.t)
 let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) :
     Virtual_dom.Vdom.Node.t =
   let open Virtual_dom.Vdom.Node in
-  div [] (List.map (view_instance ~inject) model)
+  div []
+    (List.map
+       (fun (i, m) -> view_instance i m ~inject)
+       (Model.MapInt.bindings model))

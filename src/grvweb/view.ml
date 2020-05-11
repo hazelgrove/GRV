@@ -26,7 +26,8 @@ and of_vertex (graph : Graph.t) (cursor : Graph.Child.t) (vertex : Vertex.t) :
   in
   Printf.sprintf "%s:%s" (Uuid.Id.show vertex.id) result
 
-let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
+let view_instance ~(inject : Action.t -> Virtual_dom.Vdom.Event.t)
+    (model : Model.Instance.t) : Virtual_dom.Vdom.Node.t =
   let open Action in
   let open Virtual_dom.Vdom.Node in
   let open Virtual_dom.Vdom.Attr in
@@ -74,3 +75,8 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
       br [];
       pre [] [ text @@ Format.asprintf "%a@." Graph.pp_graph model.graph ];
     ]
+
+let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) :
+    Virtual_dom.Vdom.Node.t =
+  let open Virtual_dom.Vdom.Node in
+  div [] (List.map (view_instance ~inject) model)

@@ -4,8 +4,8 @@ type t = Create | Send | Move of direction | NoOp [@@deriving sexp_of]
 
 and direction = In | Out | Left | Right [@@deriving sexp_of]
 
-let apply (model : Model.t) (action : t) (_state : State.t)
-    ~schedule_action:(_ : t -> unit) : Model.t =
+let apply_instance (model : Model.Instance.t) (action : t) (_state : State.t)
+    ~schedule_action:(_ : t -> unit) : Model.Instance.t =
   match action with
   | Create -> (
       let constructor = Constructor.Exp_app in
@@ -74,3 +74,9 @@ let apply (model : Model.t) (action : t) (_state : State.t)
       in
       { model with cursor }
   | NoOp -> model
+
+let apply (model : Model.t) (action : t) (state : State.t)
+    ~(schedule_action : t -> unit) : Model.t =
+  List.map
+    (fun instance -> apply_instance instance action state ~schedule_action)
+    model

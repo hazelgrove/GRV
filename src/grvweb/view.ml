@@ -48,10 +48,22 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
       br [];
       br [];
       button [ on_click (fun _ -> inject Create) ] [ text "App" ];
+      button [ on_click (fun _ -> inject Send) ] [ text "Send" ];
       button [ on_click (fun _ -> inject @@ Move In) ] [ text "In" ];
       button [ on_click (fun _ -> inject @@ Move Out) ] [ text "Out" ];
       button [ on_click (fun _ -> inject @@ Move Left) ] [ text "Left" ];
       button [ on_click (fun _ -> inject @@ Move Right) ] [ text "Right" ];
+      br [];
+      br [];
+      pre []
+        [
+          text
+          @@ Format.asprintf "%a@."
+               (fun fmt ->
+                 List.iter (fun action ->
+                     Format.fprintf fmt "%a\n" Graph_action.pp action))
+               model.actions;
+        ];
       br [];
       br [];
       text "Cursor";

@@ -1,6 +1,6 @@
 (* TODO: factor App and other ast constructor insertions into a constructor *)
 
-type t = Create | Move of direction | NoOp [@@deriving sexp_of]
+type t = Create | Send | Move of direction | NoOp [@@deriving sexp_of]
 
 and direction = In | Out | Left | Right [@@deriving sexp_of]
 
@@ -30,10 +30,11 @@ let apply (model : Model.t) (action : t) (_state : State.t)
                   { Graph_action.state = Edge_state.Destroyed; edge })
                 (Edge.Set.elements old_children)
           in
-          let graph =
-            List.fold_right Graph_action.apply graph_actions model.graph
-          in
-          { model with graph } )
+          { model with actions = model.actions @ graph_actions } )
+  | Send ->
+      let actions = model.actions in
+      let graph = List.fold_right Graph_action.apply actions model.graph in
+      { model with graph; actions = [] }
   | Move In ->
       let cursor =
         match

@@ -35,8 +35,8 @@ let view ~(inject : Action.t -> Virtual_dom.Vdom.Event.t) (model : Model.t) =
     else
       match Js_of_ocaml.Dom_html.Keyboard_code.of_event event with
       | Space -> Create
-      | ArrowUp -> Move In
-      | ArrowDown -> Move Out
+      | ArrowUp -> Move Out
+      | ArrowDown -> Move In
       | ArrowLeft -> Move Left
       | ArrowRight -> Move Right
       | _ -> NoOp

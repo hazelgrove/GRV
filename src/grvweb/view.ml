@@ -49,22 +49,33 @@ let view_instance (instance : int)
       br [];
       br [];
       button
-        [ on_click (fun _ -> inject { instance; action = Create }) ]
+        [ on_click (fun _ -> inject { instance; action = Enqueue Create }) ]
         [ text "App" ];
       button
         [ on_click (fun _ -> inject { instance; action = Send }) ]
         [ text "Send" ];
       button
-        [ on_click (fun _ -> inject @@ { instance; action = Move In }) ]
+        [
+          on_click (fun _ -> inject @@ { instance; action = Enqueue (Move In) });
+        ]
         [ text "In" ];
       button
-        [ on_click (fun _ -> inject @@ { instance; action = Move Out }) ]
+        [
+          on_click (fun _ ->
+              inject @@ { instance; action = Enqueue (Move Out) });
+        ]
         [ text "Out" ];
       button
-        [ on_click (fun _ -> inject @@ { instance; action = Move Left }) ]
+        [
+          on_click (fun _ ->
+              inject @@ { instance; action = Enqueue (Move Left) });
+        ]
         [ text "Left" ];
       button
-        [ on_click (fun _ -> inject @@ { instance; action = Move Right }) ]
+        [
+          on_click (fun _ ->
+              inject @@ { instance; action = Enqueue (Move Right) });
+        ]
         [ text "Right" ];
       br [];
       br [];

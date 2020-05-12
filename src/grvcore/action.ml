@@ -3,13 +3,15 @@
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-type t' = Create | Send | Move of direction | NoOp [@@deriving sexp_of]
+type t' = Create | Move of direction | NoOp [@@deriving sexp_of]
+
+type app = Send | Enqueue of t' [@@deriving sexp_of]
 
 (* TODO: rename instance to instance_id *)
 
 open Sexplib0.Sexp_conv
 
-type t = { instance : int; action : t' } [@@deriving sexp_of]
+type t = { instance : int; action : app } [@@deriving sexp_of]
 
 let apply_instance (model : Model.Instance.t) (action : t') (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.Instance.t =
@@ -38,7 +40,6 @@ let apply_instance (model : Model.Instance.t) (action : t') (_state : State.t)
                 (Edge.Set.elements old_children)
           in
           { model with actions = model.actions @ graph_actions } )
-  | Send -> failwith __LOC__
   | Move In ->
       let cursor =
         match
@@ -97,8 +98,8 @@ let apply (model : Model.t) (action : t) (state : State.t)
         ( Option.map @@ fun (sender : Model.Instance.t) ->
           { sender with actions = [] } )
         new_model
-  | _ ->
+  | Enqueue inst_action ->
       Model.MapInt.update action.instance
         ( Option.map @@ fun instance ->
-          apply_instance instance action.action state ~schedule_action )
+          apply_instance instance inst_action state ~schedule_action )
         model

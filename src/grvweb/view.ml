@@ -44,39 +44,20 @@ let view_instance (instance : int)
       | _ -> NoOp
   in
   div [ (*on_keydown (fun event -> inject @@ make_key_action event)*) ]
+  let action_button (label : string) (action : Action.app) :
+      Virtual_dom.Vdom.Node.t =
+    button [ on_click (fun _ -> inject { instance; action }) ] [ text label ]
+  in
     [
       text (of_index model.graph model.cursor Graph.Child.root);
       br [];
       br [];
-      button
-        [ on_click (fun _ -> inject { instance; action = Enqueue Create }) ]
-        [ text "App" ];
-      button
-        [ on_click (fun _ -> inject { instance; action = Send }) ]
-        [ text "Send" ];
-      button
-        [
-          on_click (fun _ -> inject @@ { instance; action = Enqueue (Move In) });
-        ]
-        [ text "In" ];
-      button
-        [
-          on_click (fun _ ->
-              inject @@ { instance; action = Enqueue (Move Out) });
-        ]
-        [ text "Out" ];
-      button
-        [
-          on_click (fun _ ->
-              inject @@ { instance; action = Enqueue (Move Left) });
-        ]
-        [ text "Left" ];
-      button
-        [
-          on_click (fun _ ->
-              inject @@ { instance; action = Enqueue (Move Right) });
-        ]
-        [ text "Right" ];
+      action_button "App" (Enqueue Create);
+      action_button "Send" Send;
+      action_button "In" (Enqueue (Move In));
+      action_button "Out" (Enqueue (Move Out));
+      action_button "Left" (Enqueue (Move Left));
+      action_button "Right" (Enqueue (Move Right));
       br [];
       br [];
       pre []

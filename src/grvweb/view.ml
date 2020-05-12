@@ -66,15 +66,12 @@ let view_instance (instance : int)
       action_button "Right" (Enqueue (Move Right));
       br [];
       br [];
-      pre []
-        [
-          text
-          @@ Format.asprintf "%a@."
-               (fun fmt ->
-                 List.iter (fun action ->
-                     Format.fprintf fmt "%a\n" Graph_action.pp action))
-               model.actions;
-        ];
+      select
+        [ create "size" "10"; bool_property "multiple" true; disabled ]
+        (List.rev_map
+           (fun action ->
+             option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
+           model.actions);
       br [];
       br [];
       text "Cursor";

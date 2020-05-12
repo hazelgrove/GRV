@@ -81,13 +81,22 @@ let apply_instance (model : Model.Instance.t) (action : t') (_state : State.t)
 
 let apply (model : Model.t) (action : t) (state : State.t)
     ~(schedule_action : t -> unit) : Model.t =
-  match action with
-  (* | Send -> (
-      match model with
-      | [ i1; i2 ] ->
-          let graph = List.fold_right Graph_action.apply i1.actions i2.graph in
-          [ { i1 with actions = [] }; { i2 with graph } ]
-      | _ -> failwith __LOC__ ) *)
+  match action.action with
+  | Send ->
+      let actions = (Model.MapInt.find action.instance model).actions in
+      let new_model =
+        Model.MapInt.map
+          (fun (receiver : Model.Instance.t) ->
+            let graph =
+              List.fold_right Graph_action.apply actions receiver.graph
+            in
+            { receiver with graph })
+          model
+      in
+      Model.MapInt.update action.instance
+        (Option.map (fun (sender : Model.Instance.t) ->
+             { sender with actions = [] }))
+        new_model
   | _ ->
       Model.MapInt.update action.instance
         (fun opt ->

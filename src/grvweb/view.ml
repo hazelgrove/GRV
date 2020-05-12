@@ -32,7 +32,7 @@ let view_instance (instance : int)
   let open Action in
   let open Virtual_dom.Vdom.Node in
   let open Virtual_dom.Vdom.Attr in
-  let _make_key_action event =
+  let _key_action event : Action.inst =
     if Js_of_ocaml.Js.to_bool event##.ctrlKey then NoOp
     else
       match Js_of_ocaml.Dom_html.Keyboard_code.of_event event with

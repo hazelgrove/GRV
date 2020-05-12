@@ -3,9 +3,9 @@
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-type t' = Create | Move of direction | NoOp [@@deriving sexp_of]
+type inst = Create | Move of direction | NoOp [@@deriving sexp_of]
 
-type app = Send | Enqueue of t' [@@deriving sexp_of]
+type app = Send | Enqueue of inst [@@deriving sexp_of]
 
 (* TODO: rename instance to instance_id *)
 
@@ -13,7 +13,7 @@ open Sexplib0.Sexp_conv
 
 type t = { instance : int; action : app } [@@deriving sexp_of]
 
-let apply_instance (model : Model.Instance.t) (action : t') (_state : State.t)
+let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.Instance.t =
   match action with
   | Create -> (

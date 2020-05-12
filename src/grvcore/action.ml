@@ -94,15 +94,11 @@ let apply (model : Model.t) (action : t) (state : State.t)
           model
       in
       Model.MapInt.update action.instance
-        (Option.map (fun (sender : Model.Instance.t) ->
-             { sender with actions = [] }))
+        ( Option.map @@ fun (sender : Model.Instance.t) ->
+          { sender with actions = [] } )
         new_model
   | _ ->
       Model.MapInt.update action.instance
-        (fun opt ->
-          match opt with
-          | Some instance ->
-              Some
-                (apply_instance instance action.action state ~schedule_action)
-          | None -> None)
+        ( Option.map @@ fun instance ->
+          apply_instance instance action.action state ~schedule_action )
         model

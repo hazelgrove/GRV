@@ -32,7 +32,7 @@ let view_instance (instance : int)
   let open Action in
   let open Virtual_dom.Vdom.Node in
   let open Virtual_dom.Vdom.Attr in
-  let _key_action event : Action.inst =
+  let key_action event : Action.inst =
     if Js_of_ocaml.Js.to_bool event##.ctrlKey then NoOp
     else
       match Js_of_ocaml.Dom_html.Keyboard_code.of_event event with
@@ -43,11 +43,17 @@ let view_instance (instance : int)
       | ArrowRight -> Move Right
       | _ -> NoOp
   in
-  div [ (*on_keydown (fun event -> inject @@ make_key_action event)*) ]
   let action_button (label : string) (action : Action.app) :
       Virtual_dom.Vdom.Node.t =
     button [ on_click (fun _ -> inject { instance; action }) ] [ text label ]
   in
+  div
+    [
+      tabindex instance;
+      on_keydown (fun event ->
+          Js_of_ocaml.Dom.preventDefault event;
+          inject { instance; action = Enqueue (key_action event) });
+    ]
     [
       text (of_index model.graph model.cursor Graph.Child.root);
       br [];

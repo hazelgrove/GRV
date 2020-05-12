@@ -1,5 +1,13 @@
 type t = { edge : Edge.t; state : Edge_state.t } [@@deriving show]
 
+let pp (fmt : Format.formatter) (edge_action : t) : unit =
+  let edge = Uuid.Wrap.unmk edge_action.edge in
+  Format.fprintf fmt "%a (%a -> %s) [%s]" Edge_state.pp edge_action.state
+    Graph.Child.pp
+    (Graph.Child.mk edge.source edge.index)
+    (Uuid.Id.show edge.target.id)
+    (Uuid.Id.show edge_action.edge.id)
+
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let target = Edge.target edge in

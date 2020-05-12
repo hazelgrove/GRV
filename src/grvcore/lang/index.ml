@@ -11,7 +11,21 @@ type t =
   | Typ_app_fun
   | Typ_app_arg
   | Typ_var_id
-[@@deriving compare, show]
+[@@deriving compare]
+
+let pp (fmt : Format.formatter) (index : t) : unit =
+  Format.fprintf fmt "%s"
+    ( match index with
+    | Root_root_root -> "root"
+    | Exp_lam_param -> "parameter"
+    | Exp_lam_param_type -> "type"
+    | Exp_lam_body -> "body"
+    | Exp_app_fun -> "left"
+    | Exp_app_arg -> "right"
+    | Exp_var_id -> "variable"
+    | Typ_app_fun -> "left type"
+    | Typ_app_arg -> "right type"
+    | Typ_var_id -> "type variable" )
 
 (* TODO: programatically generate these *)
 

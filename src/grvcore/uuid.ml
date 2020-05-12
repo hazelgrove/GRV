@@ -14,8 +14,12 @@ module Id : sig
   val well_known : int -> t
 
   val show : t -> string
+
+  val pp : Format.formatter -> t -> unit
 end = struct
   type t = int
+
+  let pp (fmt : Format.formatter) (id : t) : unit = Format.fprintf fmt "%d" id
 
   let compare = Int.compare
 

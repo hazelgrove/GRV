@@ -12,6 +12,8 @@ end
 module Child = struct
   type t = { parent : Vertex.t; index : Index.t }
 
+  let mk (parent : Vertex.t) (index : Index.t) : t = { parent; index }
+
   let root = { parent = Vertex.root; index = Root_root_root }
 
   let compare (child1 : t) (child2 : t) : int =
@@ -20,11 +22,7 @@ module Child = struct
     | i -> i
 
   let pp (fmt : Format.formatter) (child : t) : unit =
-    let open Format in
-    fprintf fmt "{\n";
-    fprintf fmt "  vertex: %a\n" Vertex.pp child.parent;
-    fprintf fmt "   index: %a\n" Index.pp child.index;
-    fprintf fmt "} "
+    Format.fprintf fmt "%a/%a" Uuid.Id.pp child.parent.id Index.pp child.index
 end
 
 module ChildMap = Map.Make (Child)

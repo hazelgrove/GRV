@@ -39,7 +39,10 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
                   { Graph_action.state = Edge_state.Destroyed; edge })
                 (Edge.Set.elements old_children)
           in
-          { model with actions = model.actions @ graph_actions } )
+          let graph =
+            List.fold_right Graph_action.apply graph_actions model.graph
+          in
+          { model with graph; actions = model.actions @ graph_actions } )
   | Move In ->
       let cursor =
         match

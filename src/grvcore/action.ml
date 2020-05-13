@@ -17,8 +17,8 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.Instance.t =
   match action with
   | Create -> (
-      let constructor = Constructor.Exp_app in
-      match Index.wrap constructor with
+      let constructor = Lang.Constructor.Exp_app in
+      match Lang.Index.wrap constructor with
       | None -> model
       | Some new_index ->
           let new_vertex = Vertex.mk constructor in
@@ -50,7 +50,7 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
         with
         | [ edge ] -> (
             let parent = Edge.target edge in
-            match Index.down parent.value with
+            match Lang.Index.down parent.value with
             | None -> model.cursor
             | Some index -> { parent; index }
             (* TODO: how to choose between ambiguous children *) )
@@ -68,14 +68,14 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
       { model with cursor }
   | Move Left ->
       let cursor =
-        match Index.left model.cursor.index with
+        match Lang.Index.left model.cursor.index with
         | None -> model.cursor
         | Some index -> { model.cursor with index }
       in
       { model with cursor }
   | Move Right ->
       let cursor =
-        match Index.right model.cursor.index with
+        match Lang.Index.right model.cursor.index with
         | None -> model.cursor
         | Some index -> { model.cursor with index }
       in

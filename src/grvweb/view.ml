@@ -24,8 +24,8 @@ and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) : string
     match vertex.value with
     | Exp_app ->
         Printf.sprintf "(%s %s)"
-          (of_index graph cursor { parent = vertex; index = Exp_app_fun })
-          (of_index graph cursor { parent = vertex; index = Exp_app_arg })
+          (of_index graph cursor { vertex; index = Exp_app_fun })
+          (of_index graph cursor { vertex; index = Exp_app_arg })
     | _ -> "TODO"
   in
   Printf.sprintf "%s:%s" (Uuid.Id.show vertex.id) result

@@ -1,17 +1,17 @@
-type t = { parent : Vertex.t; index : Lang.Index.t }
+type t = { vertex : Vertex.t; index : Lang.Index.t }
 
-let mk (parent : Vertex.t) (index : Lang.Index.t) : t = { parent; index }
+let mk (vertex : Vertex.t) (index : Lang.Index.t) : t = { vertex; index }
 
-let root = { parent = Vertex.root; index = Root_root_root }
+let root = { vertex = Vertex.root; index = Root_root_root }
 
-let compare (child1 : t) (child2 : t) : int =
-  match Vertex.compare child1.parent child2.parent with
-  | 0 -> Lang.Index.compare child1.index child2.index
+let compare (c1 : t) (c2 : t) : int =
+  match Vertex.compare c1.vertex c2.vertex with
+  | 0 -> Lang.Index.compare c1.index c2.index
   | i -> i
 
-let pp (fmt : Format.formatter) (child : t) : unit =
-  Format.fprintf fmt "%a/%a" Uuid.Id.pp child.parent.id Lang.Index.pp
-    child.index
+let pp (fmt : Format.formatter) (cursor : t) : unit =
+  Format.fprintf fmt "%a/%a" Uuid.Id.pp cursor.vertex.id Lang.Index.pp
+    cursor.index
 
 module OrderedType = struct
   type nonrec t = t

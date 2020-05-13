@@ -22,7 +22,7 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
       | None -> model
       | Some new_index ->
           let new_vertex = Vertex.mk constructor in
-          let old_parent = Graph.find_vertex model.cursor.parent model.graph in
+          let old_parent = Graph.find_vertex model.cursor.vertex model.graph in
           let old_children = Graph.find_children model.cursor model.graph in
           let edge = Edge.mk old_parent model.cursor.index new_vertex in
           let graph_actions =
@@ -49,10 +49,10 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
           Edge.Set.elements (Graph.find_children model.cursor model.graph)
         with
         | [ edge ] -> (
-            let parent = Edge.target edge in
-            match Lang.Index.down parent.value with
+            let vertex = Edge.target edge in
+            match Lang.Index.down vertex.value with
             | None -> model.cursor
-            | Some index -> { parent; index }
+            | Some index -> { vertex; index }
             (* TODO: how to choose between ambiguous children *) )
         | _ -> model.cursor
       in
@@ -60,7 +60,7 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
   | Move Out ->
       let cursor =
         match
-          Edge.Set.elements (Graph.find_parents model.cursor.parent model.graph)
+          Edge.Set.elements (Graph.find_parents model.cursor.vertex model.graph)
         with
         | [ edge ] -> Cursor.mk (Edge.source edge) (Edge.index edge)
         | _ -> model.cursor

@@ -49,8 +49,8 @@ let edge_is_live (graph : t) (edge : Edge.t) : bool =
 let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
   Uuid.Map.find vertex.id graph.vertices
 
-let find_children (child : Cursor.t) (graph : t) : Edge.Set.t =
-  Edge.Set.filter (edge_is_live graph) (Children.find child graph.children)
+let find_children (cursor : Cursor.t) (graph : t) : Edge.Set.t =
+  Edge.Set.filter (edge_is_live graph) (Children.find cursor graph.children)
 
 let find_parents (vertex : Vertex.t) (graph : t) : Edge.Set.t =
   Edge.Set.filter (edge_is_live graph) (Parents.find vertex graph.parents)

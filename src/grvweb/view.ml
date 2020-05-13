@@ -35,8 +35,10 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let ctrl_key (_event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
-    None
+  let ctrl_key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+    match Dom_html.Keyboard_code.of_event event with
+    | KeyS -> Some Send
+    | _ -> None
   in
   let key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
     Option.map

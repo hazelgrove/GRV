@@ -59,7 +59,9 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
       tabindex instance;
       on_keydown (fun event ->
           match
-            (if Js.to_bool event##.ctrlKey then ctrl_key else key) event
+            if Js.to_bool event##.altKey then (None : Action.app Option.t)
+            else if Js.to_bool event##.ctrlKey then ctrl_key event
+            else key event
           with
           | Some action ->
               Js_of_ocaml.Dom.preventDefault event;

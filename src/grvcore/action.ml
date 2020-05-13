@@ -24,14 +24,14 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
           let new_vertex = Vertex.mk constructor in
           let old_parent = Graph.find_vertex model.cursor.vertex model.graph in
           let old_children = Graph.find_children model.cursor model.graph in
-          let edge = Edge.mk old_parent model.cursor.index new_vertex in
+          let cursor = Cursor.mk old_parent model.cursor.index in
+          let edge = Edge.mk cursor new_vertex in
           let graph_actions =
             [ { Graph_action.state = Edge_state.Created; edge } ]
             @ List.map
                 (fun (old_edge : Edge.t) ->
-                  let edge =
-                    Edge.mk new_vertex new_index (Edge.target old_edge)
-                  in
+                  let source = Cursor.mk new_vertex new_index in
+                  let edge = Edge.mk source (Edge.target old_edge) in
                   { Graph_action.state = Edge_state.Created; edge })
                 (Edge.Set.elements old_children)
             @ List.map
@@ -62,7 +62,7 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
         match
           Edge.Set.elements (Graph.find_parents model.cursor.vertex model.graph)
         with
-        | [ edge ] -> Cursor.mk (Edge.source edge) (Edge.index edge)
+        | [ edge ] -> Edge.source edge
         | _ -> model.cursor
       in
       { model with cursor }

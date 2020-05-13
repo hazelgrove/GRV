@@ -1,19 +1,15 @@
-type t' = { source : Vertex.t; index : Lang.Index.t; target : Vertex.t }
-[@@deriving show]
+type t' = { source : Cursor.t; target : Vertex.t } [@@deriving show]
 
 type t = t' Uuid.Wrap.t [@@deriving show]
 
-let mk (source : Vertex.t) (index : Lang.Index.t) (target : Vertex.t) : t =
-  Uuid.Wrap.mk { source; index; target }
+let mk (source : Cursor.t) (target : Vertex.t) : t =
+  Uuid.Wrap.mk { source; target }
 
 let compare : t -> t -> int = Uuid.Wrap.compare
 
 let equal (edge1 : t) (edge2 : t) : bool = compare edge1 edge2 = 0
 
-let source (edge : t) : Vertex.t = (Uuid.Wrap.unmk edge).source
-
-(* TODO rearrange edge field accessors *)
-let index (edge : t) : Lang.Index.t = (Uuid.Wrap.unmk edge).index
+let source (edge : t) : Cursor.t = (Uuid.Wrap.unmk edge).source
 
 let target (edge : t) : Vertex.t = (Uuid.Wrap.unmk edge).target
 

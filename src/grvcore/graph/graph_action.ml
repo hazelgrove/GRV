@@ -3,8 +3,7 @@ type t = { edge : Edge.t; state : Edge_state.t } [@@deriving show]
 let pp (fmt : Format.formatter) (edge_action : t) : unit =
   let edge = Uuid.Wrap.unmk edge_action.edge in
   Format.fprintf fmt "%a (%a -> %s) [%s]" Edge_state.pp edge_action.state
-    Cursor.pp
-    (Cursor.mk edge.source edge.index)
+    Cursor.pp edge.source
     (Uuid.Id.show edge.target.id)
     (Uuid.Id.show edge_action.edge.id)
 
@@ -28,7 +27,7 @@ let disconnect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
   { graph with parents }
 
 let connect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
-  let source = Cursor.mk (Edge.source edge) (Edge.index edge) in
+  let source = Edge.source edge in
   let children = Graph.Children.find source graph.children in
   let children =
     Graph.Children.add source (Edge.Set.add edge children) graph.children
@@ -36,7 +35,7 @@ let connect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
   { graph with children }
 
 let disconnect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
-  let source = Cursor.mk (Edge.source edge) (Edge.index edge) in
+  let source = Edge.source edge in
   let children = Graph.Children.find source graph.children in
   let children =
     Graph.Children.add source
@@ -60,7 +59,7 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
     let source = Edge.source edge in
     graph.vertices
     |> Uuid.Map.add target.id target
-    |> Uuid.Map.add source.id source
+    |> Uuid.Map.add source.vertex.id source.vertex
   in
   let old_state = Edge.Map.find_opt edge graph.states in
   let action : Edge_state.t option =

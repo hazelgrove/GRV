@@ -1,6 +1,7 @@
-type t = t' Uuid.Wrap.t [@@deriving show]
+type t' = { source : Vertex.t; index : Index.t; target : Vertex.t }
+[@@deriving show]
 
-and t' = { source : Vertex.t; index : Index.t; target : Vertex.t }
+type t = t' Uuid.Wrap.t [@@deriving show]
 
 let mk (source : Vertex.t) (index : Index.t) (target : Vertex.t) : t =
   Uuid.Wrap.mk { source; index; target }

@@ -35,16 +35,19 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let key_action event : Action.inst =
-    if Js.to_bool event##.ctrlKey then NoOp
-    else
-      match Dom_html.Keyboard_code.of_event event with
-      | Space -> Create
-      | ArrowUp -> Move Out
-      | ArrowDown -> Move In
-      | ArrowLeft -> Move Left
-      | ArrowRight -> Move Right
-      | _ -> NoOp
+  let ctrl_key (_event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+    None
+  in
+  let key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+    Option.map
+      (fun action -> Enqueue action)
+      ( match Dom_html.Keyboard_code.of_event event with
+      | Space -> Some Create
+      | ArrowUp -> Some (Move Out)
+      | ArrowDown -> Some (Move In)
+      | ArrowLeft -> Some (Move Left)
+      | ArrowRight -> Some (Move Right)
+      | _ -> None )
   in
   let action_button (label : string) (action : Action.app) : Vdom.Node.t =
     button [ on_click (fun _ -> inject { instance; action }) ] [ text label ]
@@ -53,8 +56,13 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
     [
       tabindex instance;
       on_keydown (fun event ->
-          Js_of_ocaml.Dom.preventDefault event;
-          inject { instance; action = Enqueue (key_action event) });
+          match
+            (if Js.to_bool event##.ctrlKey then ctrl_key else key) event
+          with
+          | Some action ->
+              Js_of_ocaml.Dom.preventDefault event;
+              inject { instance; action }
+          | None -> Vdom.Event.Ignore);
     ]
     [
       text (of_index model.graph model.cursor Graph.Child.root);

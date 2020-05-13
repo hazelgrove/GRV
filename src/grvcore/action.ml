@@ -3,7 +3,7 @@
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-type inst = Create | Move of direction | NoOp [@@deriving sexp_of]
+type inst = Create | Move of direction [@@deriving sexp_of]
 
 type app = Send | Enqueue of inst [@@deriving sexp_of]
 
@@ -81,7 +81,6 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
         | Some index -> { model.cursor with index }
       in
       { model with cursor }
-  | NoOp -> model
 
 let apply (model : Model.t) (action : t) (state : State.t)
     ~(schedule_action : t -> unit) : Model.t =

@@ -9,35 +9,14 @@ end
 
 (* Children *)
 
-module Child = struct
-  type t = { parent : Vertex.t; index : Index.t }
-
-  let mk (parent : Vertex.t) (index : Index.t) : t = { parent; index }
-
-  let root = { parent = Vertex.root; index = Root_root_root }
-
-  let compare (child1 : t) (child2 : t) : int =
-    match Vertex.compare child1.parent child2.parent with
-    | 0 -> Index.compare child1.index child2.index
-    | i -> i
-
-  let pp (fmt : Format.formatter) (child : t) : unit =
-    Format.fprintf fmt "%a/%a" Uuid.Id.pp child.parent.id Index.pp child.index
-end
-
-module ChildMap = Map.Make (Child)
-
 module Children = struct
-  include ChildMap
+  include Cursor.Map
 
-  type t = Edge.Set.t ChildMap.t
+  type t = Edge.Set.t Cursor.Map.t
 
   let find (key : key) (map : t) : Edge.Set.t =
     Option.value (find_opt key map) ~default:Edge.Set.empty
 end
-
-let child (parent : Vertex.t) (index : Index.t) : Children.key =
-  { parent; index }
 
 (* Graph *)
 
@@ -50,6 +29,8 @@ type t = {
   parents : Parents.t;
   children : Children.t;
 }
+
+(* TODO: better field names *)
 
 let empty : t =
   {
@@ -69,7 +50,7 @@ let edge_is_live (graph : t) (edge : Edge.t) : bool =
 let find_vertex (vertex : Vertex.t) (graph : t) : Vertex.t =
   Uuid.Map.find vertex.id graph.vertices
 
-let find_children (child : Child.t) (graph : t) : Edge.Set.t =
+let find_children (child : Cursor.t) (graph : t) : Edge.Set.t =
   Edge.Set.filter (edge_is_live graph) (Children.find child graph.children)
 
 let find_parents (vertex : Vertex.t) (graph : t) : Edge.Set.t =

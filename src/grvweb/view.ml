@@ -3,8 +3,8 @@ module Js = Js_of_ocaml.Js
 module Vdom = Virtual_dom.Vdom
 
 (* TODO: use a fmt for efficiency? *)
-let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
-    (child : Graph.Child.t) : string =
+let rec of_index (graph : Graph.t) (cursor : Cursor.t) (child : Cursor.t) :
+    string =
   let result =
     match Edge.Set.elements (Graph.find_children child graph) with
     | [] -> "__"
@@ -18,8 +18,8 @@ let rec of_index (graph : Graph.t) (cursor : Graph.Child.t)
   in
   if cursor = child then Printf.sprintf "<%s>" result else result
 
-and of_vertex (graph : Graph.t) (cursor : Graph.Child.t) (vertex : Vertex.t) :
-    string =
+and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) : string
+    =
   let result =
     match vertex.value with
     | Exp_app ->
@@ -69,7 +69,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
           | None -> Vdom.Event.Ignore);
     ]
     [
-      text (of_index model.graph model.cursor Graph.Child.root);
+      text (of_index model.graph model.cursor Cursor.root);
       br [];
       br [];
       action_button "App" (Enqueue Create);
@@ -90,7 +90,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
       br [];
       text "Cursor";
       br [];
-      pre [] [ text @@ Format.asprintf "%a@." Graph.Child.pp model.cursor ];
+      pre [] [ text @@ Format.asprintf "%a@." Cursor.pp model.cursor ];
       br [];
       text "Graph";
       br [];

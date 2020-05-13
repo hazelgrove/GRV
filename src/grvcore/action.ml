@@ -62,8 +62,7 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
         match
           Edge.Set.elements (Graph.find_parents model.cursor.parent model.graph)
         with
-        | [ edge ] ->
-            { Graph.Child.parent = Edge.source edge; index = Edge.index edge }
+        | [ edge ] -> Cursor.mk (Edge.source edge) (Edge.index edge)
         | _ -> model.cursor
       in
       { model with cursor }

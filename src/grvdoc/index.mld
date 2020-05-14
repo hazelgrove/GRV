@@ -1,4 +1,4 @@
-{0 GRV - Multi-User Grove Editor Simulation}
+{0 GRV - Multi-User Grove Editor (Simulation)}
 
 {%html:
 <a href="../../../src/grvdoc/overview.svg">
@@ -11,55 +11,63 @@
 
 The application is split across two libraries:
 
-- {!grvweb} - HTML, CSS, and Javascript generation
+- {!grvweb} does Javascript, HTML, and CSS generation
 
-- {!grvcore} - everything else
+- {!grvcore} does everything else
 
-{%html:<!-- 
 {1 grvweb}
 
-{!grvweb} has two external dependencies and three modules.
+The {!grvweb} {!Main} module produces a Javascript program that spawns an
+{!App} as an {!Incr_dom} application.
 
-{ul
+It depends on two third-party libraries.
 
- {- It produces a Javascript file that starts an {!Incr_dom} application
-    instance.}
+- {!Async_kernel}
+- {!Incr_dom}
 
- {- It also has an {!index.html} file that loads and runs the application in a
-    Web browser.}}
-
- -->%}
+To run the Javascript program, open {!index.html} in a Web browser.
 
 {1 grvcore}
 
-The {!grvcore} library has many modules.
+{!grvcore} has eleven modules.
 
-Some are {!grvweb}-facing helpers:
+There are three {!grvweb}-facing helpers
 
 - {!Action}
 - {!Model}
 - {!State}
 
-Most are pieces for modeling program as {!Graph}s:
+and eight for modeling programs as graphs.
 
-- {!Constructor}
+- {!Cursor}
 - {!Edge}
 - {!Edge_state}
+- {!Graph}
 - {!Graph_action}
-- {!Index}
-- {!Vertex}
-
-Not shown:
-
+- {!Lang}
 - {!Uuid}
+- {!Vertex}
 
 {2 The Graph}
 
+{3 Graph.t}
+
 {%html:
-<a href="../../../src/grvdoc/graph.svg">
+<a href="../../../src/grvdoc/graph_t.svg">
   <img
-     src="../../../src/grvdoc/graph.svg"
+     src="../../../src/grvdoc/graph_t.svg"
      alt="Graph.t"
+     style="max-width:100%">
+</a>
+%}
+
+{3 Edge.t}
+
+{%html:
+<a href="../../../src/grvdoc/edge_t.svg">
+  <img
+     src="../../../src/grvdoc/edge_t.svg"
+     alt="Edge.t"
      style="max-width:100%">
 </a>
 %}

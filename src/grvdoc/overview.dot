@@ -31,7 +31,8 @@ graph G {
     label="grvcore"
     style="dashed,rounded"
     {rank=min; Graph_action; Edge_state}
-    Grap; Edg; Edge_state; Graph_action; Verte; Constructor; Index
+    {rank=same; Verte; Index}
+    Grap; Edg; Edge_state; Graph_action; Verte; Constructor; Cursor; Index
   }
   
   }
@@ -42,13 +43,13 @@ graph G {
 
   Main -- App -- View
 
-  Grap -- {Verte; Index; Edg; Edge_state}
+  Grap -- {Verte; Cursor; Edg; Edge_state}
 
-  Verte -- Constructor
+  {Verte; Index} -- Constructor
 
-  Index -- Constructor
+  Cursor -- {Verte; Index}
 
-  Edg -- {Verte; Index}
+  Edg -- {Verte; Cursor}
 
   Graph_action -- {Edg; Edge_state; Grap}
 

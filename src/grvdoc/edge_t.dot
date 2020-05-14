@@ -1,0 +1,28 @@
+digraph G {
+  rankdir=LR
+  compound=true
+  splines=true
+  concentrate=true
+
+  edge [arrowhead="vee"]
+
+  node [shape=box]
+
+  Verte [label="Vertex"]
+  Uuid
+
+  subgraph cluster_edge {
+    label="Edge.t"
+
+    node [shape=none]
+
+    source; target
+  }
+
+  {rank=same; Verte; Cursor}
+
+  Uuid -> source [lhead=cluster_edge]
+
+  source -> Cursor -> {Verte; Index}
+  target -> Verte
+}

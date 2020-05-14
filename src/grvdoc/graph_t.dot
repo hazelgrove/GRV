@@ -13,7 +13,7 @@ digraph G {
   edge [arrowhead="vee"]
 
   subgraph cluster_graph {
-    label="Graph"
+    label="Graph.t"
 
     node [shape=none]
 
@@ -30,6 +30,6 @@ digraph G {
   children -> Children
 
   Verte -> Parents -> Edg
-  Child -> Children -> Edg
+  Cursor -> Children -> Edg
 
 }

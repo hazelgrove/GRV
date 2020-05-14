@@ -5,7 +5,7 @@
 (documentation)
 
 (rule
- (targets overview.svg graph.svg)
+ (targets overview.svg graph_t.svg edge_t.svg)
  (deps
   (:dots
    (glob_files *.dot)))

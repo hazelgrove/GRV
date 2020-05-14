@@ -6,7 +6,6 @@ digraph G {
 
   node [shape=box]
 
-  Verte [label="Vertex"]
   Edg [label="Edge"]
   Uuid
 
@@ -20,23 +19,8 @@ digraph G {
     edges; states; cache
   }
 
-  subgraph cluster_cache {
-    label="Graph.cache"
-
-    node [shape=none]
-
-    vertices; parents; children
-  }
-
-  edges -> {Edg; Uuid}
-  states -> {Edge_state; Cursor}
-
-  cache -> children [lhead=cluster_cache]
-
-  Uuid -> vertices [dir=back]
-  Edg -> parents [dir=back]
-  vertices -> Verte
-  parents -> Verte
-  children -> Edg
-  Cursor -> children [dir=back]
+  Uuid -> edges [dir=back]
+  Edg -> {edges; states} [dir=back]
+  {edges; states} ->  Edge_state
+  cache -> Cache
 }

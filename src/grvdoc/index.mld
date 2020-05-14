@@ -17,19 +17,18 @@ The application is split across two libraries:
 
 {1 grvweb}
 
-The {!grvweb} {!Main} module produces a Javascript program that spawns an
-{!App} as an {!Incr_dom} application.
-
-It depends on two third-party libraries.
+The {!grvweb} {!Main} module depends on two third-party libraries.
 
 - {!Async_kernel}
 - {!Incr_dom}
 
-To run the Javascript program, open {!index.html} in a Web browser.
+It produces a Javascript program that spawns an {!App} as an {!Incr_dom}
+application. To run the Javascript program, open {!index.html} in a Web
+browser.
 
 {1 grvcore}
 
-{!grvcore} has eleven modules.
+{!grvcore} has twelve modules.
 
 There are three {!grvweb}-facing helpers
 
@@ -37,8 +36,9 @@ There are three {!grvweb}-facing helpers
 - {!Model}
 - {!State}
 
-and eight for modeling programs as graphs.
+and nine for modeling programs as graphs.
 
+- {!Cache}
 - {!Cursor}
 - {!Edge}
 - {!Edge_state}
@@ -50,13 +50,27 @@ and eight for modeling programs as graphs.
 
 {2 The Graph}
 
-{3 Graph.t}
+{3 Graph.t and Cache.t}
 
 {%html:
 <a href="../../../src/grvdoc/graph_t.svg">
   <img
      src="../../../src/grvdoc/graph_t.svg"
      alt="Graph.t"
+     style="max-width:100%">
+</a>
+
+<a href="../../../src/grvdoc/cache_t.svg">
+  <img
+     src="../../../src/grvdoc/cache_t.svg"
+     alt="Cache.t"
+     style="max-width:100%">
+</a>
+
+<a href="../../../src/grvdoc/graph_t_cache_t.svg">
+  <img
+     src="../../../src/grvdoc/graph_t_cache_t.svg"
+     alt="Graph.t and Cache.t"
      style="max-width:100%">
 </a>
 %}

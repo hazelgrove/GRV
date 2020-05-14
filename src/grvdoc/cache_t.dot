@@ -1,0 +1,28 @@
+digraph G {
+  rankdir=LR
+  compound=true
+  splines=true
+  concentrate=true
+
+  node [shape=box]
+
+  Verte [label="Vertex"]
+  Edg [label="Edge"]
+  Uuid
+
+  edge [arrowhead="vee"]
+
+  subgraph cluster_cache {
+    label="Cache.t"
+
+    node [shape=none]
+
+    vertices; parents; children
+  }
+
+  Uuid -> vertices [dir=back]
+  Edg -> parents [dir=back]
+  vertices -> Verte
+  parents -> Verte
+  children -> {Edg; Cursor}
+}

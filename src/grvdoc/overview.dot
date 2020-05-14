@@ -30,10 +30,10 @@ graph G {
   subgraph cluster_core {
     label="grvcore"
     style="dashed,rounded"
-    {rank=min; Grap; Edge_state; Graph_action}
-    {rank=same; Edg; Cursor}
-    {rank=same; Verte; Index}
-    Grap; Edg; Edge_state; Verte; Constructor; Cursor; Index
+    {rank=min; Grap; Graph_action; Cache}
+    {rank=same; Cursor; Verte}
+    {rank=max; Index; Constructor}
+    Grap; Edg; Edge_state; Cache; Verte; Constructor; Cursor; Index
   }
 
   }
@@ -41,11 +41,12 @@ graph G {
   {Async_kernel; Incr_dom} -- Main [lhead=cluster_web]
   View -- Action [ltail=cluster_web; lhead=cluster_mid]
   Action -- Grap [ltail=cluster_mid; lhead=cluster_core]
-  Model -- {Action; View} [ltail=cluster_mid; lhead=cluster_web]
+  Model -- View [ltail=cluster_mid; lhead=cluster_web]
+  Model -- Action
 
   Main -- App -- View
 
-  Grap -- {Verte; Cursor; Edg; Edge_state}
+  Grap -- {Edg; Edge_state}
 
   {Verte; Index} -- Constructor
 
@@ -53,6 +54,6 @@ graph G {
 
   Edg -- {Verte; Cursor}
 
-  Graph_action -- Grap [style=dashed]
+  Graph_action -- Grap -- Cache [style=dashed]
 
 }

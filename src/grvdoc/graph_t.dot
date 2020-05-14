@@ -17,19 +17,26 @@ digraph G {
 
     node [shape=none]
 
-    vertices; edges; states; parents; children
+    edges; states; cache
   }
 
-  Uuid -> vertices
-  Uuid -> edges
+  subgraph cluster_cache {
+    label="Graph.cache"
 
+    node [shape=none]
+
+    vertices; parents; children
+  }
+
+  edges -> {Edg; Uuid}
+  states -> {Edge_state; Cursor}
+
+  cache -> children [lhead=cluster_cache]
+
+  Uuid -> vertices [dir=back]
+  Edg -> parents [dir=back]
   vertices -> Verte
-  edges -> Edg
-  states -> Edge_state
-  parents -> Parents
-  children -> Children
-
-  Verte -> Parents -> Edg
-  Cursor -> Children -> Edg
-
+  parents -> Verte
+  children -> Edg
+  Cursor -> children [dir=back]
 }

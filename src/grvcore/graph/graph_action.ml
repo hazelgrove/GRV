@@ -10,39 +10,39 @@ let pp (fmt : Format.formatter) (edge_action : t) : unit =
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let target = Edge.target edge in
-  let parents = Graph.Parents.find target graph.parents in
+  let parents = Graph.find_parents target graph in
   let parents =
-    Graph.Parents.add target (Edge.Set.add edge parents) graph.parents
+    Vertex.Map.add target (Edge.Set.add edge parents) graph.cache.parents
   in
-  { graph with parents }
+  { graph with cache = { graph.cache with parents } }
 
 let disconnect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let target = Edge.target edge in
-  let parents = Graph.Parents.find target graph.parents in
+  let parents = Graph.find_parents target graph in
   let parents =
-    Graph.Parents.add target
+    Vertex.Map.add target
       (Edge.Set.filter (Edge.equal edge) parents)
-      graph.parents
+      graph.cache.parents
   in
-  { graph with parents }
+  { graph with cache = { graph.cache with parents } }
 
 let connect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let source = Edge.source edge in
-  let children = Graph.Children.find source graph.children in
+  let children = Graph.find_children source graph in
   let children =
-    Graph.Children.add source (Edge.Set.add edge children) graph.children
+    Cursor.Map.add source (Edge.Set.add edge children) graph.cache.children
   in
-  { graph with children }
+  { graph with cache = { graph.cache with children } }
 
 let disconnect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let source = Edge.source edge in
-  let children = Graph.Children.find source graph.children in
+  let children = Graph.find_children source graph in
   let children =
-    Graph.Children.add source
+    Cursor.Map.add source
       (Edge.Set.filter (Edge.equal edge) children)
-      graph.children
+      graph.cache.children
   in
-  { graph with children }
+  { graph with cache = { graph.cache with children } }
 
 let add_edge (graph : Graph.t) (edge : Edge.t) : Graph.t =
   graph |> connect_parents edge |> connect_children edge
@@ -57,7 +57,7 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
   let vertices =
     let target = Edge.target edge in
     let source = Edge.source edge in
-    graph.vertices
+    graph.cache.vertices
     |> Uuid.Map.add target.id target
     |> Uuid.Map.add source.vertex.id source.vertex
   in
@@ -76,11 +76,14 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
 
       (* TODO: short circuit if deleting a non-existant *)
       let states = Edge.Map.add edge Edge_state.Created graph.states in
-      add_edge { graph with edges; vertices; states } edge
+      let cache = { graph.cache with vertices } in
+      add_edge (Graph.mk edges states cache) edge
   | Some Destroyed -> (
       let states : Edge_state.t Edge.Map.t =
         Edge.Map.add edge Edge_state.Destroyed graph.states
       in
       match old_state with
-      | None -> { graph with edges; vertices; states }
-      | _ -> drop_edge { graph with edges; vertices; states } edge )
+      | None -> Graph.mk edges states { graph.cache with vertices }
+      | _ ->
+          let cache = { graph.cache with vertices } in
+          drop_edge (Graph.mk edges states cache) edge )

@@ -6,7 +6,7 @@ module Vdom = Virtual_dom.Vdom
 let rec of_index (graph : Graph.t) (cursor : Cursor.t) (child : Cursor.t) :
     string =
   let result =
-    match Edge.Set.elements (Graph.find_children child graph) with
+    match Edge.Set.elements (Cache.children child graph.cache) with
     | [] -> "__"
     | [ edge ] -> of_vertex graph cursor (Edge.target edge)
     | edges ->
@@ -94,7 +94,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
       br [];
       text "Graph";
       br [];
-      pre [] [ text @@ Format.asprintf "%a@." Graph.pp_graph model.graph ];
+      pre [] [ text @@ Format.asprintf "%a@." Graph.pp model.graph ];
     ]
 
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =

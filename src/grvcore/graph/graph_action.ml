@@ -10,7 +10,7 @@ let pp (fmt : Format.formatter) (edge_action : t) : unit =
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let target = Edge.target edge in
-  let parents = Graph.find_parents target graph in
+  let parents = Cache.parents target graph.cache in
   let parents =
     Vertex.Map.add target (Edge.Set.add edge parents) graph.cache.parents
   in
@@ -18,7 +18,7 @@ let connect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
 
 let disconnect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let target = Edge.target edge in
-  let parents = Graph.find_parents target graph in
+  let parents = Cache.parents target graph.cache in
   let parents =
     Vertex.Map.add target
       (Edge.Set.filter (Edge.equal edge) parents)
@@ -28,7 +28,7 @@ let disconnect_parents (edge : Edge.t) (graph : Graph.t) : Graph.t =
 
 let connect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let source = Edge.source edge in
-  let children = Graph.find_children source graph in
+  let children = Cache.children source graph.cache in
   let children =
     Cursor.Map.add source (Edge.Set.add edge children) graph.cache.children
   in
@@ -36,7 +36,7 @@ let connect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
 
 let disconnect_children (edge : Edge.t) (graph : Graph.t) : Graph.t =
   let source = Edge.source edge in
-  let children = Graph.find_children source graph in
+  let children = Cache.children source graph.cache in
   let children =
     Cursor.Map.add source
       (Edge.Set.filter (Edge.equal edge) children)

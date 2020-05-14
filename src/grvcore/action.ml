@@ -15,6 +15,7 @@ type t = { instance : int; action : app } [@@deriving sexp_of]
 
 let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.Instance.t =
+  let graph = model.graph in
   match action with
   | Create -> (
       let constructor = Lang.Constructor.Exp_app in
@@ -22,8 +23,11 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
       | None -> model
       | Some new_index ->
           let new_vertex = Vertex.mk constructor in
-          let old_parent = Graph.find_vertex model.cursor.vertex model.graph in
-          let old_children = Graph.find_children model.cursor model.graph in
+          let old_parent = Cache.vertex model.cursor.vertex graph.cache in
+          let old_children =
+            Cache.children model.cursor ~filter:(Graph.edge_is_live graph)
+              graph.cache
+          in
           let cursor = Cursor.mk old_parent model.cursor.index in
           let edge = Edge.mk cursor new_vertex in
           let graph_actions =
@@ -39,15 +43,11 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
                   { Graph_action.state = Edge_state.Destroyed; edge })
                 (Edge.Set.elements old_children)
           in
-          let graph =
-            List.fold_right Graph_action.apply graph_actions model.graph
-          in
+          let graph = List.fold_right Graph_action.apply graph_actions graph in
           { model with graph; actions = model.actions @ graph_actions } )
   | Move In ->
       let cursor =
-        match
-          Edge.Set.elements (Graph.find_children model.cursor model.graph)
-        with
+        match Edge.Set.elements (Cache.children model.cursor graph.cache) with
         | [ edge ] -> (
             let vertex = Edge.target edge in
             match Lang.Index.down vertex.value with
@@ -60,7 +60,7 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
   | Move Out ->
       let cursor =
         match
-          Edge.Set.elements (Graph.find_parents model.cursor.vertex model.graph)
+          Edge.Set.elements (Cache.parents model.cursor.vertex graph.cache)
         with
         | [ edge ] -> Edge.source edge
         | _ -> model.cursor

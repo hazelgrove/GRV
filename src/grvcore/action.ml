@@ -13,8 +13,8 @@ open Sexplib0.Sexp_conv
 
 type t = { instance : int; action : app } [@@deriving sexp_of]
 
-let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
-    ~schedule_action:(_ : t -> unit) : Model.Instance.t =
+let rec apply_instance (model : Model.Instance.t) (action : inst)
+    (state : State.t) ~(schedule_action : t -> unit) : Model.Instance.t =
   let graph = model.graph in
   match action with
   | Create -> (
@@ -44,7 +44,11 @@ let apply_instance (model : Model.Instance.t) (action : inst) (_state : State.t)
                 (Edge.Set.elements old_children)
           in
           let graph = List.fold_right Graph_action.apply graph_actions graph in
-          { model with graph; actions = model.actions @ graph_actions } )
+          (* always Move In after Create *)
+          let model =
+            { model with graph; actions = model.actions @ graph_actions }
+          in
+          apply_instance model (Move In) state ~schedule_action )
   | Move In ->
       let cursor =
         match Edge.Set.elements (Cache.children model.cursor graph.cache) with

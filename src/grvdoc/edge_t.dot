@@ -21,7 +21,7 @@ digraph G {
 
   {rank=same; Verte; Cursor}
 
-  Uuid -> source [lhead=cluster_edge]
+  Uuid -> source [lhead=cluster_edge,dir=back]
 
   source -> Cursor -> {Verte; Index}
   target -> Verte

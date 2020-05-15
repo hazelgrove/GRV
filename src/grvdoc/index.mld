@@ -17,7 +17,13 @@ The application is split across two libraries:
 
 {1 grvweb}
 
-The {!grvweb} {!Main} module depends on two third-party libraries.
+{!grvweb} has three modules:
+
+- {!App}
+- {!Main}
+- {!View}
+
+The {!Main} module exports nothing and depends on two external libraries.
 
 - {!Async_kernel}
 - {!Incr_dom}
@@ -28,9 +34,7 @@ application. To run the Javascript program, open
 
 {1 grvcore}
 
-{!grvcore} has twelve modules.
-
-There are three {!grvweb}-facing helpers
+{!grvcore} has twelve modules. There are three {!grvweb}-facing helpers
 
 - {!Action}
 - {!Model}

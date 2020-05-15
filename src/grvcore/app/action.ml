@@ -1,21 +1,17 @@
-(* TODO: factor App and other ast constructor insertions into a constructor *)
-
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
 type edit = Create of Lang.Constructor.t | Delete [@@deriving sexp_of]
 
-type inst = Edit of edit | Move of direction [@@deriving sexp_of]
+type local = Edit of edit | Move of direction [@@deriving sexp_of]
 
-type app = Send | Enqueue of inst [@@deriving sexp_of]
-
-(* TODO: rename instance to instance_id *)
+type app = Send | Enqueue of local [@@deriving sexp_of]
 
 open Sexplib0.Sexp_conv
 
-type t = { instance : int; action : app } [@@deriving sexp_of]
+type t = { instance_id : int; action : app } [@@deriving sexp_of]
 
-let rec apply_instance (model : Model.Instance.t) (action : inst)
+let rec apply_instance (model : Model.Instance.t) (action : local)
     (state : State.t) ~(schedule_action : t -> unit) : Model.Instance.t =
   let graph = model.graph in
   match action with
@@ -29,9 +25,10 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
             | Some new_index ->
                 let new_vertex = Vertex.mk constructor in
                 let old_parent = Cache.vertex model.cursor.vertex graph.cache in
-                let cursor = Cursor.mk old_parent model.cursor.index in
                 (* TODO: replace with model.cursor *)
-                let edge = Edge.mk cursor new_vertex in
+                let edge =
+                  Edge.mk (Cursor.mk old_parent model.cursor.index) new_vertex
+                in
                 ( true,
                   [ { Graph_action.state = Edge_state.Created; edge } ]
                   @ List.map
@@ -97,7 +94,7 @@ let apply (model : Model.t) (action : t) (state : State.t)
     ~(schedule_action : t -> unit) : Model.t =
   match action.action with
   | Send ->
-      let actions = (Model.MapInt.find action.instance model).actions in
+      let actions = (Model.MapInt.find action.instance_id model).actions in
       let new_model =
         Model.MapInt.map
           (fun (receiver : Model.Instance.t) ->
@@ -107,12 +104,12 @@ let apply (model : Model.t) (action : t) (state : State.t)
             { receiver with graph })
           model
       in
-      Model.MapInt.update action.instance
+      Model.MapInt.update action.instance_id
         ( Option.map @@ fun (sender : Model.Instance.t) ->
           { sender with actions = [] } )
         new_model
   | Enqueue inst_action ->
-      Model.MapInt.update action.instance
+      Model.MapInt.update action.instance_id
         ( Option.map @@ fun instance ->
           apply_instance instance inst_action state ~schedule_action )
         model

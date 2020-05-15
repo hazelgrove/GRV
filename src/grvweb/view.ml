@@ -92,7 +92,7 @@ let keymap : (Dom_html.Keyboard_code.t, Lang.Constructor.t) Hashtbl.t =
     (List.to_seq
        (List.map (fun (constructor, _, code) -> (code, constructor)) actions))
 
-let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
+let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     (model : Model.Instance.t) : Vdom.Node.t =
   let open Action in
   let open Vdom.Node in
@@ -118,12 +118,12 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
            | None -> None ))
   in
   let action_button (label : string) (action : Action.app) : Vdom.Node.t =
-    button [ on_click (fun _ -> inject { instance; action }) ] [ text label ]
+    button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
   in
   div
     [
       class_ "instance";
-      tabindex instance;
+      tabindex instance_id;
       on_keydown (fun event ->
           match
             if Js.to_bool event##.altKey then (None : Action.app Option.t)
@@ -132,7 +132,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
           with
           | Some action ->
               Js_of_ocaml.Dom.preventDefault event;
-              inject { instance; action }
+              inject { instance_id; action }
           | None -> Vdom.Event.Ignore);
     ]
     [

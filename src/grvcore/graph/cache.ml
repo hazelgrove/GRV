@@ -1,6 +1,7 @@
 type t = {
   (* Contains both Created and Destroyed *)
   vertices : Vertex.t Uuid.Map.t;
+  (* TODO: rename to vertexes *)
   edges : Edge.t Uuid.Map.t;
   (* Contains only Created *)
   parents : Edge.Set.t Vertex.Map.t;
@@ -46,17 +47,29 @@ let pp (fmt : Format.formatter) (cache : t) : unit =
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
+  let source = (Edge.source edge).vertex in
   let target = Edge.target edge in
+  let vertices =
+    cache.vertices
+    |> Uuid.Map.add source.id source
+    |> Uuid.Map.add target.id target
+  in
   let parents = parents target cache in
   let parents =
     Vertex.Map.add target (Edge.Set.add edge parents) cache.parents
   in
-  { cache with edges; parents }
+  { cache with vertices; edges; parents }
 
 (* Note that this disconnects *all* parents of edge.target *)
 let disconnect_parents (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
+  let source = (Edge.source edge).vertex in
   let target = Edge.target edge in
+  let vertices =
+    cache.vertices
+    |> Uuid.Map.add source.id source
+    |> Uuid.Map.add target.id target
+  in
   let parents = parents target cache in
   let parents =
     Vertex.Map.add target
@@ -64,25 +77,39 @@ let disconnect_parents (edge : Edge.t) (cache : t) : t =
       (Edge.Set.filter (Edge.equal edge) parents)
       cache.parents
   in
-  { cache with edges; parents }
+  { cache with vertices; edges; parents }
 
 let connect_children (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
-  let source = Edge.source edge in
-  let children = children source cache in
-  let children =
-    Cursor.Map.add source (Edge.Set.add edge children) cache.children
+  let cursor = Edge.source edge in
+  let source = cursor.vertex in
+  let target = Edge.target edge in
+  let vertices =
+    cache.vertices
+    |> Uuid.Map.add source.id source
+    |> Uuid.Map.add target.id target
   in
-  { cache with edges; children }
+  let children = children cursor cache in
+  let children =
+    Cursor.Map.add cursor (Edge.Set.add edge children) cache.children
+  in
+  { cache with vertices; edges; children }
 
 (* Note that this disconnects *all* children of edge.source *)
 let disconnect_children (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
-  let source = Edge.source edge in
-  let children = children source cache in
+  let cursor = Edge.source edge in
+  let source = cursor.vertex in
+  let target = Edge.target edge in
+  let vertices =
+    cache.vertices
+    |> Uuid.Map.add source.id source
+    |> Uuid.Map.add target.id target
+  in
+  let children = children cursor cache in
   let children =
-    Cursor.Map.add source
+    Cursor.Map.add cursor
       (Edge.Set.filter (Edge.equal edge) children)
       cache.children
   in
-  { cache with edges; children }
+  { cache with vertices; edges; children }

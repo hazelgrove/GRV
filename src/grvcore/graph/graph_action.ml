@@ -10,13 +10,6 @@ let pp (fmt : Format.formatter) (edge_action : t) : unit =
 let apply (edge_action : t) (graph : Graph.t) : Graph.t =
   let edge = edge_action.edge in
   let edge_state = edge_action.state in
-  let vertices =
-    let target = Edge.target edge in
-    let source = Edge.source edge in
-    graph.cache.vertices
-    |> Uuid.Map.add target.id target
-    |> Uuid.Map.add source.vertex.id source.vertex
-  in
   let old_state = Edge.Map.find_opt edge graph.states in
   let action : Edge_state.t option =
     match old_state with
@@ -35,8 +28,7 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
       {
         states;
         cache =
-          { graph.cache with vertices }
-          |> Cache.connect_parents edge
+          graph.cache |> Cache.connect_parents edge
           |> Cache.connect_children edge;
       }
   | Some Destroyed -> (
@@ -44,12 +36,12 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
         Edge.Map.add edge Edge_state.Destroyed graph.states
       in
       match old_state with
-      | None -> Graph.mk states { graph.cache with vertices }
+      | None -> Graph.mk states graph.cache
       | _ ->
           {
             states;
             cache =
-              { graph.cache with vertices }
+              graph.cache
               |> Cache.disconnect_parents edge
               |> Cache.disconnect_children edge;
           } )

@@ -21,19 +21,15 @@ let empty : t =
 let vertex (vertex : Vertex.t) (cache : t) : Vertex.t =
   Uuid.Map.find vertex.id cache.vertices
 
-let parents (vertex : Vertex.t) ?(filter : (Edge.t -> bool) option) (cache : t)
-    : Edge.Set.t =
-  Edge.Set.filter (Option.value filter ~default:(fun _ -> true))
-  @@ Option.value
-       (Vertex.Map.find_opt vertex cache.parents)
-       ~default:Edge.Set.empty
+let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
+  Option.value
+    (Vertex.Map.find_opt vertex cache.parents)
+    ~default:Edge.Set.empty
 
-let children (cursor : Cursor.t) ?(filter : (Edge.t -> bool) option) (cache : t)
-    : Edge.Set.t =
-  Edge.Set.filter (Option.value filter ~default:(fun _ -> true))
-  @@ Option.value
-       (Cursor.Map.find_opt cursor cache.children)
-       ~default:Edge.Set.empty
+let children (cursor : Cursor.t) (cache : t) : Edge.Set.t =
+  Option.value
+    (Cursor.Map.find_opt cursor cache.children)
+    ~default:Edge.Set.empty
 
 let pp (fmt : Format.formatter) (cache : t) : unit =
   let open Format in

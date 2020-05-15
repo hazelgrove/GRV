@@ -24,10 +24,7 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
       | Some new_index ->
           let new_vertex = Vertex.mk constructor in
           let old_parent = Cache.vertex model.cursor.vertex graph.cache in
-          let old_children =
-            Cache.children model.cursor ~filter:(Graph.edge_is_live graph)
-              graph.cache
-          in
+          let old_children = Cache.children model.cursor graph.cache in
           let cursor = Cursor.mk old_parent model.cursor.index in
           (* TODO: replace with model.cursor *)
           let edge = Edge.mk cursor new_vertex in
@@ -51,10 +48,7 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
           in
           apply_instance model (Move In) state ~schedule_action )
   | Delete ->
-      let old_children =
-        Cache.children model.cursor ~filter:(Graph.edge_is_live graph)
-          graph.cache
-      in
+      let old_children = Cache.children model.cursor graph.cache in
       let graph_actions =
         List.map
           (fun edge -> { Graph_action.state = Edge_state.Destroyed; edge })

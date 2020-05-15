@@ -23,8 +23,8 @@ The {!grvweb} {!Main} module depends on two third-party libraries.
 - {!Incr_dom}
 
 It produces a Javascript program that spawns an {!App} as an {!Incr_dom}
-application. To run the Javascript program, open {!index.html} in a Web
-browser.
+application. To run the Javascript program, open
+{{:../../../src/grvweb/index.html}index.html} in a Web browser.
 
 {1 grvcore}
 

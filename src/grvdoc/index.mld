@@ -50,7 +50,7 @@ and nine for modeling programs as graphs.
 
 {2 The Graph}
 
-{3 Graph.t and Cache.t}
+{3 Graph.t}
 
 {%html:
 <a href="../../../src/grvdoc/graph_t.svg">
@@ -59,7 +59,11 @@ and nine for modeling programs as graphs.
      alt="Graph.t"
      style="max-width:100%">
 </a>
+%}
 
+{3 Cache.t}
+
+{%html:
 <a href="../../../src/grvdoc/cache_t.svg">
   <img
      src="../../../src/grvdoc/cache_t.svg"

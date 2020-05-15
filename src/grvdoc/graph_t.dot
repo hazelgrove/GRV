@@ -19,8 +19,9 @@ digraph G {
     edges; states; cache
   }
 
-  Uuid -> edges [dir=back]
-  Edg -> {edges; states} [dir=back]
-  {edges; states} ->  Edge_state
+  Edge_state -> {edges; states} [dir=back]
+
+  edges -> Uuid
+  {edges; states} -> Edg
   cache -> Cache
 }

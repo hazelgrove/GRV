@@ -1,6 +1,8 @@
 type t = {
+  (* Contains both Created and Destroyed *)
   vertices : Vertex.t Uuid.Map.t;
   edges : Edge.t Uuid.Map.t;
+  (* Contains only Created *)
   parents : Edge.Set.t Vertex.Map.t;
   children : Edge.Set.t Cursor.Map.t;
 }
@@ -50,11 +52,13 @@ let connect_parents (edge : Edge.t) (cache : t) : t =
   in
   { cache with parents }
 
+(* Note that this disconnects *all* parents of edge.target *)
 let disconnect_parents (edge : Edge.t) (cache : t) : t =
   let target = Edge.target edge in
   let parents = parents target cache in
   let parents =
     Vertex.Map.add target
+      (* TODO: is there a bug here? *)
       (Edge.Set.filter (Edge.equal edge) parents)
       cache.parents
   in
@@ -68,6 +72,7 @@ let connect_children (edge : Edge.t) (cache : t) : t =
   in
   { cache with children }
 
+(* Note that this disconnects *all* children of edge.source *)
 let disconnect_children (edge : Edge.t) (cache : t) : t =
   let source = Edge.source edge in
   let children = children source cache in

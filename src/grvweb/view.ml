@@ -90,12 +90,12 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
       br [];
       br [];
       action_button "App" (Enqueue Create);
+      action_button "Delete" (Enqueue Delete);
       action_button "Send" Send;
       action_button "In" (Enqueue (Move In));
       action_button "Out" (Enqueue (Move Out));
       action_button "Left" (Enqueue (Move Left));
       action_button "Right" (Enqueue (Move Right));
-      action_button "Delete" (Enqueue Delete);
       br [];
       br [];
       select

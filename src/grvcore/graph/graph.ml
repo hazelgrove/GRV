@@ -5,12 +5,7 @@ type t = { states : Edge_state.t Edge.Map.t; cache : Cache.t }
 let mk (states : Edge_state.t Edge.Map.t) (cache : Cache.t) : t =
   { states; cache }
 
-(* TODO: better field names *)
-
 let empty : t = mk Edge.Map.empty Cache.empty
-
-let edge_is_live (graph : t) (edge : Edge.t) : bool =
-  Some Edge_state.Created = Edge.Map.find_opt edge graph.states
 
 let pp (fmt : Format.formatter) (graph : t) : unit =
   let open Format in

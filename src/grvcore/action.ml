@@ -3,6 +3,7 @@
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
+(* TODO: factor Create and Delete into own type *)
 type inst = Create | Delete | Move of direction [@@deriving sexp_of]
 
 type app = Send | Enqueue of inst [@@deriving sexp_of]

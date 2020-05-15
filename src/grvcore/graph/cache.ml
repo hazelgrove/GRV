@@ -36,6 +36,7 @@ let pp (fmt : Format.formatter) (cache : t) : unit =
   fprintf fmt "Vertices\n";
   Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertices;
   fprintf fmt "\nEdges\n";
+  (* TODO: fix indents of printed edges *)
   Uuid.Map.iter
     (fun id e -> fprintf fmt "%s = %a\n" (Uuid.Id.show id) Edge.pp e)
     cache.edges

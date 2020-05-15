@@ -60,7 +60,8 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
     Option.map
       (fun action -> Enqueue action)
       ( match Dom_html.Keyboard_code.of_event event with
-      | Space -> Some Create
+      | Space -> Some (Edit (Create Exp_app))
+      (* TODO: Delete key *)
       | ArrowUp -> Some (Move Out)
       | ArrowDown -> Some (Move In)
       | ArrowLeft -> Some (Move Left)
@@ -89,8 +90,8 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
       of_index model.graph model.cursor Cursor.root;
       br [];
       br [];
-      action_button "App" (Enqueue Create);
-      action_button "Delete" (Enqueue Delete);
+      action_button "App" (Enqueue (Edit (Create Exp_app)));
+      action_button "Delete" (Enqueue (Edit Delete));
       action_button "Send" Send;
       action_button "In" (Enqueue (Move In));
       action_button "Out" (Enqueue (Move Out));

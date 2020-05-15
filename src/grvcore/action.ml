@@ -3,8 +3,9 @@
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-(* TODO: factor Create and Delete into own type *)
-type inst = Create | Delete | Move of direction [@@deriving sexp_of]
+type edit = Create of Lang.Constructor.t | Delete [@@deriving sexp_of]
+
+type inst = Edit of edit | Move of direction [@@deriving sexp_of]
 
 type app = Send | Enqueue of inst [@@deriving sexp_of]
 
@@ -18,9 +19,8 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
     (state : State.t) ~(schedule_action : t -> unit) : Model.Instance.t =
   let graph = model.graph in
   match action with
-  | Create -> (
-      let constructor = Lang.Constructor.Exp_app in
-      match Lang.Index.wrap constructor with
+  | Edit (Create constructor) -> (
+      match Lang.Index.default_index constructor with
       | None -> model
       | Some new_index ->
           let new_vertex = Vertex.mk constructor in
@@ -48,7 +48,7 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
             { model with graph; actions = model.actions @ graph_actions }
           in
           apply_instance model (Move In) state ~schedule_action )
-  | Delete ->
+  | Edit Delete ->
       let old_children = Cache.children model.cursor graph.cache in
       let graph_actions =
         List.map

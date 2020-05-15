@@ -1,0 +1,73 @@
+html {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    margin: 1ex;
+}
+
+body * {
+    box-sizing: border-box;
+    white-space: pre;
+}
+
+body > div {
+    display: flex;
+    flex-direction: row;
+}
+
+.instance {
+    flex: 1;
+    margin: 1ex;
+}
+
+.cursor {
+    background-color: #dfd;
+}
+
+/* .hole { */
+/*     border-bottom: 1px solid black; */
+/* } */
+
+.chars {
+    display: inline-block;
+    width: 1ex;
+    height: 2ex;
+}
+
+.vertex > sub {
+    color: #ccc;
+}
+
+.vertex {
+    display: inline;
+}
+
+/* .label { */
+/*     position: absolute; */
+/*     top: 0; */
+/*     left: 50%; */
+/* } */
+
+@keyframes blink-left {
+    50% {
+        border-left: 1px solid black;
+        margin-left: -1px;
+    }
+}
+
+@keyframes blink-right {
+    50% {
+        border-right: 1px solid black;
+        margin-right: -1px;
+    }
+}
+
+.instance:focus .cursor > .hole:only-child {
+    animation-name: blink-left;
+    animation-duration: .5s;
+    animation-timing-function: step-end;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}

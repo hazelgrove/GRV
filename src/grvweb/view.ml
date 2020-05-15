@@ -2,33 +2,49 @@ module Dom_html = Js_of_ocaml.Dom_html
 module Js = Js_of_ocaml.Js
 module Vdom = Virtual_dom.Vdom
 
-(* TODO: use a fmt for efficiency? *)
+let chars (str : string) : Vdom.Node.t =
+  Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
+
+let rec intersperse (delim : 'a) (xs : 'a list) : 'a list =
+  match xs with
+  | [] | [ _ ] -> xs
+  | x :: xs' -> x :: delim :: intersperse delim xs'
+
 let rec of_index (graph : Graph.t) (cursor : Cursor.t) (child : Cursor.t) :
-    string =
-  let result =
+    Vdom.Node.t =
+  let open Vdom.Node in
+  let open Vdom.Attr in
+  let node =
     match Edge.Set.elements (Cache.children child graph.cache) with
-    | [] -> "__"
+    | [] -> span [ class_ "hole" ] [ chars "_" ]
     | [ edge ] -> of_vertex graph cursor (Edge.target edge)
     | edges ->
-        Printf.sprintf "{ %s }"
-          (String.concat " | "
-             (List.map
-                (fun edge -> of_vertex graph cursor (Edge.target edge))
-                edges))
+        let nodes =
+          List.map (fun edge -> of_vertex graph cursor (Edge.target edge)) edges
+        in
+        span [ class_ "conflict" ] (intersperse (chars "|") nodes)
   in
-  if cursor = child then Printf.sprintf "<%s>" result else result
+  if cursor = child then span [ class_ "cursor" ] [ node ] else node
 
-and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) : string
-    =
-  let result =
+and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
+    Vdom.Node.t =
+  let open Vdom.Node in
+  let open Vdom.Attr in
+  let node =
     match vertex.value with
     | Exp_app ->
-        Printf.sprintf "(%s %s)"
-          (of_index graph cursor { vertex; index = Exp_app_fun })
-          (of_index graph cursor { vertex; index = Exp_app_arg })
-    | _ -> "TODO"
+        span [ class_ "app" ]
+          [
+            chars "(";
+            of_index graph cursor { vertex; index = Exp_app_fun };
+            chars " ";
+            of_index graph cursor { vertex; index = Exp_app_arg };
+            chars ")";
+          ]
+    | _ -> text "TODO"
   in
-  Printf.sprintf "%s:%s" (Uuid.Id.show vertex.id) result
+  span [ class_ "vertex" ]
+    [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]
 
 let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
     (model : Model.Instance.t) : Vdom.Node.t =
@@ -56,6 +72,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
   in
   div
     [
+      class_ "instance";
       tabindex instance;
       on_keydown (fun event ->
           match
@@ -69,7 +86,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
           | None -> Vdom.Event.Ignore);
     ]
     [
-      text (of_index model.graph model.cursor Cursor.root);
+      of_index model.graph model.cursor Cursor.root;
       br [];
       br [];
       action_button "App" (Enqueue Create);

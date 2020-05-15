@@ -95,6 +95,7 @@ let view_instance (instance : int) ~(inject : Action.t -> Vdom.Event.t)
       action_button "Out" (Enqueue (Move Out));
       action_button "Left" (Enqueue (Move Left));
       action_button "Right" (Enqueue (Move Right));
+      action_button "Delete" (Enqueue Delete);
       br [];
       br [];
       select

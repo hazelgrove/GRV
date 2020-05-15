@@ -3,7 +3,7 @@
 (* TODO: add button to insert Var so we can test conflicts *)
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-type inst = Create | Move of direction [@@deriving sexp_of]
+type inst = Create | Delete | Move of direction [@@deriving sexp_of]
 
 type app = Send | Enqueue of inst [@@deriving sexp_of]
 
@@ -29,6 +29,7 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
               graph.cache
           in
           let cursor = Cursor.mk old_parent model.cursor.index in
+          (* TODO: replace with model.cursor *)
           let edge = Edge.mk cursor new_vertex in
           let graph_actions =
             [ { Graph_action.state = Edge_state.Created; edge } ]
@@ -49,6 +50,18 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
             { model with graph; actions = model.actions @ graph_actions }
           in
           apply_instance model (Move In) state ~schedule_action )
+  | Delete ->
+      let old_children =
+        Cache.children model.cursor ~filter:(Graph.edge_is_live graph)
+          graph.cache
+      in
+      let graph_actions =
+        List.map
+          (fun edge -> { Graph_action.state = Edge_state.Destroyed; edge })
+          (Edge.Set.elements old_children)
+      in
+      let graph = List.fold_right Graph_action.apply graph_actions graph in
+      { model with graph; actions = model.actions @ graph_actions }
   | Move In ->
       let cursor =
         match Edge.Set.elements (Cache.children model.cursor graph.cache) with

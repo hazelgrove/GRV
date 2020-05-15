@@ -24,11 +24,7 @@ let rec apply_instance (model : Model.Instance.t) (action : local)
             | None -> (false, [])
             | Some new_index ->
                 let new_vertex = Vertex.mk constructor in
-                let old_parent = Cache.vertex model.cursor.vertex graph.cache in
-                (* TODO: replace with model.cursor *)
-                let edge =
-                  Edge.mk (Cursor.mk old_parent model.cursor.index) new_vertex
-                in
+                let edge = Edge.mk model.cursor new_vertex in
                 ( true,
                   [ { Graph_action.state = Edge_state.Created; edge } ]
                   @ List.map

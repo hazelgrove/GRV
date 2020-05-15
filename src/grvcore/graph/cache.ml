@@ -18,9 +18,6 @@ let empty : t =
   let children = Cursor.Map.empty in
   mk vertices edges parents children
 
-let vertex (vertex : Vertex.t) (cache : t) : Vertex.t =
-  Uuid.Map.find vertex.id cache.vertices
-
 let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
   Option.value
     (Vertex.Map.find_opt vertex cache.parents)

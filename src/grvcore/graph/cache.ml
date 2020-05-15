@@ -1,16 +1,19 @@
 type t = {
   vertices : Vertex.t Uuid.Map.t;
+  edges : Edge.t Uuid.Map.t;
   parents : Edge.Set.t Vertex.Map.t;
   children : Edge.Set.t Cursor.Map.t;
 }
 
-let mk vertices parents children : t = { vertices; parents; children }
+let mk vertices edges parents children : t =
+  { vertices; edges; parents; children }
 
 let empty : t =
   let vertices = Uuid.Map.singleton Vertex.root.id Vertex.root in
+  let edges = Uuid.Map.empty in
   let parents = Vertex.Map.empty in
   let children = Cursor.Map.empty in
-  mk vertices parents children
+  mk vertices edges parents children
 
 let vertex (vertex : Vertex.t) (cache : t) : Vertex.t =
   Uuid.Map.find vertex.id cache.vertices
@@ -32,7 +35,11 @@ let children (cursor : Cursor.t) ?(filter : (Edge.t -> bool) option) (cache : t)
 let pp (fmt : Format.formatter) (cache : t) : unit =
   let open Format in
   fprintf fmt "Vertices\n";
-  Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertices
+  Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertices;
+  fprintf fmt "\nEdges\n";
+  Uuid.Map.iter
+    (fun id e -> fprintf fmt "%s = %a\n" (Uuid.Id.show id) Edge.pp e)
+    cache.edges
 
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let connect_parents (edge : Edge.t) (cache : t) : t =

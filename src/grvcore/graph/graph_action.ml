@@ -10,7 +10,7 @@ let pp (fmt : Format.formatter) (edge_action : t) : unit =
 let apply (edge_action : t) (graph : Graph.t) : Graph.t =
   let edge = edge_action.edge in
   let edge_state = edge_action.state in
-  let edges = Uuid.Map.add edge.id edge graph.edges in
+  let edges = Uuid.Map.add edge.id edge graph.cache.edges in
   let vertices =
     let target = Edge.target edge in
     let source = Edge.source edge in
@@ -34,7 +34,6 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
       (* TODO: short circuit if deleting a non-existant *)
       let states = Edge.Map.add edge Edge_state.Created graph.states in
       {
-        graph with
         states;
         cache =
           { graph.cache with vertices }
@@ -46,13 +45,12 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
         Edge.Map.add edge Edge_state.Destroyed graph.states
       in
       match old_state with
-      | None -> Graph.mk edges states { graph.cache with vertices }
+      | None -> Graph.mk states { graph.cache with vertices; edges }
       | _ ->
           {
-            graph with
             states;
             cache =
-              { graph.cache with vertices }
+              { graph.cache with vertices; edges }
               |> Cache.disconnect_parents edge
               |> Cache.disconnect_children edge;
           } )

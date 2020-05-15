@@ -1,8 +1,19 @@
 (include_subdirs unqualified)
 
+(library
+ (name grvweb)
+ (public_name GRV.web)
+ (libraries grvcore incr_dom)
+ (modules
+  (:standard \ main))
+ (preprocess
+  (pps js_of_ocaml-ppx ppx_let ppx_sexp_conv))
+ (wrapped false))
+
 (executable
  (name main)
- (libraries grvcore incr_dom)
+ (libraries grvcore grvweb incr_dom)
+ (modules main)
  (modes js)
  (js_of_ocaml
   (flags

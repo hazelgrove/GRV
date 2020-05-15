@@ -19,44 +19,44 @@ let rec apply_instance (model : Model.Instance.t) (action : inst)
     (state : State.t) ~(schedule_action : t -> unit) : Model.Instance.t =
   let graph = model.graph in
   match action with
-  | Edit (Create constructor) -> (
-      match Lang.Index.default_index constructor with
-      | None -> model
-      | Some new_index ->
-          let new_vertex = Vertex.mk constructor in
-          let old_parent = Cache.vertex model.cursor.vertex graph.cache in
-          let old_children = Cache.children model.cursor graph.cache in
-          let cursor = Cursor.mk old_parent model.cursor.index in
-          (* TODO: replace with model.cursor *)
-          let edge = Edge.mk cursor new_vertex in
-          let graph_actions =
-            [ { Graph_action.state = Edge_state.Created; edge } ]
-            @ List.map
-                (fun (old_edge : Edge.t) ->
-                  let source = Cursor.mk new_vertex new_index in
-                  let edge = Edge.mk source (Edge.target old_edge) in
-                  { Graph_action.state = Edge_state.Created; edge })
-                (Edge.Set.elements old_children)
-            @ List.map
+  | Edit edit ->
+      let old_children = Cache.children model.cursor graph.cache in
+      let (move_in, graph_actions) : bool * Graph_action.t list =
+        match edit with
+        | Create constructor -> (
+            match Lang.Index.default_index constructor with
+            | None -> (false, [])
+            | Some new_index ->
+                let new_vertex = Vertex.mk constructor in
+                let old_parent = Cache.vertex model.cursor.vertex graph.cache in
+                let cursor = Cursor.mk old_parent model.cursor.index in
+                (* TODO: replace with model.cursor *)
+                let edge = Edge.mk cursor new_vertex in
+                ( true,
+                  [ { Graph_action.state = Edge_state.Created; edge } ]
+                  @ List.map
+                      (fun (old_edge : Edge.t) ->
+                        let source = Cursor.mk new_vertex new_index in
+                        let edge = Edge.mk source (Edge.target old_edge) in
+                        { Graph_action.state = Edge_state.Created; edge })
+                      (Edge.Set.elements old_children)
+                  @ List.map
+                      (fun edge ->
+                        { Graph_action.state = Edge_state.Destroyed; edge })
+                      (Edge.Set.elements old_children) ) )
+        | Delete ->
+            ( false,
+              List.map
                 (fun edge ->
                   { Graph_action.state = Edge_state.Destroyed; edge })
-                (Edge.Set.elements old_children)
-          in
-          let graph = List.fold_right Graph_action.apply graph_actions graph in
-          (* always Move In after Create *)
-          let model =
-            { model with graph; actions = model.actions @ graph_actions }
-          in
-          apply_instance model (Move In) state ~schedule_action )
-  | Edit Delete ->
-      let old_children = Cache.children model.cursor graph.cache in
-      let graph_actions =
-        List.map
-          (fun edge -> { Graph_action.state = Edge_state.Destroyed; edge })
-          (Edge.Set.elements old_children)
+                (Edge.Set.elements old_children) )
       in
       let graph = List.fold_right Graph_action.apply graph_actions graph in
-      { model with graph; actions = model.actions @ graph_actions }
+      let model =
+        { model with graph; actions = model.actions @ graph_actions }
+      in
+      if move_in then apply_instance model (Move In) state ~schedule_action
+      else model
   | Move In ->
       let cursor =
         match Edge.Set.elements (Cache.children model.cursor graph.cache) with

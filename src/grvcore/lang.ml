@@ -18,8 +18,8 @@ module Constructor = struct
     | Exp_plus
     (* TODO: sums and pairs *)
     (**** Typ ****)
-    | Typ_arrow
     | Typ_num
+    | Typ_arrow
   [@@deriving show, sexp_of]
 end
 
@@ -49,11 +49,11 @@ module Index = struct
     | Exp_plus_left
     | Exp_plus_right
     (**** Typ ****)
+    (* Typ_num *)
+    (* -- EMPTY -- *)
     (* Typ_arrow *)
     | Typ_arrow_arg
     | Typ_arrow_result
-  (* Typ_num *)
-  (* -- EMPTY -- *)
   [@@deriving show, compare, sexp_of]
 
   (* TODO: programatically generate these *)
@@ -68,8 +68,8 @@ module Index = struct
     | Exp_app -> Some Exp_app_fun
     | Exp_num _ -> None
     | Exp_plus -> Some Exp_plus_left
-    | Typ_arrow -> Some Typ_arrow_arg
     | Typ_num -> None
+    | Typ_arrow -> Some Typ_arrow_arg
 
   (* Specifies where to go when the cursor moves down *)
   let down (ctor : Constructor.t) : t option =
@@ -81,8 +81,8 @@ module Index = struct
     | Exp_app -> Some Exp_app_fun
     | Exp_num _ -> None
     | Exp_plus -> Some Exp_plus_left
-    | Typ_arrow -> Some Typ_arrow_arg
     | Typ_num -> None
+    | Typ_arrow -> Some Typ_arrow_arg
 
   let right (index : t) : t option =
     match index with

@@ -25,23 +25,11 @@ let apply (edge_action : t) (graph : Graph.t) : Graph.t =
 
       (* TODO: short circuit if deleting a non-existant *)
       let states = Edge.Map.add edge Edge_state.Created graph.states in
-      {
-        states;
-        cache =
-          graph.cache |> Cache.connect_parents edge
-          |> Cache.connect_children edge;
-      }
+      { states; cache = Cache.create edge graph.cache }
   | Some Destroyed -> (
       let states : Edge_state.t Edge.Map.t =
         Edge.Map.add edge Edge_state.Destroyed graph.states
       in
       match old_state with
       | None -> Graph.mk states graph.cache
-      | _ ->
-          {
-            states;
-            cache =
-              graph.cache
-              |> Cache.disconnect_parents edge
-              |> Cache.disconnect_children edge;
-          } )
+      | _ -> { states; cache = Cache.destroy edge graph.cache } )

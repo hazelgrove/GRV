@@ -33,3 +33,40 @@ let pp (fmt : Format.formatter) (cache : t) : unit =
   let open Format in
   fprintf fmt "Vertices\n";
   Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertices
+
+(* TODO: review this carefully (note only parents/children maps updated) *)
+let connect_parents (edge : Edge.t) (cache : t) : t =
+  let target = Edge.target edge in
+  let parents = parents target cache in
+  let parents =
+    Vertex.Map.add target (Edge.Set.add edge parents) cache.parents
+  in
+  { cache with parents }
+
+let disconnect_parents (edge : Edge.t) (cache : t) : t =
+  let target = Edge.target edge in
+  let parents = parents target cache in
+  let parents =
+    Vertex.Map.add target
+      (Edge.Set.filter (Edge.equal edge) parents)
+      cache.parents
+  in
+  { cache with parents }
+
+let connect_children (edge : Edge.t) (cache : t) : t =
+  let source = Edge.source edge in
+  let children = children source cache in
+  let children =
+    Cursor.Map.add source (Edge.Set.add edge children) cache.children
+  in
+  { cache with children }
+
+let disconnect_children (edge : Edge.t) (cache : t) : t =
+  let source = Edge.source edge in
+  let children = children source cache in
+  let children =
+    Cursor.Map.add source
+      (Edge.Set.filter (Edge.equal edge) children)
+      cache.children
+  in
+  { cache with children }

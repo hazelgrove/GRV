@@ -1,22 +1,21 @@
 type t = {
   (* Contains both Created and Destroyed *)
-  vertices : Vertex.t Uuid.Map.t;
-  (* TODO: rename to vertexes *)
+  vertexes : Vertex.t Uuid.Map.t;
   edges : Edge.t Uuid.Map.t;
   (* Contains only Created *)
   parents : Edge.Set.t Vertex.Map.t;
   children : Edge.Set.t Cursor.Map.t;
 }
 
-let mk vertices edges parents children : t =
-  { vertices; edges; parents; children }
+let mk vertexes edges parents children : t =
+  { vertexes; edges; parents; children }
 
 let empty : t =
-  let vertices = Uuid.Map.singleton Vertex.root.id Vertex.root in
+  let vertexes = Uuid.Map.singleton Vertex.root.id Vertex.root in
   let edges = Uuid.Map.empty in
   let parents = Vertex.Map.empty in
   let children = Cursor.Map.empty in
-  mk vertices edges parents children
+  mk vertexes edges parents children
 
 let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
   Option.value
@@ -30,8 +29,8 @@ let children (cursor : Cursor.t) (cache : t) : Edge.Set.t =
 
 let pp (fmt : Format.formatter) (cache : t) : unit =
   let open Format in
-  fprintf fmt "Vertices\n";
-  Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertices;
+  fprintf fmt "vertexes\n";
+  Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertexes;
   fprintf fmt "\nEdges\n";
   (* TODO: fix indents of printed edges *)
   Uuid.Map.iter
@@ -44,8 +43,8 @@ let create (edge : Edge.t) (cache : t) : t =
   let cursor = Edge.source edge in
   let source = cursor.vertex in
   let target = Edge.target edge in
-  let vertices =
-    cache.vertices
+  let vertexes =
+    cache.vertexes
     |> Uuid.Map.add source.id source
     |> Uuid.Map.add target.id target
   in
@@ -57,15 +56,15 @@ let create (edge : Edge.t) (cache : t) : t =
   let children =
     Cursor.Map.add cursor (Edge.Set.add edge children) cache.children
   in
-  { vertices; edges; children; parents }
+  { vertexes; edges; children; parents }
 
 let destroy (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
   let cursor = Edge.source edge in
   let source = cursor.vertex in
   let target = Edge.target edge in
-  let vertices =
-    cache.vertices
+  let vertexes =
+    cache.vertexes
     |> Uuid.Map.add source.id source
     |> Uuid.Map.add target.id target
   in
@@ -82,4 +81,4 @@ let destroy (edge : Edge.t) (cache : t) : t =
       (Edge.Set.filter (fun e -> not (Edge.equal edge e)) children)
       cache.children
   in
-  { vertices; edges; children; parents }
+  { vertexes; edges; children; parents }

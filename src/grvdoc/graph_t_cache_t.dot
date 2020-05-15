@@ -25,7 +25,7 @@ digraph G {
 
     node [shape=none]
 
-    vertices; parents; children
+    vertexes; parents; children
   }
 
   edges -> {Edg; Uuid}
@@ -34,9 +34,9 @@ digraph G {
 
   cache -> children [lhead=cluster_cache]
 
-  Uuid -> vertices [dir=back]
+  Uuid -> vertexes [dir=back]
   Edg -> parents [dir=back]
-  vertices -> Verte
+  vertexes -> Verte
   parents -> Verte
   children -> {Edg; Cursor}
 }

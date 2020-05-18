@@ -17,6 +17,13 @@ let empty : t =
   let children = Cursor.Map.empty in
   mk vertexes edges parents children
 
+let vertex (source : Cursor.t) (cache : t) : Vertex.t Option.t =
+  Option.map
+    (fun (_, edge) -> Edge.target edge)
+    (Uuid.Map.find_first_opt
+       (fun id -> Edge.source (Uuid.Map.find id cache.edges) = source)
+       cache.edges)
+
 let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
   Option.value
     (Vertex.Map.find_opt vertex cache.parents)

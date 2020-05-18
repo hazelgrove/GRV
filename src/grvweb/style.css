@@ -32,7 +32,7 @@ body > div {
 
 .chars {
     display: inline-block;
-    width: 1ex;
+    min-width: 1ex;
     height: 2ex;
 }
 

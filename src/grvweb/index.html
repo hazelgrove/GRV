@@ -13,7 +13,18 @@
 
   <body spellcheck="false">
     <div class="container" id="container"></div>
+    <script src="viz.js"></script>
+    <script src="lite.render.js"></script>
+    <script>
+      function drawViz(instance, src) {
+          var viz = new Viz();
+          return viz.renderSVGElement(src)
+              .then(function(element) {
+                  var node = document.getElementById(instance);
+                  node.replaceChild(element, node.childNodes[0]);
+              });
+      }
+    </script>
+    <script src="main.bc.js"></script>
   </body>
-
-  <script src="main.bc.js"></script>
 </html>

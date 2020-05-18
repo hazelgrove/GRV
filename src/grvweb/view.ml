@@ -120,54 +120,59 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
   let action_button (label : string) (action : Action.app) : Vdom.Node.t =
     button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
   in
-  div
-    [
-      class_ "instance";
-      tabindex instance_id;
-      on_keydown (fun event ->
-          match
-            if Js.to_bool event##.altKey then (None : Action.app Option.t)
-            else if Js.to_bool event##.ctrlKey then ctrl_key event
-            else key event
-          with
-          | Some action ->
-              Js_of_ocaml.Dom.preventDefault event;
-              inject { instance_id; action }
-          | None -> Vdom.Event.Ignore);
-    ]
-    [
-      of_index model.graph model.cursor Cursor.root;
-      br [];
-      br [];
-      div []
-        (List.map
-           (fun (constructor, name, _) ->
-             action_button name (Enqueue (Edit (Create constructor))))
-           actions);
-      action_button "Delete" (Enqueue (Edit Delete));
-      action_button "Send" Send;
-      action_button "In" (Enqueue (Move In));
-      action_button "Out" (Enqueue (Move Out));
-      action_button "Left" (Enqueue (Move Left));
-      action_button "Right" (Enqueue (Move Right));
-      br [];
-      br [];
-      select
-        [ create "size" "10"; bool_property "multiple" true; disabled ]
-        (List.rev_map
-           (fun action ->
-             option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
-           model.actions);
-      br [];
-      br [];
-      text "Cursor";
-      br [];
-      pre [] [ text @@ Format.asprintf "%a@." Cursor.pp model.cursor ];
-      br [];
-      text "Graph";
-      br [];
-      pre [] [ text @@ Format.asprintf "%a@." Graph.pp model.graph ];
-    ]
+  let result =
+    div
+      [
+        class_ "instance";
+        tabindex instance_id;
+        on_keydown (fun event ->
+            match
+              if Js.to_bool event##.altKey then (None : Action.app Option.t)
+              else if Js.to_bool event##.ctrlKey then ctrl_key event
+              else key event
+            with
+            | Some action ->
+                Js_of_ocaml.Dom.preventDefault event;
+                inject { instance_id; action }
+            | None -> Vdom.Event.Ignore);
+      ]
+      [
+        of_index model.graph model.cursor Cursor.root;
+        br [];
+        br [];
+        div []
+          (List.map
+             (fun (constructor, name, _) ->
+               action_button name (Enqueue (Edit (Create constructor))))
+             actions);
+        action_button "Delete" (Enqueue (Edit Delete));
+        action_button "Send" Send;
+        action_button "In" (Enqueue (Move In));
+        action_button "Out" (Enqueue (Move Out));
+        action_button "Left" (Enqueue (Move Left));
+        action_button "Right" (Enqueue (Move Right));
+        br [];
+        br [];
+        select
+          [ create "size" "10"; bool_property "multiple" true; disabled ]
+          (List.rev_map
+             (fun action ->
+               option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
+             model.actions);
+        br [];
+        br [];
+        text "Cursor";
+        br [];
+        pre [] [ text @@ Format.asprintf "%a@." Cursor.pp model.cursor ];
+        br [];
+        text "Graph";
+        br [];
+        br [];
+        div [ id @@ Printf.sprintf "graph%d" instance_id ] [ span [] [] ];
+      ]
+  in
+  Viz.draw instance_id model.graph model.cursor;
+  result
 
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []

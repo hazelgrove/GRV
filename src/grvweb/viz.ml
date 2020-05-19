@@ -73,21 +73,30 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
     let children = map snd (of_seq @@ Cursor.Map.to_seq graph.cache.children) in
     let live_children =
       let is_live edge = Edge.Map.find_opt edge graph.states = Some Created in
-      List.filter (Edge.Set.exists is_live) children
+      filter (Edge.Set.exists is_live) children
     in
-    let live_edges = map of_seq @@ map Edge.Set.to_seq live_children in
-    concat
-    @@ map
-         (map (fun edge ->
-              let source : Vertex.t = (Edge.source edge).vertex in
-              let target : Vertex.t = Edge.target edge in
-              let source_id = Uuid.Id.show source.id in
-              let target_id = Uuid.Id.show target.id in
-              match field_of_index (Edge.source edge).index with
-              | None -> Printf.sprintf "n0 -> n%s" target_id
-              | Some field ->
-                  Printf.sprintf "n%s:%s -> n%s" source_id field target_id))
-         live_edges
+    let live_edges =
+      concat @@ map of_seq @@ map Edge.Set.to_seq live_children
+    in
+    map
+      (fun edge ->
+        let source : Vertex.t = (Edge.source edge).vertex in
+        let target : Vertex.t = Edge.target edge in
+        let source_id = Uuid.Id.show source.id in
+        let target_id = Uuid.Id.show target.id in
+        let color =
+          if
+            length @@ filter (fun e -> Edge.(source e = source edge)) live_edges
+            < 2
+          then "black"
+          else "red"
+        in
+        match field_of_index (Edge.source edge).index with
+        | None -> Printf.sprintf "n0 -> n%s [color=%s]" target_id color
+        | Some field ->
+            Printf.sprintf "n%s:%s -> n%s [color=%s]" source_id field target_id
+              color)
+      live_edges
   in
   let hole, hole_edge =
     let children = Cache.children cursor graph.cache in

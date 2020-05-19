@@ -17,13 +17,6 @@ let empty : t =
   let children = Cursor.Map.empty in
   mk vertexes edges parents children
 
-let vertex (source : Cursor.t) (cache : t) : Vertex.t Option.t =
-  Option.map
-    (fun (_, edge) -> Edge.target edge)
-    (Uuid.Map.find_first_opt
-       (fun id -> Edge.source (Uuid.Map.find id cache.edges) = source)
-       cache.edges)
-
 let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
   Option.value
     (Vertex.Map.find_opt vertex cache.parents)
@@ -48,8 +41,8 @@ let pp (fmt : Format.formatter) (cache : t) : unit =
 let create (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
   let cursor = Edge.source edge in
-  let source = cursor.vertex in
   let target = Edge.target edge in
+  let source = cursor.vertex in
   let vertexes =
     cache.vertexes
     |> Uuid.Map.add source.id source
@@ -68,8 +61,8 @@ let create (edge : Edge.t) (cache : t) : t =
 let destroy (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
   let cursor = Edge.source edge in
-  let source = cursor.vertex in
   let target = Edge.target edge in
+  let source = cursor.vertex in
   let vertexes =
     cache.vertexes
     |> Uuid.Map.add source.id source
@@ -77,15 +70,10 @@ let destroy (edge : Edge.t) (cache : t) : t =
   in
   let parents = parents target cache in
   let parents =
-    Vertex.Map.add target
-      (* TODO: is there a bug here? *)
-      (Edge.Set.filter (fun e -> not (Edge.equal edge e)) parents)
-      cache.parents
+    Vertex.Map.add target (Edge.Set.remove edge parents) cache.parents
   in
   let children = children cursor cache in
   let children =
-    Cursor.Map.add cursor
-      (Edge.Set.filter (fun e -> not (Edge.equal edge e)) children)
-      cache.children
+    Cursor.Map.add cursor (Edge.Set.remove edge children) cache.children
   in
   { vertexes; edges; children; parents }

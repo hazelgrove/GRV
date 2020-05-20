@@ -1,5 +1,5 @@
 module Sort = struct
-  type t = Root | Id | Exp | Typ
+  type t = Root | Id | Exp | Pat | Typ
 end
 
 module Constructor = struct
@@ -8,15 +8,15 @@ module Constructor = struct
   type t =
     (**** Root ****)
     | Root_root
-    (**** Id ****)
-    | Id_id of string
     (**** Exp ****)
-    | Exp_var
+    | Exp_var of string
     | Exp_lam
     | Exp_app
     | Exp_num of int
     | Exp_plus
     (* TODO: sums and pairs *)
+    (**** Pat ****)
+    | Pat_var of string
     (**** Typ ****)
     | Typ_num
     | Typ_arrow
@@ -25,12 +25,12 @@ module Constructor = struct
   let sort_of (c : t) : Sort.t =
     match c with
     | Root_root -> Sort.Root
-    | Id_id _ -> Sort.Id
-    | Exp_var -> Sort.Exp
+    | Exp_var _ -> Sort.Exp
     | Exp_lam -> Sort.Exp
     | Exp_app -> Sort.Exp
     | Exp_num _ -> Sort.Exp
     | Exp_plus -> Sort.Exp
+    | Pat_var _ -> Sort.Exp
     | Typ_num -> Sort.Typ
     | Typ_arrow -> Sort.Typ
 end
@@ -47,7 +47,7 @@ module Index = struct
     (* -- EMPTY -- *)
     (**** Exp ****)
     (* Exp_var *)
-    | Exp_var_id
+    (* -- EMPTY -- *)
     (* Exp_lam *)
     | Exp_lam_param
     | Exp_lam_param_type
@@ -60,6 +60,9 @@ module Index = struct
     (* Exp_plus *)
     | Exp_plus_left
     | Exp_plus_right
+    (**** Pat ****)
+    (* Pat_var *)
+    (* -- EMPTY -- *)
     (**** Typ ****)
     (* Typ_num *)
     (* -- EMPTY -- *)
@@ -71,7 +74,6 @@ module Index = struct
   let child_sort (i : t) : Sort.t =
     match i with
     | Root_root_root -> Sort.Exp
-    | Exp_var_id -> Sort.Id
     | Exp_lam_param -> Sort.Id
     | Exp_lam_param_type -> Sort.Typ
     | Exp_lam_body -> Sort.Exp
@@ -88,12 +90,12 @@ module Index = struct
   let default_index (ctor : Constructor.t) : t option =
     match ctor with
     | Root_root -> (* NOTE: Can't actually happen *) Some Root_root_root
-    | Id_id _ -> None
-    | Exp_var -> Some Exp_var_id
+    | Exp_var _ -> None
     | Exp_lam -> Some Exp_lam_param
     | Exp_app -> Some Exp_app_fun
     | Exp_num _ -> None
     | Exp_plus -> Some Exp_plus_left
+    | Pat_var _ -> None
     | Typ_num -> None
     | Typ_arrow -> Some Typ_arrow_arg
 
@@ -101,19 +103,18 @@ module Index = struct
   let down (ctor : Constructor.t) : t option =
     match ctor with
     | Root_root -> (* NOTE: Can't actually happen *) Some Root_root_root
-    | Id_id _ -> None
-    | Exp_var -> Some Exp_var_id
+    | Exp_var _ -> None
     | Exp_lam -> Some Exp_lam_param
     | Exp_app -> Some Exp_app_fun
     | Exp_num _ -> None
     | Exp_plus -> Some Exp_plus_left
+    | Pat_var _ -> None
     | Typ_num -> None
     | Typ_arrow -> Some Typ_arrow_arg
 
   let right (index : t) : t option =
     match index with
     | Root_root_root -> None
-    | Exp_var_id -> None
     | Exp_lam_param -> Some Exp_lam_param_type
     | Exp_lam_param_type -> Some Exp_lam_body
     | Exp_lam_body -> None
@@ -127,7 +128,6 @@ module Index = struct
   let left (index : t) : t option =
     match index with
     | Root_root_root -> None
-    | Exp_var_id -> None
     | Exp_lam_param -> None
     | Exp_lam_param_type -> Some Exp_lam_param
     | Exp_lam_body -> Some Exp_lam_param_type

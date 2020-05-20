@@ -30,10 +30,16 @@ body > div {
 /*     border-bottom: 1px solid black; */
 /* } */
 
-.chars {
+.chars,
+.errs {
     display: inline-block;
     min-width: 1ex;
     height: 2ex;
+}
+
+.errs {
+    color: red;
+    font-weight: bold;
 }
 
 .vertex > sub {

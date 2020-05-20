@@ -1,6 +1,6 @@
 type direction = In | Out | Left | Right [@@deriving sexp_of]
 
-type edit = Create of Lang.Constructor.t | Delete [@@deriving sexp_of]
+type edit = Create of Lang.Constructor.t | Destroy [@@deriving sexp_of]
 
 type local = Move of direction | Edit of edit [@@deriving sexp_of]
 
@@ -40,7 +40,7 @@ let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
           ( true,
             create_parent_edge @ create_new_children_edges
             @ destroy_old_children_edges ) )
-  | Delete ->
+  | Destroy ->
       let destroy_edges =
         List.map
           (fun edge -> Graph_action.{ state = Destroyed; edge })
@@ -83,16 +83,25 @@ let rec apply_instance (local_action : local) (model : Model.Instance.t) :
       in
       { model with cursor }
   | Edit edit ->
-      let move_in, graph_actions =
-        apply_edit edit model.cursor model.graph.cache
+      let allowed =
+        match edit with
+        | Destroy -> true
+        | Create constructor ->
+            Lang.Index.child_sort model.cursor.index
+            = Lang.Constructor.sort_of constructor
       in
-      let graph =
-        List.fold_right Graph_action.apply graph_actions model.graph
-      in
-      let model =
-        { model with graph; actions = model.actions @ graph_actions }
-      in
-      if move_in then apply_instance (Move In) model else model
+      if not allowed then model
+      else
+        let move_in, graph_actions =
+          apply_edit edit model.cursor model.graph.cache
+        in
+        let graph =
+          List.fold_right Graph_action.apply graph_actions model.graph
+        in
+        let model =
+          { model with graph; actions = model.actions @ graph_actions }
+        in
+        if move_in then apply_instance (Move In) model else model
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =

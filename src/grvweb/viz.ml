@@ -2,7 +2,6 @@ module Js = Js_of_ocaml.Js
 
 let field_of_index : Lang.Index.t -> string Option.t = function
   | Root_root_root -> None
-  | Exp_var_id -> Some "id"
   | Exp_lam_param -> Some "param"
   | Exp_lam_param_type -> Some "param_type"
   | Exp_lam_body -> Some "body"
@@ -16,8 +15,7 @@ let field_of_index : Lang.Index.t -> string Option.t = function
 let vertex_label (vertex : Vertex.t) (id : string) : string =
   match Uuid.Wrap.unmk vertex with
   | Root_root -> "Root_root"
-  | Id_id str -> "Id_id " ^ id ^ "\n" ^ str
-  | Exp_var -> "{Exp_var " ^ id ^ "|{<id> id}}"
+  | Exp_var str -> "Exp_var " ^ id ^ "\n" ^ str
   | Exp_lam ->
       "{Exp_lam " ^ id ^ "|"
       ^ {|{<param> param
@@ -27,6 +25,7 @@ let vertex_label (vertex : Vertex.t) (id : string) : string =
   | Exp_app -> "{Exp_app " ^ id ^ "|{<fun> fun|<arg> arg}}"
   | Exp_num num -> "Exp_num " ^ id ^ "\n" ^ string_of_int num
   | Exp_plus -> "{Exp_plus " ^ id ^ "|{<left> left|<right> right}}"
+  | Pat_var str -> "Pat_var " ^ id ^ "\n" ^ str
   | Typ_num -> "Typ_num " ^ id
   | Typ_arrow -> "{Typ_arrow " ^ id ^ "|{<arg> arg|<result> result}}"
 
@@ -109,7 +108,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
     | false, _ | _, None -> ([], [])
   in
   {|digraph G {
-   node [shape=record];
+   node [shape=Mrecord];
    edge [arrowhead=vee];
    {rank=min; n0 [shape=point]};
    |}

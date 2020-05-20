@@ -5,6 +5,9 @@ module Vdom = Virtual_dom.Vdom
 let chars (str : string) : Vdom.Node.t =
   Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
 
+let errs (str : string) : Vdom.Node.t =
+  Vdom.Node.span [ Vdom.Attr.class_ "errs" ] [ Vdom.Node.text str ]
+
 let rec intersperse (delim : 'a) (xs : 'a list) : 'a list =
   match xs with
   | [] | [ _ ] -> xs
@@ -22,7 +25,8 @@ let rec of_index (graph : Graph.t) (cursor : Cursor.t) (child : Cursor.t) :
         let nodes =
           List.map (fun edge -> of_vertex graph cursor (Edge.target edge)) edges
         in
-        span [ class_ "conflict" ] (intersperse (chars "|") nodes)
+        span [ class_ "conflict" ]
+          ([ errs "{" ] @ intersperse (errs "|") nodes @ [ errs "}" ])
   in
   if cursor = child then span [ class_ "cursor" ] [ node ] else node
 
@@ -34,8 +38,7 @@ and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
     span []
       ( match vertex.value with
       | Root_root -> failwith __LOC__
-      | Id_id s -> [ chars s ]
-      | Exp_var -> [ of_index graph cursor { vertex; index = Exp_var_id } ]
+      | Exp_var s -> [ chars s ]
       | Exp_lam ->
           [
             chars "(\\";
@@ -61,11 +64,12 @@ and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
             chars "+";
             of_index graph cursor { vertex; index = Exp_plus_right };
           ]
+      | Pat_var s -> [ chars s ]
       | Typ_num -> [ chars "Num" ]
       | Typ_arrow ->
           [
             of_index graph cursor { vertex; index = Typ_arrow_arg };
-            chars "+";
+            chars "->";
             of_index graph cursor { vertex; index = Typ_arrow_result };
           ] )
   in
@@ -100,10 +104,10 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     @@
     match Dom_html.Keyboard_code.of_event event with
     | KeyN -> Some (Edit (Create Typ_num))
-    | KeyV -> Some (Edit (Create Exp_var))
+    | KeyV -> Some (Edit (Create (Exp_var "X")))
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
-    | Delete -> Some (Edit Delete)
+    | Delete -> Some (Edit Destroy)
     | ArrowUp -> Some (Move Out)
     | ArrowDown -> Some (Move In)
     | ArrowLeft -> Some (Move Left)
@@ -143,7 +147,7 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         br [];
         div []
           [
-            action_button "Var (v)" (Enqueue (Edit (Create Exp_var)));
+            action_button "Var (v)" (Enqueue (Edit (Create (Exp_var "X"))));
             action_button "Lam (\\)" (Enqueue (Edit (Create Exp_lam)));
             action_button "App (space)" (Enqueue (Edit (Create Exp_app)));
             action_button "Plus (+)" (Enqueue (Edit (Create Exp_plus)));
@@ -152,7 +156,7 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
           ];
         div []
           [
-            action_button "Delete (delete)" (Enqueue (Edit Delete));
+            action_button "Delete (delete)" (Enqueue (Edit Destroy));
             action_button "Send (ctrl-s)" Send;
             action_button "In (↓)" (Enqueue (Move In));
             action_button "Out (↑)" (Enqueue (Move Out));

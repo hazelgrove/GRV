@@ -1,5 +1,7 @@
 (include_subdirs unqualified)
 
+(copy_files ../../lib/*.js)
+
 (library
  (name grvweb)
  (public_name GRV.web)

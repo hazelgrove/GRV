@@ -72,26 +72,6 @@ and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]
 
-let actions : (Lang.Constructor.t * string * Dom_html.Keyboard_code.t) list =
-  [
-    (* Id_id *)
-    (Exp_var, "Var", KeyV);
-    (Exp_lam, "Lam (\\)", Backslash);
-    (Exp_app, "App (space)", Space);
-    (* TODO: (Exp_num, "Lam", Backslash); *)
-    (* TODO: Require Shift+Equal (i.e., plus) *)
-    (Exp_plus, "Plus (=)", Equal);
-    (Typ_num, "Num", KeyN);
-    (* TODO: Require Shift+Period (i.e. >) *)
-    (Typ_arrow, "Arrow (>)", Period);
-    (* TODO: Typ_num *)
-  ]
-
-let keymap : (Dom_html.Keyboard_code.t, Lang.Constructor.t) Hashtbl.t =
-  Hashtbl.of_seq
-    (List.to_seq
-       (List.map (fun (constructor, _, code) -> (code, constructor)) actions))
-
 let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     (model : Model.Instance.t) : Vdom.Node.t =
   let open Action in
@@ -102,20 +82,33 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     | KeyS -> Some Send
     | _ -> None
   in
-  let key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
-    Option.map
-      (fun action -> Enqueue action)
-      (let code = Dom_html.Keyboard_code.of_event event in
-       match code with
-       (* TODO: Delete key *)
-       | ArrowUp -> Some (Move Out)
-       | ArrowDown -> Some (Move In)
-       | ArrowLeft -> Some (Move Left)
-       | ArrowRight -> Some (Move Right)
-       | _ -> (
-           match Hashtbl.find_opt keymap code with
-           | Some constructor -> Some (Edit (Create constructor))
-           | None -> None ))
+  let shift_key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+    let key : string =
+      Option.value
+        (Option.map Js.to_string (Js.Optdef.to_option event##.key))
+        ~default:""
+    in
+    Option.map (fun action -> Enqueue action)
+    @@
+    match key with
+    | "+" -> Some (Edit (Create Exp_plus))
+    | ">" -> Some (Edit (Create Typ_arrow))
+    | _ -> None
+  in
+  let base_key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+    Option.map (fun action -> Enqueue action)
+    @@
+    match Dom_html.Keyboard_code.of_event event with
+    | KeyN -> Some (Edit (Create Typ_num))
+    | KeyV -> Some (Edit (Create Exp_var))
+    | Space -> Some (Edit (Create Exp_app))
+    | Backslash -> Some (Edit (Create Exp_lam))
+    | Delete -> Some (Edit Delete)
+    | ArrowUp -> Some (Move Out)
+    | ArrowDown -> Some (Move In)
+    | ArrowLeft -> Some (Move Left)
+    | ArrowRight -> Some (Move Right)
+    | _ -> None
   in
   let action_button (label : string) (action : Action.app) : Vdom.Node.t =
     button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
@@ -126,11 +119,19 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         class_ "instance";
         tabindex instance_id;
         on_keydown (fun event ->
-            match
-              if Js.to_bool event##.altKey then (None : Action.app Option.t)
-              else if Js.to_bool event##.ctrlKey then ctrl_key event
-              else key event
-            with
+            let handler =
+              match
+                Js.
+                  ( to_bool event##.shiftKey,
+                    to_bool event##.ctrlKey,
+                    to_bool event##.altKey )
+              with
+              | false, false, false -> base_key
+              | true, false, false -> shift_key
+              | false, true, false -> ctrl_key
+              | _, _, _ -> fun _ -> (None : Action.app Option.t)
+            in
+            match handler event with
             | Some action ->
                 Js_of_ocaml.Dom.preventDefault event;
                 inject { instance_id; action }
@@ -141,18 +142,23 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         br [];
         br [];
         div []
-          (List.map
-             (fun (constructor, name, _) ->
-               action_button name (Enqueue (Edit (Create constructor))))
-             actions);
-        action_button "Delete" (Enqueue (Edit Delete));
-        action_button "Send" Send;
-        action_button "In" (Enqueue (Move In));
-        action_button "Out" (Enqueue (Move Out));
-        action_button "Left" (Enqueue (Move Left));
-        action_button "Right" (Enqueue (Move Right));
-        br [];
-        br [];
+          [
+            action_button "Var (v)" (Enqueue (Edit (Create Exp_var)));
+            action_button "Lam (\\)" (Enqueue (Edit (Create Exp_lam)));
+            action_button "App (space)" (Enqueue (Edit (Create Exp_app)));
+            action_button "Plus (+)" (Enqueue (Edit (Create Exp_plus)));
+            action_button "Num (n)" (Enqueue (Edit (Create Typ_num)));
+            action_button "Arrow (>)" (Enqueue (Edit (Create Typ_arrow)));
+          ];
+        div []
+          [
+            action_button "Delete (delete)" (Enqueue (Edit Delete));
+            action_button "Send (ctrl-s)" Send;
+            action_button "In (↓)" (Enqueue (Move In));
+            action_button "Out (↑)" (Enqueue (Move Out));
+            action_button "Left (←)" (Enqueue (Move Left));
+            action_button "Right (→)" (Enqueue (Move Right));
+          ];
         select
           [ create "size" "10"; bool_property "multiple" true; disabled ]
           (List.rev_map

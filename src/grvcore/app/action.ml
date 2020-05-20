@@ -20,13 +20,16 @@ let rec apply_instance (model : Model.Instance.t) (action : local)
       let (move_in, graph_actions) : bool * Graph_action.t list =
         match edit with
         | Create constructor -> (
+            let new_vertex = Vertex.mk constructor in
+            let edge = Edge.mk model.cursor new_vertex in
+            let actions =
+              [ { Graph_action.state = Edge_state.Created; edge } ]
+            in
             match Lang.Index.default_index constructor with
-            | None -> (false, [])
+            | None -> (false, actions)
             | Some new_index ->
-                let new_vertex = Vertex.mk constructor in
-                let edge = Edge.mk model.cursor new_vertex in
                 ( true,
-                  [ { Graph_action.state = Edge_state.Created; edge } ]
+                  actions
                   @ List.map
                       (fun (old_edge : Edge.t) ->
                         let source = Cursor.mk new_vertex new_index in

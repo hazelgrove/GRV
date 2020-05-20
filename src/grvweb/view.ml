@@ -114,7 +114,14 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     | ArrowRight -> Some (Move Right)
     | _ -> None
   in
-  let action_button (label : string) (action : Action.app) : Vdom.Node.t =
+  let button_ (label : string) (action : Action.app) : Vdom.Node.t =
+    button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
+  in
+  let create_button (label : string) (ctor : Lang.Constructor.t) : Vdom.Node.t =
+    button_ label @@ Enqueue (Edit (Create ctor))
+  in
+  let move_button (label : string) (dir : Action.direction) : Vdom.Node.t =
+    let action = Enqueue (Move dir) in
     button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
   in
   let result =
@@ -147,21 +154,21 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         br [];
         div []
           [
-            action_button "Var (v)" (Enqueue (Edit (Create (Exp_var "X"))));
-            action_button "Lam (\\)" (Enqueue (Edit (Create Exp_lam)));
-            action_button "App (space)" (Enqueue (Edit (Create Exp_app)));
-            action_button "Plus (+)" (Enqueue (Edit (Create Exp_plus)));
-            action_button "Num (n)" (Enqueue (Edit (Create Typ_num)));
-            action_button "Arrow (>)" (Enqueue (Edit (Create Typ_arrow)));
+            create_button "Var (v)" (Exp_var "X");
+            create_button "Lam (\\)" Exp_lam;
+            create_button "App (space)" Exp_app;
+            create_button "Plus (+)" Exp_plus;
+            create_button "Num (n)" Typ_num;
+            create_button "Arrow (>)" Typ_arrow;
           ];
         div []
           [
-            action_button "Delete (delete)" (Enqueue (Edit Destroy));
-            action_button "Send (ctrl-s)" Send;
-            action_button "In (↓)" (Enqueue (Move In));
-            action_button "Out (↑)" (Enqueue (Move Out));
-            action_button "Left (←)" (Enqueue (Move Left));
-            action_button "Right (→)" (Enqueue (Move Right));
+            button_ "Delete (delete)" (Enqueue (Edit Destroy));
+            button_ "Send (ctrl-s)" Send;
+            move_button "In (↓)" In;
+            move_button "Out (↑)" Out;
+            move_button "Left (←)" Left;
+            move_button "Right (→)" Right;
           ];
         select
           [ create "size" "10"; bool_property "multiple" true; disabled ]

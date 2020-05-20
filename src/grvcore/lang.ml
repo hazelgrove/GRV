@@ -30,7 +30,7 @@ module Constructor = struct
     | Exp_app -> Sort.Exp
     | Exp_num _ -> Sort.Exp
     | Exp_plus -> Sort.Exp
-    | Pat_var _ -> Sort.Exp
+    | Pat_var _ -> Sort.Pat
     | Typ_num -> Sort.Typ
     | Typ_arrow -> Sort.Typ
 end
@@ -74,7 +74,7 @@ module Index = struct
   let child_sort (i : t) : Sort.t =
     match i with
     | Root_root_root -> Sort.Exp
-    | Exp_lam_param -> Sort.Id
+    | Exp_lam_param -> Sort.Pat
     | Exp_lam_param_type -> Sort.Typ
     | Exp_lam_body -> Sort.Exp
     | Exp_app_fun -> Sort.Exp

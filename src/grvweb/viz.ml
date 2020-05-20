@@ -15,22 +15,20 @@ let field_of_index : Lang.Index.t -> string Option.t = function
 
 let vertex_label (vertex : Vertex.t) (id : string) : string =
   match Uuid.Wrap.unmk vertex with
-  | Root_root -> "Root"
+  | Root_root -> "Root_root"
   | Id_id str -> "Id_id " ^ id ^ "\n" ^ str
   | Exp_var -> "{Exp_var " ^ id ^ "|{<id> id}}"
   | Exp_lam ->
-      Printf.sprintf
-        {|{Exp_lam %s
-        |{<param> param
-        | <param_type> param_type
-        | <body> body
-        }}|}
-        id
+      "{Exp_lam " ^ id ^ "|"
+      ^ {|{<param> param
+         | <param_type> param_type
+         | <body> body}}
+         |}
   | Exp_app -> "{Exp_app " ^ id ^ "|{<fun> fun|<arg> arg}}"
   | Exp_num num -> "Exp_num " ^ id ^ "\n" ^ string_of_int num
   | Exp_plus -> "{Exp_plus " ^ id ^ "|{<left> left|<right> right}}"
-  | Typ_num -> "Typ_num"
-  | Typ_arrow -> "{Typ_arrow %s|{<arg> arg|<result> result}}"
+  | Typ_num -> "Typ_num " ^ id
+  | Typ_arrow -> "{Typ_arrow " ^ id ^ "|{<arg> arg|<result> result}}"
 
 let cursor_color = {|"#ddffdd"|}
 
@@ -115,8 +113,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
    edge [arrowhead=vee];
    {rank=min; n0 [shape=point]};
    |}
-  ^ String.concat ";\n" nodes ^ ";\n"
-  ^ String.concat ";\n" (hole @ edges @ hole_edge)
+  ^ String.concat ";\n" (nodes @ hole @ edges @ hole_edge)
   ^ "}"
 
 let draw (instance : int) (graph : Graph.t) (cursor : Cursor.t) : unit =

@@ -104,6 +104,7 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     @@
     match Dom_html.Keyboard_code.of_event event with
     | KeyN -> Some (Edit (Create Typ_num))
+    | KeyP -> Some (Edit (Create (Pat_var "P")))
     | KeyV -> Some (Edit (Create (Exp_var "X")))
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
@@ -154,6 +155,7 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         br [];
         div []
           [
+            create_button "Pat (p)" (Pat_var "P");
             create_button "Var (v)" (Exp_var "X");
             create_button "Lam (\\)" Exp_lam;
             create_button "App (space)" Exp_app;

@@ -21,6 +21,18 @@ module Constructor = struct
     | Typ_num
     | Typ_arrow
   [@@deriving show, sexp_of]
+
+  let sort_of (c : t) : Sort.t =
+    match c with
+    | Root_root -> Sort.Root
+    | Id_id _ -> Sort.Id
+    | Exp_var -> Sort.Exp
+    | Exp_lam -> Sort.Exp
+    | Exp_app -> Sort.Exp
+    | Exp_num _ -> Sort.Exp
+    | Exp_plus -> Sort.Exp
+    | Typ_num -> Sort.Typ
+    | Typ_arrow -> Sort.Typ
 end
 
 module Index = struct
@@ -55,6 +67,20 @@ module Index = struct
     | Typ_arrow_arg
     | Typ_arrow_result
   [@@deriving show, compare, sexp_of]
+
+  let child_sort (i : t) : Sort.t =
+    match i with
+    | Root_root_root -> Sort.Exp
+    | Exp_var_id -> Sort.Id
+    | Exp_lam_param -> Sort.Id
+    | Exp_lam_param_type -> Sort.Typ
+    | Exp_lam_body -> Sort.Exp
+    | Exp_app_fun -> Sort.Exp
+    | Exp_app_arg -> Sort.Exp
+    | Exp_plus_left -> Sort.Exp
+    | Exp_plus_right -> Sort.Exp
+    | Typ_arrow_arg -> Sort.Typ
+    | Typ_arrow_result -> Sort.Typ
 
   (* TODO: programatically generate these *)
 

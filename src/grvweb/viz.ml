@@ -15,6 +15,7 @@ let field_of_index : Lang.Index.t -> string Option.t = function
 let vertex_label (vertex : Vertex.t) (id : string) : string =
   match Uuid.Wrap.unmk vertex with
   | Root_root -> "Root_root"
+  | Pat_var str -> "Pat_var " ^ id ^ "\n" ^ str
   | Exp_var str -> "Exp_var " ^ id ^ "\n" ^ str
   | Exp_lam ->
       "{Exp_lam " ^ id ^ "|"
@@ -22,12 +23,11 @@ let vertex_label (vertex : Vertex.t) (id : string) : string =
          | <param_type> param_type
          | <body> body}}
          |}
-  | Exp_app -> "{Exp_app " ^ id ^ "|{<fun> fun|<arg> arg}}"
   | Exp_num num -> "Exp_num " ^ id ^ "\n" ^ string_of_int num
+  | Exp_app -> "{Exp_app " ^ id ^ "|{<fun> fun|<arg> arg}}"
   | Exp_plus -> "{Exp_plus " ^ id ^ "|{<left> left|<right> right}}"
-  | Pat_var str -> "Pat_var " ^ id ^ "\n" ^ str
-  | Typ_num -> "Typ_num " ^ id
   | Typ_arrow -> "{Typ_arrow " ^ id ^ "|{<arg> arg|<result> result}}"
+  | Typ_num -> "Typ_num " ^ id
 
 let cursor_color = {|"#ddffdd"|}
 

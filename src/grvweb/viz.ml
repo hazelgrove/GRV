@@ -15,8 +15,8 @@ let field_of_index : Lang.Index.t -> string Option.t = function
 let vertex_label (vertex : Vertex.t) (id : string) : string =
   match Uuid.Wrap.unmk vertex with
   | Root_root -> "Root_root"
-  | Pat_var str -> "Pat_var " ^ id ^ "\n" ^ str
-  | Exp_var str -> "Exp_var " ^ id ^ "\n" ^ str
+  | Pat_var str -> "Pat_var " ^ id ^ "\\n" ^ str
+  | Exp_var str -> "Exp_var " ^ id ^ "\\n" ^ str
   | Exp_lam ->
       "{Exp_lam " ^ id ^ "|"
       ^ {|{<param> param

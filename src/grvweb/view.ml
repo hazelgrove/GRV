@@ -115,11 +115,17 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     | ArrowRight -> Some (Move Right)
     | _ -> None
   in
-  let button_ (label : string) (action : Action.app) : Vdom.Node.t =
-    button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
+  let button_ ?(disabled : bool = false) (label : string) (action : Action.app)
+      : Vdom.Node.t =
+    let attrs = [ on_click (fun _ -> inject { instance_id; action }) ] in
+    button
+      (attrs @ if disabled then [ Vdom.Attr.disabled ] else [])
+      [ text label ]
   in
-  let create_button (label : string) (ctor : Lang.Constructor.t) : Vdom.Node.t =
-    button_ label @@ Enqueue (Edit (Create ctor))
+  let create_button (label : string) (ctor : Lang.Constructor.t)
+      (sort : Lang.Sort.t) : Vdom.Node.t =
+    let disabled = not (Lang.Index.child_sort model.cursor.index = sort) in
+    button_ ~disabled label @@ Enqueue (Edit (Create ctor))
   in
   let move_button (label : string) (dir : Action.direction) : Vdom.Node.t =
     let action = Enqueue (Move dir) in
@@ -155,13 +161,13 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         br [];
         div []
           [
-            create_button "Pat (p)" (Pat_var "P");
-            create_button "Var (v)" (Exp_var "X");
-            create_button "Lam (\\)" Exp_lam;
-            create_button "App (space)" Exp_app;
-            create_button "Plus (+)" Exp_plus;
-            create_button "Num (n)" Typ_num;
-            create_button "Arrow (>)" Typ_arrow;
+            create_button "Pat (p)" (Pat_var "P") Lang.Sort.Pat;
+            create_button "Var (v)" (Exp_var "X") Lang.Sort.Exp;
+            create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
+            create_button "App (space)" Exp_app Lang.Sort.Exp;
+            create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
+            create_button "Num (n)" Typ_num Lang.Sort.Typ;
+            create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
           ];
         div []
           [

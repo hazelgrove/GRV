@@ -1,3 +1,4 @@
+module Dom = Js_of_ocaml.Dom
 module Dom_html = Js_of_ocaml.Dom_html
 module Js = Js_of_ocaml.Js
 module Vdom = Virtual_dom.Vdom
@@ -38,8 +39,8 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t) :
     span
       [
         ( on_click @@ fun event ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
+          Dom.preventDefault event;
+          Dom_html.stopPropagation event;
           inject { Action.instance_id = model.id; action = Select vertex.id } );
       ]
       ( match vertex.value with
@@ -87,40 +88,6 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let ctrl_key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
-    match Dom_html.Keyboard_code.of_event event with
-    | KeyS -> Some Send
-    | _ -> None
-  in
-  let shift_key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
-    let key : string =
-      Option.value
-        (Option.map Js.to_string (Js.Optdef.to_option event##.key))
-        ~default:""
-    in
-    Option.map (fun action -> Enqueue action)
-    @@
-    match key with
-    | "+" -> Some (Edit (Create Exp_plus))
-    | ">" -> Some (Edit (Create Typ_arrow))
-    | _ -> None
-  in
-  let base_key (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
-    Option.map (fun action -> Enqueue action)
-    @@
-    match Dom_html.Keyboard_code.of_event event with
-    | KeyN -> Some (Edit (Create Typ_num))
-    | KeyP -> Some (Edit (Create (Pat_var "P")))
-    | KeyV -> Some (Edit (Create (Exp_var "X")))
-    | Space -> Some (Edit (Create Exp_app))
-    | Backslash -> Some (Edit (Create Exp_lam))
-    | Delete -> Some (Edit Destroy)
-    | ArrowUp -> Some (Move Out)
-    | ArrowDown -> Some (Move In)
-    | ArrowLeft -> Some (Move Left)
-    | ArrowRight -> Some (Move Right)
-    | _ -> None
-  in
   let button_ ?(disabled : bool = false) (label : string) (action : Action.app)
       : Vdom.Node.t =
     let attrs =
@@ -154,9 +121,9 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t)
                     to_bool event##.ctrlKey,
                     to_bool event##.altKey )
               with
-              | false, false, false -> base_key
-              | true, false, false -> shift_key
-              | false, true, false -> ctrl_key
+              | false, false, false -> Key.base
+              | true, false, false -> Key.shift
+              | false, true, false -> Key.ctrl
               | _, _, _ -> fun _ -> (None : Action.app Option.t)
             in
             match handler event with

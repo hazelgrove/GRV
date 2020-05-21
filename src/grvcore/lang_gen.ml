@@ -131,7 +131,7 @@ let () =
   (**** Function body for `sort_of` ****)
   let sort_of : string =
     let mk_constructor s (Constructor (c, ts, _, _, _)) : string =
-      f "\n    | %s_%s%s -> Sort.%s" s c (arg_pat ts) s
+      f "\n    | %s_%s%s -> %s" s c (arg_pat ts) s
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
@@ -181,7 +181,7 @@ let () =
   in
   let parent_constructor : string =
     let mk_index s c (Index (i, _)) : string =
-      f "\n    | %s_%s_%s -> Constructor.%s_%s" s c i s c
+      f "\n    | %s_%s_%s -> %s_%s" s c i s c
     in
     let mk_constructor s (Constructor (c, _, _, _, is)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
@@ -193,7 +193,7 @@ let () =
   in
   let child_sort : string =
     let mk_index s c (Index (i, (lazy (s_i, _)))) : string =
-      f "\n    | %s_%s_%s -> Sort.%s" s c i s_i
+      f "\n    | %s_%s_%s -> %s" s c i s_i
     in
     let mk_constructor s (Constructor (c, _, _, _, is)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is

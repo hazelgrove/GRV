@@ -1,9 +1,15 @@
 module Instance = struct
-  type t = { graph : Graph.t; cursor : Cursor.t; actions : Graph_action.t list }
+  type t = {
+    id : int;
+    graph : Graph.t;
+    cursor : Cursor.t;
+    actions : Graph_action.t list;
+  }
 
   let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
-  let empty : t = { graph = Graph.empty; cursor = Cursor.root; actions = [] }
+  let empty (id : int) : t =
+    { id; graph = Graph.empty; cursor = Cursor.root; actions = [] }
 end
 
 module MapInt = Map.Make (struct
@@ -15,6 +21,6 @@ end)
 type t = Instance.t MapInt.t
 
 let empty =
-  MapInt.of_seq (List.to_seq [ (0, Instance.empty); (1, Instance.empty) ])
+  MapInt.of_seq (List.to_seq [ (0, Instance.empty 0); (1, Instance.empty 1) ])
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2

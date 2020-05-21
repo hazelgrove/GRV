@@ -115,7 +115,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   ^ String.concat ";\n" (nodes @ hole @ edges @ hole_edge)
   ^ "}"
 
-let draw (instance : int) (graph : Graph.t) (cursor : Cursor.t) : unit =
+let draw (model : Model.Instance.t) : unit =
   Js.Unsafe.js_expr
-  @@ Printf.sprintf "drawViz('graph%d', '%s')" instance
-       (String.escaped @@ draw_graph graph cursor)
+  @@ Printf.sprintf "drawViz('graph%d', '%s')" model.id
+       (String.escaped @@ draw_graph model.graph model.cursor)

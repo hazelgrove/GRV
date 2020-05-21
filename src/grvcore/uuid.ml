@@ -1,5 +1,5 @@
 module Id : sig
-  type t
+  type t [@@deriving sexp_of]
 
   val compare : t -> t -> int
 
@@ -10,9 +10,13 @@ module Id : sig
 
   val show : t -> string
 
+  val read : string -> t
+
   val pp : Format.formatter -> t -> unit
 end = struct
-  type t = int
+  open Sexplib0.Sexp_conv
+
+  type t = int [@@deriving sexp_of]
 
   let pp (fmt : Format.formatter) (id : t) : unit = Format.fprintf fmt "%d" id
 
@@ -29,6 +33,8 @@ end = struct
     int
 
   let show = Int.to_string
+
+  let read = int_of_string
 end
 
 module Map = Map.Make (Id)

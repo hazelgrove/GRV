@@ -5,7 +5,7 @@ type edit = Create of Lang.Constructor.t | Destroy [@@deriving sexp_of]
 type local = Move of direction | Edit of edit [@@deriving sexp_of]
 
 (* TODO: Make `Send` be to a specific instance *)
-type app = Send | Enqueue of local [@@deriving sexp_of]
+type app = Select of Uuid.Id.t | Send | Enqueue of local [@@deriving sexp_of]
 
 open Sexplib0.Sexp_conv
 
@@ -103,9 +103,43 @@ let rec apply_instance (local_action : local) (model : Model.Instance.t) :
         in
         if move_in then apply_instance (Move In) model else model
 
+module Base_Option = Option
+
+module Option = struct
+  include Base_Option
+
+  module Let_syntax = struct
+    module Let_syntax = struct
+      let map ~(f : 'a -> 'b) (o : 'a option) : 'b option = Base_Option.map f o
+
+      let bind (o : 'a option) ~(f : 'a -> 'b option) : 'b option =
+        Base_Option.bind o f
+    end
+  end
+end
+
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   match action.action with
+  | Select vertex_id -> (
+      match
+        let%bind.Option receiver : Model.Instance.t Option.t =
+          Model.MapInt.find_opt action.instance_id model
+        in
+        let graph : Graph.t = (receiver : Model.Instance.t).graph in
+        let%bind.Option vertex : Vertex.t Option.t =
+          Uuid.Map.find_opt vertex_id receiver.graph.cache.vertexes
+        in
+        let%bind.Option edge : Edge.t Option.t =
+          Edge.Set.find_first_opt
+            (fun edge -> Edge.target edge = vertex)
+            (Cache.parents vertex graph.cache)
+        in
+        let cursor : Cursor.t = Edge.source edge in
+        Some { receiver with Model.Instance.cursor }
+      with
+      | Some receiver -> Model.MapInt.add action.instance_id receiver model
+      | None -> model )
   | Send ->
       let actions = (Model.MapInt.find action.instance_id model).actions in
       let new_model =

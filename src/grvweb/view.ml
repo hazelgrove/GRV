@@ -13,70 +13,78 @@ let rec intersperse (delim : 'a) (xs : 'a list) : 'a list =
   | [] | [ _ ] -> xs
   | x :: xs' -> x :: delim :: intersperse delim xs'
 
-let rec of_index (graph : Graph.t) (cursor : Cursor.t) (child : Cursor.t) :
+let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
     Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    match Edge.Set.elements (Cache.children child graph.cache) with
+    match Edge.Set.elements (Cache.children child model.graph.cache) with
     | [] -> span [ class_ "hole" ] [ chars "_" ]
-    | [ edge ] -> of_vertex graph cursor (Edge.target edge)
+    | [ edge ] -> of_vertex ~inject model @@ Edge.target edge
     | edges ->
         let nodes =
-          List.map (fun edge -> of_vertex graph cursor (Edge.target edge)) edges
+          List.map
+            (fun edge -> of_vertex ~inject model @@ Edge.target edge)
+            edges
         in
         span [ class_ "conflict" ]
           ([ errs "{" ] @ intersperse (errs "|") nodes @ [ errs "}" ])
   in
-  if cursor = child then span [ class_ "cursor" ] [ node ] else node
+  if model.cursor = child then span [ class_ "cursor" ] [ node ] else node
 
-and of_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
+and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t) :
     Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    span []
+    span
+      [
+        ( on_click @@ fun event ->
+          Js_of_ocaml.Dom.preventDefault event;
+          Js_of_ocaml.Dom_html.stopPropagation event;
+          inject { Action.instance_id = model.id; action = Select vertex.id } );
+      ]
       ( match vertex.value with
       | Root_root -> failwith __LOC__
       | Exp_var s -> [ chars s ]
       | Exp_lam ->
           [
             chars "(\\";
-            of_index graph cursor { vertex; index = Exp_lam_param };
+            of_index ~inject model { vertex; index = Exp_lam_param };
             chars ":";
-            of_index graph cursor { vertex; index = Exp_lam_param_type };
+            of_index ~inject model { vertex; index = Exp_lam_param_type };
             chars "->";
-            of_index graph cursor { vertex; index = Exp_lam_body };
+            of_index ~inject model { vertex; index = Exp_lam_body };
             chars ")";
           ]
       | Exp_app ->
           [
             chars "(";
-            of_index graph cursor { vertex; index = Exp_app_fun };
+            of_index ~inject model { vertex; index = Exp_app_fun };
             chars " ";
-            of_index graph cursor { vertex; index = Exp_app_arg };
+            of_index ~inject model { vertex; index = Exp_app_arg };
             chars ")";
           ]
       | Exp_num n -> [ chars (Int.to_string n) ]
       | Exp_plus ->
           [
-            of_index graph cursor { vertex; index = Exp_plus_left };
+            of_index ~inject model { vertex; index = Exp_plus_left };
             chars "+";
-            of_index graph cursor { vertex; index = Exp_plus_right };
+            of_index ~inject model { vertex; index = Exp_plus_right };
           ]
       | Pat_var s -> [ chars s ]
       | Typ_num -> [ chars "Num" ]
       | Typ_arrow ->
           [
-            of_index graph cursor { vertex; index = Typ_arrow_arg };
+            of_index ~inject model { vertex; index = Typ_arrow_arg };
             chars "->";
-            of_index graph cursor { vertex; index = Typ_arrow_result };
+            of_index ~inject model { vertex; index = Typ_arrow_result };
           ] )
   in
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]
 
-let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
+let view_instance ~(inject : Action.t -> Vdom.Event.t)
     (model : Model.Instance.t) : Vdom.Node.t =
   let open Action in
   let open Vdom.Node in
@@ -104,6 +112,7 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     @@
     match Dom_html.Keyboard_code.of_event event with
     | KeyN -> Some (Edit (Create Typ_num))
+    | KeyP -> Some (Edit (Create (Pat_var "P")))
     | KeyV -> Some (Edit (Create (Exp_var "X")))
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
@@ -114,14 +123,31 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
     | ArrowRight -> Some (Move Right)
     | _ -> None
   in
-  let action_button (label : string) (action : Action.app) : Vdom.Node.t =
-    button [ on_click (fun _ -> inject { instance_id; action }) ] [ text label ]
+  let button_ ?(disabled : bool = false) (label : string) (action : Action.app)
+      : Vdom.Node.t =
+    let attrs =
+      [ on_click (fun _ -> inject { instance_id = model.id; action }) ]
+    in
+    button
+      (attrs @ if disabled then [ Vdom.Attr.disabled ] else [])
+      [ text label ]
+  in
+  let create_button (label : string) (ctor : Lang.Constructor.t)
+      (sort : Lang.Sort.t) : Vdom.Node.t =
+    let disabled = not (Lang.Index.child_sort model.cursor.index = sort) in
+    button_ ~disabled label @@ Enqueue (Edit (Create ctor))
+  in
+  let move_button (label : string) (dir : Action.direction) : Vdom.Node.t =
+    let action = Enqueue (Move dir) in
+    button
+      [ on_click (fun _ -> inject { instance_id = model.id; action }) ]
+      [ text label ]
   in
   let result =
     div
       [
         class_ "instance";
-        tabindex instance_id;
+        tabindex model.id;
         on_keydown (fun event ->
             let handler =
               match
@@ -138,30 +164,31 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
             match handler event with
             | Some action ->
                 Js_of_ocaml.Dom.preventDefault event;
-                inject { instance_id; action }
+                inject { instance_id = model.id; action }
             | None -> Vdom.Event.Ignore);
       ]
       [
-        of_index model.graph model.cursor Cursor.root;
+        of_index ~inject model Cursor.root;
         br [];
         br [];
         div []
           [
-            action_button "Var (v)" (Enqueue (Edit (Create (Exp_var "X"))));
-            action_button "Lam (\\)" (Enqueue (Edit (Create Exp_lam)));
-            action_button "App (space)" (Enqueue (Edit (Create Exp_app)));
-            action_button "Plus (+)" (Enqueue (Edit (Create Exp_plus)));
-            action_button "Num (n)" (Enqueue (Edit (Create Typ_num)));
-            action_button "Arrow (>)" (Enqueue (Edit (Create Typ_arrow)));
+            create_button "Pat (p)" (Pat_var "P") Lang.Sort.Pat;
+            create_button "Var (v)" (Exp_var "X") Lang.Sort.Exp;
+            create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
+            create_button "App (space)" Exp_app Lang.Sort.Exp;
+            create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
+            create_button "Num (n)" Typ_num Lang.Sort.Typ;
+            create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
           ];
         div []
           [
-            action_button "Delete (delete)" (Enqueue (Edit Destroy));
-            action_button "Send (ctrl-s)" Send;
-            action_button "In (↓)" (Enqueue (Move In));
-            action_button "Out (↑)" (Enqueue (Move Out));
-            action_button "Left (←)" (Enqueue (Move Left));
-            action_button "Right (→)" (Enqueue (Move Right));
+            button_ "Delete (delete)" (Enqueue (Edit Destroy));
+            button_ "Send (ctrl-s)" Send;
+            move_button "In (↓)" In;
+            move_button "Out (↑)" Out;
+            move_button "Left (←)" Left;
+            move_button "Right (→)" Right;
           ];
         select
           [ create "size" "10"; bool_property "multiple" true; disabled ]
@@ -178,14 +205,14 @@ let view_instance (instance_id : int) ~(inject : Action.t -> Vdom.Event.t)
         text "Graph";
         br [];
         br [];
-        div [ id @@ Printf.sprintf "graph%d" instance_id ] [ span [] [] ];
+        div [ id @@ Printf.sprintf "graph%d" model.id ] [ span [] [] ];
       ]
   in
-  Viz.draw instance_id model.graph model.cursor;
+  Viz.draw model;
   result
 
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []
     (List.map
-       (fun (i, m) -> view_instance i m ~inject)
+       (fun (_, m) -> view_instance m ~inject)
        (Model.MapInt.bindings model))

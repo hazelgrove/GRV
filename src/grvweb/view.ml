@@ -18,15 +18,12 @@ let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
+    let recur : Vertex.t -> Vdom.Node.t = of_vertex ~inject model in
     match Edge.Set.elements (Cache.children child model.graph.cache) with
     | [] -> span [ class_ "hole" ] [ chars "_" ]
-    | [ edge ] -> of_vertex ~inject model @@ Edge.target edge
+    | [ edge ] -> recur @@ Edge.target edge
     | edges ->
-        let nodes =
-          List.map
-            (fun edge -> of_vertex ~inject model @@ Edge.target edge)
-            edges
-        in
+        let nodes = List.map (fun edge -> recur @@ Edge.target edge) edges in
         span [ class_ "conflict" ]
           ([ errs "{" ] @ intersperse (errs "|") nodes @ [ errs "}" ])
   in
@@ -37,6 +34,7 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t) :
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
+    let recur : Cursor.t -> Vdom.Node.t = of_index ~inject model in
     span
       [
         ( on_click @@ fun event ->
@@ -50,35 +48,35 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t) :
       | Exp_lam ->
           [
             chars "(\\";
-            of_index ~inject model { vertex; index = Exp_lam_param };
+            recur { vertex; index = Exp_lam_param };
             chars ":";
-            of_index ~inject model { vertex; index = Exp_lam_param_type };
+            recur { vertex; index = Exp_lam_param_type };
             chars "->";
-            of_index ~inject model { vertex; index = Exp_lam_body };
+            recur { vertex; index = Exp_lam_body };
             chars ")";
           ]
       | Exp_app ->
           [
             chars "(";
-            of_index ~inject model { vertex; index = Exp_app_fun };
+            recur { vertex; index = Exp_app_fun };
             chars " ";
-            of_index ~inject model { vertex; index = Exp_app_arg };
+            recur { vertex; index = Exp_app_arg };
             chars ")";
           ]
       | Exp_num n -> [ chars (Int.to_string n) ]
       | Exp_plus ->
           [
-            of_index ~inject model { vertex; index = Exp_plus_left };
+            recur { vertex; index = Exp_plus_left };
             chars "+";
-            of_index ~inject model { vertex; index = Exp_plus_right };
+            recur { vertex; index = Exp_plus_right };
           ]
       | Pat_var s -> [ chars s ]
       | Typ_num -> [ chars "Num" ]
       | Typ_arrow ->
           [
-            of_index ~inject model { vertex; index = Typ_arrow_arg };
+            recur { vertex; index = Typ_arrow_arg };
             chars "->";
-            of_index ~inject model { vertex; index = Typ_arrow_result };
+            recur { vertex; index = Typ_arrow_result };
           ] )
   in
   span [ class_ "vertex" ]

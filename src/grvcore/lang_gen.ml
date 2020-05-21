@@ -15,10 +15,10 @@ and constructor =
   | Constructor of
       ( constructor_name
       * typ list
-      * index_name option
-      (* default *)
-      * index_name option
-      (* down *)
+      * (* default *)
+      index_name option
+      * (* down *)
+      index_name option
       * index list )
 
 and sort = (sort_name * constructor list) Lazy.t
@@ -40,7 +40,7 @@ and exp =
         Constructor
           ( "lam",
             [],
-            Some "body",
+            Some "param",
             Some "body",
             [
               Index ("param", pat);
@@ -83,7 +83,7 @@ let sorts = [ root; exp; pat; typ ]
 (* TODO: pretty print data *)
 (* TODO: deriving compare vs deriving ord *)
 
-(*** Helpers for mode ideomatic code ***)
+(**** Helpers for mode ideomatic code ****)
 let f : ('a, unit, string) format -> 'a = Printf.sprintf
 
 let cat ?(join : string option) ?(empty : string option) (f : 'a -> string)
@@ -94,6 +94,18 @@ let cat ?(join : string option) ?(empty : string option) (f : 'a -> string)
   | _ -> String.concat join (List.map f l)
 
 let arg_pat (ts : typ list) : string = match ts with [] -> "" | _ -> " _"
+
+let shift_forward (l : 'a list) : ('b * 'b option) list =
+  let l2 = List.tl (List.map (fun s -> Some s) l @ [ None ]) in
+  List.map2 (fun x y -> (x, y)) l l2
+
+let shift_backward (l : 'a list) : ('b * 'b option) list =
+  let l2 =
+    List.rev (List.tl (List.rev (None :: List.map (fun s -> Some s) l)))
+  in
+  List.map2 (fun x y -> (x, y)) l l2
+
+let empty = "\n    (* -- empty -- *)"
 
 (**** Module: Sort ****)
 let () =
@@ -154,21 +166,10 @@ end
 |}
     t sort_of
 
-let shift_forward (l : 'a list) : ('b * 'b option) list =
-  let l2 = List.tl (List.map (fun s -> Some s) l @ [ None ]) in
-  List.map2 (fun x y -> (x, y)) l l2
-
-let shift_backward (l : 'a list) : ('b * 'b option) list =
-  let l2 =
-    List.rev (List.tl (List.rev (None :: List.map (fun s -> Some s) l)))
-  in
-  List.map2 (fun x y -> (x, y)) l l2
-
-let empty = "\n    (* -- empty -- *)"
-
 (* TODO: rename Index to Field, Child_index, child position, child slot? *)
+(**** Module: Index ****)
 let () =
-  (*** Type declaration ****)
+  (**** Type declaration ****)
   let t =
     let mk_index s c (Index (i, _)) : string = f "\n    | %s_%s_%s" s c i in
     let mk_constructor s (Constructor (c, _, _, _, is)) : string =
@@ -179,6 +180,7 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `parent_constructor` ****)
   let parent_constructor : string =
     let mk_index s c (Index (i, _)) : string =
       f "\n    | %s_%s_%s -> %s_%s" s c i s c
@@ -191,6 +193,7 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `child_sort` ****)
   let child_sort : string =
     let mk_index s c (Index (i, (lazy (s_i, _)))) : string =
       f "\n    | %s_%s_%s -> %s" s c i s_i
@@ -203,6 +206,7 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `default_index` ****)
   let default_index : string =
     let mk_constructor sort (Constructor (c, ts, def, _, _)) : string =
       f "\n    | %s_%s%s -> " sort c (arg_pat ts)
@@ -213,6 +217,7 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `down` ****)
   let down : string =
     let mk_constructor sort (Constructor (c, ts, _, down, _)) : string =
       f "\n    | %s_%s%s -> " sort c (arg_pat ts)
@@ -223,6 +228,7 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `right` ****)
   let right : string =
     let mk_index s c (Index (i1, _), i2) : string =
       match i2 with
@@ -238,6 +244,7 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `left` ****)
   let left : string =
     let mk_index s c (Index (i1, _), i2) : string =
       match i2 with

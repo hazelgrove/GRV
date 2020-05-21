@@ -42,9 +42,6 @@ module Index = struct
     (**** Root ****)
     (* Root_root *)
     | Root_root_root
-    (**** Id ****)
-    (* Id_id *)
-    (* -- EMPTY -- *)
     (**** Exp ****)
     (* Exp_var *)
     (* -- EMPTY -- *)

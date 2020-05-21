@@ -53,11 +53,11 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
       | Exp_var s -> [ chars s ]
       | Exp_lam ->
           [
-            chars "(\\";
+            chars "(λ";
             recur { vertex; index = Exp_lam_param };
             chars ":";
             recur { vertex; index = Exp_lam_param_type };
-            chars "->";
+            chars ".";
             recur { vertex; index = Exp_lam_body };
             chars ")";
           ]
@@ -81,7 +81,7 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
       | Typ_arrow ->
           [
             recur { vertex; index = Typ_arrow_arg };
-            chars "->";
+            chars "→";
             recur { vertex; index = Typ_arrow_result };
           ] )
   in

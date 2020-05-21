@@ -88,15 +88,15 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]
 
-let view_instance ~(inject : Action.t -> Vdom.Event.t)
-    (model : Model.Instance.t) : Vdom.Node.t =
+let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
+    (this_model : Model.Instance.t) : Vdom.Node.t =
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
   let button_ ?(disabled : bool = false) (label : string) (action : Action.app)
       : Vdom.Node.t =
     let attrs =
-      [ on_click (fun _ -> inject { instance_id = model.id; action }) ]
+      [ on_click (fun _ -> inject { instance_id = this_model.id; action }) ]
     in
     button
       (attrs @ if disabled then [ Vdom.Attr.disabled ] else [])
@@ -104,20 +104,21 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t)
   in
   let create_button (label : string) (ctor : Lang.Constructor.t)
       (sort : Lang.Sort.t) : Vdom.Node.t =
-    let disabled = not (Lang.Index.child_sort model.cursor.index = sort) in
+    let disabled = not (Lang.Index.child_sort this_model.cursor.index = sort) in
     button_ ~disabled label @@ Enqueue (Edit (Create ctor))
   in
   let move_button (label : string) (dir : Action.direction) : Vdom.Node.t =
     let action = Enqueue (Move dir) in
     button
-      [ on_click (fun _ -> inject { instance_id = model.id; action }) ]
+      [ on_click (fun _ -> inject { instance_id = this_model.id; action }) ]
       [ text label ]
   in
   let result =
     div
       [
+        id @@ "instance" ^ string_of_int this_model.id;
         class_ "instance";
-        tabindex model.id;
+        tabindex this_model.id;
         on_keydown (fun event ->
             let handler =
               match
@@ -128,17 +129,17 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t)
               with
               | false, false, false -> Key.base
               | true, false, false -> Key.shift
-              | false, true, false -> Key.ctrl
+              | false, true, false -> Key.ctrl model this_model
               | _, _, _ -> fun _ -> (None : Action.app Option.t)
             in
             match handler event with
             | Some action ->
                 Js_of_ocaml.Dom.preventDefault event;
-                inject { instance_id = model.id; action }
+                inject { instance_id = this_model.id; action }
             | None -> Vdom.Event.Ignore);
       ]
       [
-        of_index ~inject model Cursor.root;
+        of_index ~inject this_model Cursor.root;
         br [];
         br [];
         div []
@@ -165,24 +166,24 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t)
           (List.rev_map
              (fun action ->
                option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
-             model.actions);
+             this_model.actions);
         br [];
         br [];
         text "Cursor";
         br [];
-        pre [] [ text @@ Format.asprintf "%a@." Cursor.pp model.cursor ];
+        pre [] [ text @@ Format.asprintf "%a@." Cursor.pp this_model.cursor ];
         br [];
         text "Graph";
         br [];
         br [];
-        div [ id @@ Printf.sprintf "graph%d" model.id ] [ span [] [] ];
+        div [ id @@ Printf.sprintf "graph%d" this_model.id ] [ span [] [] ];
       ]
   in
-  Viz.draw model;
+  Viz.draw this_model;
   result
 
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []
     (List.map
-       (fun (_, m) -> view_instance m ~inject)
+       (fun (_, this_model) -> view_instance ~inject model this_model)
        (Model.MapInt.bindings model))

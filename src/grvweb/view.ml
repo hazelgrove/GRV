@@ -14,35 +14,40 @@ let rec intersperse (delim : 'a) (xs : 'a list) : 'a list =
   | [] | [ _ ] -> xs
   | x :: xs' -> x :: delim :: intersperse delim xs'
 
+let clickable ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
+    Vdom.Attr.t =
+  Vdom.Attr.on_click (fun event ->
+      Dom.preventDefault event;
+      Dom_html.stopPropagation event;
+      inject { Action.instance_id = model.id; action = Select cursor })
+
 let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
     Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    let recur : Vertex.t -> Vdom.Node.t = of_vertex ~inject model in
+    let recur : Vertex.t -> Cursor.t -> Vdom.Node.t = of_vertex ~inject model in
     match Edge.Set.elements (Cache.children child model.graph.cache) with
-    | [] -> span [ class_ "hole" ] [ chars "_" ]
-    | [ edge ] -> recur @@ Edge.target edge
+    | [] -> span [ class_ "hole"; clickable ~inject model child ] [ chars "_" ]
+    | [ edge ] -> recur (Edge.target edge) child
     | edges ->
-        let nodes = List.map (fun edge -> recur @@ Edge.target edge) edges in
-        span [ class_ "conflict" ]
+        let nodes =
+          List.map (fun edge -> recur (Edge.target edge) child) edges
+        in
+        span
+          [ class_ "conflict"; clickable ~inject model child ]
           ([ errs "{" ] @ intersperse (errs "|") nodes @ [ errs "}" ])
   in
   if model.cursor = child then span [ class_ "cursor" ] [ node ] else node
 
-and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t) :
-    Vdom.Node.t =
+and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
+    (parent : Cursor.t) : Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
     let recur : Cursor.t -> Vdom.Node.t = of_index ~inject model in
     span
-      [
-        ( on_click @@ fun event ->
-          Dom.preventDefault event;
-          Dom_html.stopPropagation event;
-          inject { Action.instance_id = model.id; action = Select vertex.id } );
-      ]
+      [ clickable ~inject model parent ]
       ( match vertex.value with
       | Root_root -> failwith __LOC__
       | Exp_var s -> [ chars s ]

@@ -41,7 +41,7 @@ module Map = Map.Make (Id)
 
 (* TODO: use `private` types for Wrap.t *)
 module Wrap = struct
-  type 'a t = { id : Id.t; value : 'a }
+  type 'a t = { id : Id.t; value : 'a } [@@deriving sexp_of]
 
   let compare (u1 : 'a t) (u2 : 'a t) : int = Id.compare u1.id u2.id
 

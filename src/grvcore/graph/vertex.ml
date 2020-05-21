@@ -1,4 +1,4 @@
-type t = Lang.Constructor.t Uuid.Wrap.t
+type t = Lang.Constructor.t Uuid.Wrap.t [@@deriving sexp_of]
 
 let mk : Lang.Constructor.t -> t = Uuid.Wrap.mk
 

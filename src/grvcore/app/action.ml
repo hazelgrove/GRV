@@ -5,7 +5,7 @@ type edit = Create of Lang.Constructor.t | Destroy [@@deriving sexp_of]
 type local = Move of direction | Edit of edit [@@deriving sexp_of]
 
 (* TODO: Make `Send` be to a specific instance *)
-type app = Select of Uuid.Id.t | Send | Enqueue of local [@@deriving sexp_of]
+type app = Select of Cursor.t | Send | Enqueue of local [@@deriving sexp_of]
 
 open Sexplib0.Sexp_conv
 
@@ -106,22 +106,12 @@ let rec apply_instance (local_action : local) (model : Model.Instance.t) :
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   match action.action with
-  | Select vertex_id -> (
+  | Select cursor -> (
       match
-        let%bind.Option receiver : Model.Instance.t Option.t =
+        let%map.Option receiver : Model.Instance.t Option.t =
           Model.MapInt.find_opt action.instance_id model
         in
-        let graph : Graph.t = (receiver : Model.Instance.t).graph in
-        let%bind.Option vertex : Vertex.t Option.t =
-          Uuid.Map.find_opt vertex_id receiver.graph.cache.vertexes
-        in
-        let%bind.Option edge : Edge.t Option.t =
-          Edge.Set.find_first_opt
-            (fun edge -> Edge.target edge = vertex)
-            (Cache.parents vertex graph.cache)
-        in
-        let cursor : Cursor.t = Edge.source edge in
-        Some { receiver with Model.Instance.cursor }
+        { receiver with Model.Instance.cursor }
       with
       | Some receiver -> Model.MapInt.add action.instance_id receiver model
       | None -> model )

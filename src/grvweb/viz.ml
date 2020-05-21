@@ -1,5 +1,3 @@
-module Js = Js_of_ocaml.Js
-
 let field_of_index : Lang.Index.t -> string Option.t = function
   | Root_root_root -> None
   | Exp_lam_param -> Some "param"
@@ -116,6 +114,6 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   ^ "}"
 
 let draw (model : Model.Instance.t) : unit =
-  Js.Unsafe.js_expr
+  Js.Unsafe.eval_string
   @@ Printf.sprintf "drawViz('graph%d', '%s')" model.id
        (String.escaped @@ draw_graph model.graph model.cursor)

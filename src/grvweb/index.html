@@ -16,17 +16,27 @@
     <script src="viz.js"></script>
     <script src="lite.render.js"></script>
     <script>
-      function drawViz(instance, src) {
+      function drawViz(id, src) {
           var viz = new Viz();
           return viz.renderSVGElement(src)
               .then(function(element) {
-                  var node = document.getElementById(instance);
+                  var node = document.getElementById(id);
                   node.replaceChild(element, node.childNodes[0]);
               });
       }
 
-      function refocus(instance) {
-          document.getElementById(instance).focus();
+      function refocus(id) {
+          document.getElementById(id).focus();
+      }
+
+      function getInput(id) {
+          var obj = document.getElementById(id) || {value: ""};
+          return obj.value;
+      }
+
+      function setInput(id, val) {
+          var obj = document.getElementById(id) || {value: ""};
+          obj.value = val;
       }
     </script>
     <script src="main.bc.js"></script>

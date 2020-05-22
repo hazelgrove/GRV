@@ -157,79 +157,76 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     in
     div [] [ btn; txt ]
   in
-  let result =
-    div
-      [
-        id @@ "instance" ^ string_of_int this_model.id;
-        class_ "instance";
-        tabindex this_model.id;
-        on_keydown (fun event ->
-            let handler =
-              match
-                Js.
-                  ( to_bool event##.shiftKey,
-                    to_bool event##.ctrlKey,
-                    to_bool event##.altKey )
-              with
-              | false, false, false -> Key.base
-              | true, false, false -> Key.shift
-              | false, true, false -> Key.ctrl model this_model
-              | _, _, _ -> fun _ -> (None : Action.app Option.t)
-            in
-            match handler event with
-            | Some action ->
-                Js_of_ocaml.Dom.preventDefault event;
-                Js_of_ocaml.Dom_html.stopPropagation event;
-                inject { instance_id = this_model.id; action }
-            | None -> Vdom.Event.Ignore);
-      ]
-      [
-        of_index ~inject this_model Cursor.root;
-        br [];
-        br [];
-        div []
-          [
-            input_button "Pat (ctrl-p)" "pat_id" Lang.Sort.Pat
-              (fun str -> Pat_var str)
-              (function Lang.Constructor.Pat_var str -> Some str | _ -> None);
-            input_button "Var (ctrl-v)" "var_id" Lang.Sort.Exp
-              (fun str -> Exp_var str)
-              (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
-            create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
-            create_button "App (space)" Exp_app Lang.Sort.Exp;
-            create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
-            create_button "Num (n)" Typ_num Lang.Sort.Typ;
-            create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
-          ];
-        div []
-          [
-            button_ "Delete (delete)" (Enqueue (Edit Destroy));
-            button_ "Send (ctrl-s)" Send;
-            move_button "In (↓)" In;
-            move_button "Out (↑)" Out;
-            move_button "Left (←)" Left;
-            move_button "Right (→)" Right;
-          ];
-        select
-          [ create "size" "10"; bool_property "multiple" true; disabled ]
-          (List.rev_map
-             (fun action ->
-               option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
-             this_model.actions);
-        br [];
-        br [];
-        text "Cursor";
-        br [];
-        pre [] [ text @@ Format.asprintf "%a@." Cursor.pp this_model.cursor ];
-        br [];
-        text "Graph";
-        br [];
-        br [];
-        div [ id @@ Printf.sprintf "graph%d" this_model.id ] [ span [] [] ];
-      ]
-  in
   Viz.draw this_model;
-  result
+  div
+    [
+      id @@ "instance" ^ string_of_int this_model.id;
+      class_ "instance";
+      tabindex this_model.id;
+      on_keydown (fun event ->
+          let handler =
+            match
+              Js.
+                ( to_bool event##.shiftKey,
+                  to_bool event##.ctrlKey,
+                  to_bool event##.altKey )
+            with
+            | false, false, false -> Key.base
+            | true, false, false -> Key.shift
+            | false, true, false -> Key.ctrl model this_model
+            | _, _, _ -> fun _ -> (None : Action.app Option.t)
+          in
+          match handler event with
+          | Some action ->
+              Js_of_ocaml.Dom.preventDefault event;
+              Js_of_ocaml.Dom_html.stopPropagation event;
+              inject { instance_id = this_model.id; action }
+          | None -> Vdom.Event.Ignore);
+    ]
+    [
+      of_index ~inject this_model Cursor.root;
+      br [];
+      br [];
+      div []
+        [
+          input_button "Pat (ctrl-p)" "pat_id" Lang.Sort.Pat
+            (fun str -> Pat_var str)
+            (function Lang.Constructor.Pat_var str -> Some str | _ -> None);
+          input_button "Var (ctrl-v)" "var_id" Lang.Sort.Exp
+            (fun str -> Exp_var str)
+            (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
+          create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
+          create_button "App (space)" Exp_app Lang.Sort.Exp;
+          create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
+          create_button "Num (n)" Typ_num Lang.Sort.Typ;
+          create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
+        ];
+      div []
+        [
+          button_ "Delete (delete)" (Enqueue (Edit Destroy));
+          button_ "Send (ctrl-s)" Send;
+          move_button "In (↓)" In;
+          move_button "Out (↑)" Out;
+          move_button "Left (←)" Left;
+          move_button "Right (→)" Right;
+        ];
+      select
+        [ create "size" "10"; bool_property "multiple" true; disabled ]
+        (List.rev_map
+           (fun action ->
+             option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
+           this_model.actions);
+      br [];
+      br [];
+      text "Cursor";
+      br [];
+      pre [] [ text @@ Format.asprintf "%a@." Cursor.pp this_model.cursor ];
+      br [];
+      text "Graph";
+      br [];
+      br [];
+      div [ id @@ Printf.sprintf "graph%d" this_model.id ] [ span [] [] ];
+    ]
 
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []

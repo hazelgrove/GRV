@@ -1,5 +1,5 @@
-HTML_DIR=_build/default/src/grvweb
-DOC_DIR=_build/default/_doc/_html/GRV
+BUILD_DIR=_build/default
+HTML_DIR=_build/default/src/grvweb/
 
 all: dev
 
@@ -16,14 +16,17 @@ dev:
 release:
 	dune build --profile release
 
+echo-lang:
+	@echo "$(BUILD_DIR)/src/grvcore/lang.ml"
+
+echo-doc:
+	@echo "$(BUILD_DIR)/_doc/_html/GRV/index.html"
+
 echo-html-dir:
 	@echo "$(HTML_DIR)"
 
 echo-html:
 	@echo "$(HTML_DIR)/index.html"
-
-echo-doc:
-	@echo "$(DOC_DIR)/index.html"
 
 win-chrome:
 	"/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" "$(HTML_DIR)/index.html"

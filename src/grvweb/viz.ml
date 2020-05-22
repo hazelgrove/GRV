@@ -1,15 +1,3 @@
-let field_of_index : Lang.Index.t -> string Option.t = function
-  | Root_root_root -> None
-  | Exp_lam_param -> Some "param"
-  | Exp_lam_param_type -> Some "param_type"
-  | Exp_lam_body -> Some "body"
-  | Exp_app_fun -> Some "fun"
-  | Exp_app_arg -> Some "arg"
-  | Exp_plus_left -> Some "left"
-  | Exp_plus_right -> Some "right"
-  | Typ_arrow_arg -> Some "arg"
-  | Typ_arrow_result -> Some "result"
-
 let vertex_label (vertex : Vertex.t) (id : string) : string =
   match Uuid.Wrap.unmk vertex with
   | Root_root -> "Root_root"
@@ -86,24 +74,23 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
           then "black"
           else "red"
         in
-        match field_of_index (Edge.source edge).index with
-        | None -> Printf.sprintf "n0 -> n%s [color=%s]" target_id color
-        | Some field ->
-            Printf.sprintf "n%s:%s -> n%s [color=%s]" source_id field target_id
-              color)
+        let field = Lang.Index.short_name (Edge.source edge).index in
+        Printf.sprintf "n%s:%s -> n%s [color=%s]" source_id field target_id
+          color)
       live_edges
   in
   let hole, hole_edge =
     let children = Cache.children cursor graph.cache in
-    match (children = Edge.Set.empty, field_of_index cursor.index) with
-    | true, Some field ->
+    match Edge.Set.is_empty children with
+    | true ->
+        let field = Lang.Index.short_name cursor.index in
         let open Printf in
         ( [
             sprintf {|hole [label="",shape=circle,style=filled,fillcolor=%s]|}
               cursor_color;
           ],
           [ sprintf "n%s:%s -> hole" (Uuid.Id.show cursor.vertex.id) field ] )
-    | false, _ | _, None -> ([], [])
+    | false -> ([], [])
   in
   {|digraph G {
    node [shape=Mrecord];

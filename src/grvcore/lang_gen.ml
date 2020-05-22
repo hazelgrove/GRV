@@ -181,6 +181,19 @@ let () =
     cat mk_sort sorts
   in
   (**** Function body for `parent_constructor` ****)
+  let short_name : string =
+    let mk_index s c (Index (i, _)) : string =
+      f "\n    | %s_%s_%s -> \"%s\"" s c i i
+    in
+    let mk_constructor s (Constructor (c, _, _, _, is)) : string =
+      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
+    in
+    let mk_sort ((lazy (s, cs)) : sort) : string =
+      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+    in
+    cat mk_sort sorts
+  in
+  (**** Function body for `parent_constructor` ****)
   let parent_constructor : string =
     let mk_index s c (Index (i, _)) : string =
       f "\n    | %s_%s_%s -> %s_%s" s c i s c
@@ -267,6 +280,9 @@ module Index = struct
   type t =%s
   [@@deriving show, eq, ord, sexp_of]
 
+  let short_name (i : t) : string =
+    match i with%s
+
   (* Returns the constructor that parents of a particular index should have *)
   let parent_constructor (i : t) : Constructor.t =
     match i with%s
@@ -292,4 +308,4 @@ module Index = struct
     match i with%s
 end
 |}
-    t parent_constructor child_sort default_index down right left
+    t short_name parent_constructor child_sort default_index down right left

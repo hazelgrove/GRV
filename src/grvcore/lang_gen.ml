@@ -8,13 +8,14 @@ type constructor_name = string
 
 type typ = string
 
-(* TODO: point directly to sort? *)
+type arg = Arg of (typ * (* string_of *) string)
+
 type index = Index of (index_name * sort)
 
 and constructor =
   | Constructor of
       ( constructor_name
-      * typ list
+      * arg list
       * (* default *)
       index_name option
       * (* down *)
@@ -36,7 +37,7 @@ and exp =
   lazy
     ( "Exp",
       [
-        Constructor ("var", [ "string" ], None, None, []);
+        Constructor ("var", [ Arg ("string", "(fun x -> x)") ], None, None, []);
         Constructor
           ( "lam",
             [],
@@ -53,7 +54,7 @@ and exp =
             Some "fun",
             Some "fun",
             [ Index ("fun", exp); Index ("arg", exp) ] );
-        Constructor ("num", [ "int" ], None, None, []);
+        Constructor ("num", [ Arg ("int", "string_of_int") ], None, None, []);
         Constructor
           ( "plus",
             [],
@@ -63,7 +64,12 @@ and exp =
         (* TODO: sums and pairs *)
       ] )
 
-and pat = lazy ("Pat", [ Constructor ("var", [ "string" ], None, None, []) ])
+and pat =
+  lazy
+    ( "Pat",
+      [
+        Constructor ("var", [ Arg ("string", "(fun x -> x)") ], None, None, []);
+      ] )
 
 and typ =
   lazy
@@ -81,7 +87,6 @@ and typ =
 let sorts = [ root; exp; pat; typ ]
 
 (* TODO: pretty print data *)
-(* TODO: deriving compare vs deriving ord *)
 
 (**** Helpers for mode ideomatic code ****)
 let f : ('a, unit, string) format -> 'a = Printf.sprintf
@@ -93,7 +98,7 @@ let cat ?(join : string option) ?(empty : string option) (f : 'a -> string)
   | Some empty, [] -> empty
   | _ -> String.concat join (List.map f l)
 
-let arg_pat (ts : typ list) : string = match ts with [] -> "" | _ -> " _"
+let arg_pat (ts : arg list) : string = match ts with [] -> "" | _ -> " _"
 
 let shift_forward (l : 'a list) : ('b * 'b option) list =
   let l2 = List.tl (List.map (fun s -> Some s) l @ [ None ]) in
@@ -128,7 +133,7 @@ end
 let () =
   (*** Type declaration ****)
   let t : string =
-    let mk_arg (t : typ) : string = t in
+    let mk_arg (Arg (t, _)) : string = t in
     let mk_constructor s (Constructor (c, ts, _, _, _)) : string =
       let args =
         match ts with [] -> "" | _ -> f " of (%s)" (cat ~join:", " mk_arg ts)
@@ -150,6 +155,37 @@ let () =
     in
     cat mk_sort sorts
   in
+  (**** Function body for `graphviz_of` ****)
+  let graphviz_of : string =
+    let mk_index _ _ (Index (i, _)) : string = f "<%s> %s" i i in
+    let mk_constructor s (Constructor (c, ts, _, _, is)) : string =
+      let bindings =
+        match ts with
+        | [] -> ""
+        | _ ->
+            f " (%s)"
+              (String.concat ", " (List.mapi (fun i _ -> f "arg%d" i) ts))
+      in
+      let args =
+        match ts with
+        | [] -> ""
+        | _ ->
+            f " %s"
+              (String.concat " "
+                 (List.mapi
+                    (fun i (Arg (_, string_of)) ->
+                      f "\" ^ %s arg%d ^ \"" string_of i)
+                    ts))
+      in
+      f "\n    | %s_%s%s -> \"{%s_%s%s \" ^ id ^ \"|{%s}}\"" s c bindings s c
+        args
+        (cat ~join:"|" (mk_index s c) is)
+    in
+    let mk_sort ((lazy (s, cs)) : sort) : string =
+      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+    in
+    cat mk_sort sorts
+  in
   (**** Module declaration ****)
   Printf.printf
     {|
@@ -162,9 +198,13 @@ module Constructor = struct
   (* Returns the sort of a particular constructor *)
   let sort_of (c : t) : Sort.t =
     match c with%s
+
+  (* Specifies where to go when the cursor moves left *)
+  let graphviz_of (id : string) (c : t) : string =
+    match c with%s
 end
 |}
-    t sort_of
+    t sort_of graphviz_of
 
 (* TODO: rename Index to Field, Child_index, child position, child slot? *)
 (**** Module: Index ****)
@@ -180,7 +220,7 @@ let () =
     in
     cat mk_sort sorts
   in
-  (**** Function body for `parent_constructor` ****)
+  (**** Function body for `short_name` ****)
   let short_name : string =
     let mk_index s c (Index (i, _)) : string =
       f "\n    | %s_%s_%s -> \"%s\"" s c i i

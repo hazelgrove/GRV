@@ -1,20 +1,3 @@
-let vertex_label (vertex : Vertex.t) (id : string) : string =
-  match Uuid.Wrap.unmk vertex with
-  | Root_root -> "Root_root"
-  | Pat_var str -> "Pat_var " ^ id ^ "\\n" ^ str
-  | Exp_var str -> "Exp_var " ^ id ^ "\\n" ^ str
-  | Exp_lam ->
-      "{Exp_lam " ^ id ^ "|"
-      ^ {|{<param> param
-         | <param_type> param_type
-         | <body> body}}
-         |}
-  | Exp_num num -> "Exp_num " ^ id ^ "\n" ^ string_of_int num
-  | Exp_app -> "{Exp_app " ^ id ^ "|{<fun> fun|<arg> arg}}"
-  | Exp_plus -> "{Exp_plus " ^ id ^ "|{<left> left|<right> right}}"
-  | Typ_arrow -> "{Typ_arrow " ^ id ^ "|{<arg> arg|<result> result}}"
-  | Typ_num -> "Typ_num " ^ id
-
 let cursor_color = {|"#ddffdd"|}
 
 let vertex_color (vertex : Vertex.t) (cursor : Cursor.t) (cache : Cache.t) :
@@ -45,7 +28,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
     let live_vertexes = Uuid.Map.filter is_live_vertex graph.cache.vertexes in
     List.map (fun (key, vertex) ->
         let id = Uuid.Id.show key in
-        let label = vertex_label vertex id in
+        let label = Lang.Constructor.graphviz_of id (Uuid.Wrap.unmk vertex) in
         let color = vertex_color vertex cursor graph.cache in
         Printf.sprintf {|n%s [label="%s",style=filled,fillcolor=%s]|} id label
           color)

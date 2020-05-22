@@ -199,6 +199,15 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     ]
     [
       of_index ~inject this_model Cursor.root;
+      span []
+        ( match this_model.graph.cache.deleted with
+        | None -> []
+        | Some edge ->
+            [
+              chars "  [deleted ";
+              of_vertex ~inject this_model (Edge.target edge) (Edge.source edge);
+              chars "]";
+            ] );
       br [];
       br [];
       div []

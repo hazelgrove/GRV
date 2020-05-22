@@ -5,17 +5,18 @@ type t = {
   (* Contains only Created *)
   parents : Edge.Set.t Vertex.Map.t;
   children : Edge.Set.t Cursor.Map.t;
+  deleted : Edge.t Option.t;
 }
 
-let mk vertexes edges parents children : t =
-  { vertexes; edges; parents; children }
+let mk vertexes edges parents children deleted : t =
+  { vertexes; edges; parents; children; deleted }
 
 let empty : t =
   let vertexes = Uuid.Map.singleton Vertex.root.id Vertex.root in
   let edges = Uuid.Map.empty in
   let parents = Vertex.Map.empty in
   let children = Cursor.Map.empty in
-  mk vertexes edges parents children
+  mk vertexes edges parents children None
 
 let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
   Option.value
@@ -56,7 +57,7 @@ let create (edge : Edge.t) (cache : t) : t =
   let children =
     Cursor.Map.add cursor (Edge.Set.add edge children) cache.children
   in
-  { vertexes; edges; children; parents }
+  { cache with vertexes; edges; children; parents }
 
 let destroy (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in
@@ -76,4 +77,4 @@ let destroy (edge : Edge.t) (cache : t) : t =
   let children =
     Cursor.Map.add cursor (Edge.Set.remove edge children) cache.children
   in
-  { vertexes; edges; children; parents }
+  { vertexes; edges; children; parents; deleted = Some edge }

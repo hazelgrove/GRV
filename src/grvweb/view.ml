@@ -171,7 +171,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     in
     div [] [ btn; txt ]
   in
-  Viz.draw this_model;
+  Graphviz.draw this_model;
   div
     [
       id @@ "instance" ^ string_of_int this_model.id;

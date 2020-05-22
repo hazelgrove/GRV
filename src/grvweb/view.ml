@@ -152,7 +152,21 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
         [ text label ]
     in
     let txt : Vdom.Node.t =
-      let attrs = [ id id_; type_ "text" ] in
+      let attrs =
+        [
+          id id_;
+          type_ "text";
+          on_change (fun _ _ ->
+              match Key.focus_input id_ this_model with
+              | Some str ->
+                  inject
+                    {
+                      instance_id = this_model.id;
+                      action = Enqueue (Edit (Create (mk str)));
+                    }
+              | None -> Vdom.Event.Ignore);
+        ]
+      in
       input (attrs @ if disabled then [ Vdom.Attr.disabled ] else []) []
     in
     div [] [ btn; txt ]

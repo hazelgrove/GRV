@@ -155,10 +155,9 @@ let () =
     in
     cat mk_sort sorts
   in
-  (**** Function body for `graphviz_of` ****)
-  let graphviz_of : string =
-    let mk_index _ _ (Index (i, _)) : string = f "<%s> %s" i i in
-    let mk_constructor s (Constructor (c, ts, _, _, is)) : string =
+  (**** Function body for `graphviz_label` ****)
+  let graphviz_label : string =
+    let mk_constructor s (Constructor (c, ts, _, _, _)) : string =
       let bindings =
         match ts with
         | [] -> ""
@@ -170,16 +169,14 @@ let () =
         match ts with
         | [] -> ""
         | _ ->
-            f " %s"
-              (String.concat " "
+            f "(%s)"
+              (String.concat ", "
                  (List.mapi
                     (fun i (Arg (_, string_of)) ->
                       f "\" ^ %s arg%d ^ \"" string_of i)
                     ts))
       in
-      f "\n    | %s_%s%s -> \"{%s_%s%s \" ^ id ^ \"|{%s}}\"" s c bindings s c
-        args
-        (cat ~join:"|" (mk_index s c) is)
+      f "\n    | %s_%s%s -> \"%s_%s%s\"" s c bindings s c args
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
@@ -200,11 +197,11 @@ module Constructor = struct
     match c with%s
 
   (* Specifies where to go when the cursor moves left *)
-  let graphviz_of (id : string) (c : t) : string =
+  let graphviz_label (c : t) : string =
     match c with%s
 end
 |}
-    t sort_of graphviz_of
+    t sort_of graphviz_label
 
 (* TODO: rename Index to Field, Child_index, child position, child slot? *)
 (**** Module: Index ****)
@@ -240,6 +237,18 @@ let () =
     in
     let mk_constructor s (Constructor (c, _, _, _, is)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
+    in
+    let mk_sort ((lazy (s, cs)) : sort) : string =
+      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+    in
+    cat mk_sort sorts
+  in
+  (**** Function body for `child_indexes` ****)
+  let child_indexes : string =
+    let mk_index s c (Index (i, _)) : string = f "%s_%s_%s" s c i in
+    let mk_constructor s (Constructor (c, ts, _, _, is)) : string =
+      f "\n    | %s_%s%s -> [%s]" s c (arg_pat ts)
+        (cat ~join:"; " (mk_index s c) is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
@@ -327,6 +336,10 @@ module Index = struct
   let parent_constructor (i : t) : Constructor.t =
     match i with%s
 
+  (* Returns the constructor that parents of a particular index should have *)
+  let child_indexes (c : Constructor.t) : t list =
+    match c with%s
+
   (* Returns the sort that children of a particular index should have *)
   let child_sort (i : t) : Sort.t =
     match i with%s
@@ -348,4 +361,5 @@ module Index = struct
     match i with%s
 end
 |}
-    t short_name parent_constructor child_sort default_index down right left
+    t short_name parent_constructor child_indexes child_sort default_index down
+    right left

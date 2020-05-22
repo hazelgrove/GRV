@@ -28,10 +28,19 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
     let live_vertexes = Uuid.Map.filter is_live_vertex graph.cache.vertexes in
     List.map (fun (key, vertex) ->
         let id = Uuid.Id.show key in
-        let label = Lang.Constructor.graphviz_of id (Uuid.Wrap.unmk vertex) in
+        let constructor = Uuid.Wrap.unmk vertex in
+        let label = Lang.Constructor.graphviz_label constructor in
+        let children =
+          String.concat "|"
+            (List.map
+               (fun i ->
+                 let name = Lang.Index.short_name i in
+                 Printf.sprintf "<%s> %s" name name)
+               (Lang.Index.child_indexes constructor))
+        in
         let color = vertex_color vertex cursor graph.cache in
-        Printf.sprintf {|n%s [label="%s",style=filled,fillcolor=%s]|} id label
-          color)
+        Printf.sprintf {|n%s [label="{%s: %s|{%s}}",style=filled,fillcolor=%s]|}
+          id id label children color)
     @@ Uuid.Map.bindings live_vertexes
   in
   let edges =

@@ -1,5 +1,24 @@
 module Dom_html = Js_of_ocaml.Dom_html
 
+let focus_input (id : string) (this_model : Model.Instance.t) : string Option.t
+    =
+  Js.eval_to_unit @@ "refocus('" ^ id ^ "')";
+  match Js.eval_to_string @@ "getInput('" ^ id ^ "')" with
+  | "" -> None
+  | str ->
+      Js.eval_to_unit @@ "setInput('" ^ id ^ "', '')";
+      Js.eval_to_unit ("refocus('instance" ^ string_of_int this_model.id ^ "')");
+      Some str
+
+let focus_instance (next_model_opt : Model.Instance.t Option.t)
+    (default_model : Model.Instance.t) : unit =
+  let next_id =
+    match next_model_opt with
+    | Some next_model -> next_model.id
+    | None -> default_model.id
+  in
+  Js.eval_to_unit ("refocus('instance" ^ string_of_int next_id ^ "')")
+
 let ctrl (model : Model.t) (this_model : Model.Instance.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   match Dom_html.Keyboard_code.of_event event with
@@ -8,46 +27,28 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
       let%map.Option action : Action.local Option.t =
         match key with
         | KeyP -> (
-            Js.eval_to_unit "refocus('pat_id')";
-            match Js.eval_to_string "getInput('pat_id')" with
-            | "" ->
+            match focus_input "pat_id" this_model with
+            | None ->
                 Js_of_ocaml.Dom.preventDefault event;
                 Js_of_ocaml.Dom_html.stopPropagation event;
                 None
-            | str ->
-                Js.eval_to_unit "setInput('pat_id', '')";
-                Js.eval_to_unit
-                  ("refocus('instance" ^ string_of_int this_model.id ^ "')");
-                Some (Edit (Create (Pat_var str))) )
+            | Some str -> Some (Edit (Create (Pat_var str))) )
         | KeyV -> (
-            Js.eval_to_unit "refocus('var_id')";
-            match Js.eval_to_string "getInput('var_id')" with
-            | "" ->
+            match focus_input "var_id" this_model with
+            | None ->
                 Js_of_ocaml.Dom.preventDefault event;
                 Js_of_ocaml.Dom_html.stopPropagation event;
                 None
-            | str ->
-                Js.eval_to_unit "setInput('var_id', '')";
-                Js.eval_to_unit
-                  ("refocus('instance" ^ string_of_int this_model.id ^ "')");
-                Some (Edit (Create (Exp_var str))) )
+            | Some str -> Some (Edit (Create (Exp_var str))) )
         | ArrowLeft ->
-            let prev_id =
-              match Model.MapInt.find_opt (this_model.id - 1) model with
-              | Some prev_model -> prev_model.id
-              | None -> fst @@ Model.MapInt.max_binding model
-            in
-            Js.eval_to_unit @@ "refocus('instance" ^ string_of_int prev_id
-            ^ "')";
+            focus_instance
+              (Model.MapInt.find_opt (this_model.id - 1) model)
+              (snd @@ Model.MapInt.max_binding model);
             None
         | ArrowRight ->
-            let next_id =
-              match Model.MapInt.find_opt (this_model.id + 1) model with
-              | Some next_model -> next_model.id
-              | None -> fst @@ Model.MapInt.min_binding model
-            in
-            Js.eval_to_unit @@ "refocus('instance" ^ string_of_int next_id
-            ^ "')";
+            focus_instance
+              (Model.MapInt.find_opt (this_model.id + 1) model)
+              (snd @@ Model.MapInt.min_binding model);
             None
         | _ -> None
       in

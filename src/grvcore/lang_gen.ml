@@ -192,7 +192,7 @@ let () =
       f "\n    | %s_%s%s" s c args
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -202,7 +202,7 @@ let () =
       f "\n    | %s_%s%s -> %s" s c (arg_pat ts) s
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -223,7 +223,7 @@ let () =
       f "\n    | %s_%s%s -> \"%s_%s%s\"" s c (bindings ts) s c args
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -255,10 +255,10 @@ let () =
   let t =
     let mk_index s c (Index (i, _)) : string = f "\n    | %s_%s_%s" s c i in
     let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
-      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
+      f "\n    (* %s_%s *)%s" s c (cat ~empty (mk_index s c) is)
     in
     let mk_sort (lazy (s, cs)) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -268,10 +268,10 @@ let () =
       f "\n    | %s_%s_%s -> \"%s\"" s c i i
     in
     let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
-      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
+      f "\n    (* %s_%s *)%s" s c (cat ~empty (mk_index s c) is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -281,10 +281,10 @@ let () =
       f "\n    | %s_%s_%s -> %s_%s" s c i s c
     in
     let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
-      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
+      f "\n    (* %s_%s *)%s" s c (cat ~empty (mk_index s c) is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -296,7 +296,7 @@ let () =
         (cat ~join:"; " (mk_index s c) is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -306,32 +306,32 @@ let () =
       f "\n    | %s_%s_%s -> %s" s c i s_i
     in
     let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
-      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
+      f "\n    (* %s_%s *)%s" s c (cat ~empty (mk_index s c) is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
   (**** Function body for `default_index` ****)
   let default_index : string =
     let mk_constructor sort (Constructor (c, ts, _, def, _, _)) : string =
-      f "\n    | %s_%s%s -> " sort c (arg_pat ts)
-      ^ match def with None -> "None" | Some d -> f "Some %s_%s_%s" sort c d
+      f "\n    | %s_%s%s -> %s" sort c (arg_pat ts)
+        (match def with None -> "None" | Some d -> f "Some %s_%s_%s" sort c d)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
   (**** Function body for `down` ****)
   let down : string =
     let mk_constructor sort (Constructor (c, ts, _, _, down, _)) : string =
-      f "\n    | %s_%s%s -> " sort c (arg_pat ts)
-      ^ match down with None -> "None" | Some d -> f "Some %s_%s_%s" sort c d
+      f "\n    | %s_%s%s -> %s" sort c (arg_pat ts)
+        (match down with None -> "None" | Some d -> f "Some %s_%s_%s" sort c d)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -344,10 +344,10 @@ let () =
           f "\n    | %s_%s_%s -> Some %s_%s_%s" s c i1 s c i2
     in
     let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
-      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) (shift_forward is)
+      f "\n    (* %s_%s *)%s" s c (cat ~empty (mk_index s c) (shift_forward is))
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -360,10 +360,11 @@ let () =
           f "\n    | %s_%s_%s -> Some %s_%s_%s" s c i1 s c i2
     in
     let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
-      f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) (shift_backward is)
+      f "\n    (* %s_%s *)%s" s c
+        (cat ~empty (mk_index s c) (shift_backward is))
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
@@ -380,12 +381,11 @@ let () =
         (cat ~join:"; " (mk_show s c) ss)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)" s ^ cat (mk_constructor s) cs
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
     in
     cat mk_sort sorts
   in
   (**** Module declaration ****)
-  (* TODO: remove ^ *)
   Printf.printf
     {|
 module Index = struct

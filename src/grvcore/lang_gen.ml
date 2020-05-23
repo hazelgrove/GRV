@@ -1,16 +1,19 @@
 (* TODO: generate parts of viz.ml and view.ml from this *)
 
-type index_name = string
-
 type sort_name = string
 
 type constructor_name = string
 
+type index_name = string
+
 type typ = string
 
-type arg = Arg of (typ * (* string_of *) string)
+type graphviz_string_of = string
 
-type index = Index of (index_name * sort)
+(* TODO: variable name: ts -> ps? *)
+type arg = Arg of (typ * graphviz_string_of)
+
+type sort = (sort_name * constructor list) Lazy.t
 
 and constructor =
   | Constructor of
@@ -22,7 +25,7 @@ and constructor =
       index_name option
       * index list )
 
-and sort = (sort_name * constructor list) Lazy.t
+and index = Index of (index_name * sort)
 
 (* Note that down and default_index can't actually happen on Root_root *)
 let rec root =
@@ -172,8 +175,8 @@ let () =
             f "(%s)"
               (String.concat ", "
                  (List.mapi
-                    (fun i (Arg (_, string_of)) ->
-                      f "\" ^ %s arg%d ^ \"" string_of i)
+                    (fun i (Arg (_, graphviz_string_of)) ->
+                      f "\" ^ %s arg%d ^ \"" graphviz_string_of i)
                     ts))
       in
       f "\n    | %s_%s%s -> \"%s_%s%s\"" s c bindings s c args

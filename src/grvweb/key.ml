@@ -7,7 +7,7 @@ let focus_input (id : string) (this_model : Model.Instance.t) : string Option.t
   | "" -> None
   | str ->
       Js.eval_to_unit @@ "setInput('" ^ id ^ "', '')";
-      Js.eval_to_unit ("refocus('instance" ^ string_of_int this_model.id ^ "')");
+      Js.eval_to_unit ("refocus('instance" ^ Int.to_string this_model.id ^ "')");
       Some str
 
 let focus_instance (next_model_opt : Model.Instance.t Option.t)
@@ -17,7 +17,7 @@ let focus_instance (next_model_opt : Model.Instance.t Option.t)
     | Some next_model -> next_model.id
     | None -> default_model.id
   in
-  Js.eval_to_unit ("refocus('instance" ^ string_of_int next_id ^ "')")
+  Js.eval_to_unit ("refocus('instance" ^ Int.to_string next_id ^ "')")
 
 let ctrl (model : Model.t) (this_model : Model.Instance.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =

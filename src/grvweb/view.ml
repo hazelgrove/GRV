@@ -98,7 +98,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       [
         on_click (fun _ ->
             Js.eval_to_unit
-              ("refocus('instance" ^ string_of_int this_model.id ^ "')");
+              ("refocus('instance" ^ Int.to_string this_model.id ^ "')");
             inject { instance_id = this_model.id; action });
       ]
     in
@@ -139,7 +139,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           ( on_click @@ fun _ ->
             let pat = Js.eval_to_string @@ "getInput('" ^ id_ ^ "')" in
             Js.eval_to_unit
-              ("refocus('instance" ^ string_of_int this_model.id ^ "')");
+              ("refocus('instance" ^ Int.to_string this_model.id ^ "')");
             inject
               {
                 instance_id = this_model.id;
@@ -174,7 +174,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
   Graphviz.draw this_model;
   div
     [
-      id @@ "instance" ^ string_of_int this_model.id;
+      id @@ "instance" ^ Int.to_string this_model.id;
       class_ "instance";
       tabindex this_model.id;
       on_keydown (fun event ->

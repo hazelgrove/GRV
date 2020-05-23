@@ -75,7 +75,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
                   to_bool event##.ctrlKey,
                   to_bool event##.altKey )
             with
-            | false, false, false -> Key.base
+            | false, false, false -> Key.base this_model
             | true, false, false -> Key.shift
             | false, true, false -> Key.ctrl model this_model
             | _, _, _ -> fun _ -> (None : Action.app Option.t)
@@ -103,21 +103,21 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       div []
         [
           mk
-          @@ W.input_button "Pat (ctrl-p)" "pat_id" Lang.Sort.Pat
+          @@ W.input_button "Pat (p)" "pat_id" Lang.Sort.Pat
                (fun str -> Pat_var str)
                (function Lang.Constructor.Pat_var str -> Some str | _ -> None);
           mk
-          @@ W.input_button "Var (ctrl-v)" "var_id" Lang.Sort.Exp
+          @@ W.input_button "Var (v)" "var_id" Lang.Sort.Exp
                (fun str -> Exp_var str)
                (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
           mk
-          @@ W.input_button "Num (ctrl-m)" "num_id" Lang.Sort.Exp
+          @@ W.input_button "Num (n)" "num_id" Lang.Sort.Exp
                (fun str -> Exp_num (int_of_string str))
                (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
           mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
           mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
           mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
-          mk @@ W.create_button "Num (n)" Typ_num Lang.Sort.Typ;
+          mk @@ W.create_button "Num (N)" Typ_num Lang.Sort.Typ;
           mk @@ W.create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
         ];
       div []

@@ -26,27 +26,6 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
   | key ->
       let%map.Option action : Action.local Option.t =
         match key with
-        | KeyM ->
-            Js_of_ocaml.Dom.preventDefault event;
-            Js_of_ocaml.Dom_html.stopPropagation event;
-            let%map.Option str : string Option.t =
-              focus_input "num_id" this_model
-            in
-            Action.Edit (Create (Exp_num (int_of_string str)))
-        | KeyP -> (
-            match focus_input "pat_id" this_model with
-            | None ->
-                Js_of_ocaml.Dom.preventDefault event;
-                Js_of_ocaml.Dom_html.stopPropagation event;
-                None
-            | Some str -> Some (Edit (Create (Pat_var str))) )
-        | KeyV -> (
-            match focus_input "var_id" this_model with
-            | None ->
-                Js_of_ocaml.Dom.preventDefault event;
-                Js_of_ocaml.Dom_html.stopPropagation event;
-                None
-            | Some str -> Some (Edit (Create (Exp_var str))) )
         | ArrowLeft ->
             focus_instance
               (Model.MapInt.find_opt (this_model.id - 1) model)
@@ -67,16 +46,38 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   in
   let%map.Option action : Action.local Option.t =
     match Js.to_string jstr with
+    | "N" -> Some (Edit (Create Typ_num))
     | "+" -> Some (Edit (Create Exp_plus))
     | ">" -> Some (Edit (Create Typ_arrow))
     | _ -> None
   in
   Action.Enqueue action
 
-let base (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
+    Action.app Option.t =
   let%map.Option action : Action.local Option.t =
     match Dom_html.Keyboard_code.of_event event with
-    | KeyN -> Some (Edit (Create Typ_num))
+    | KeyN ->
+        Js_of_ocaml.Dom.preventDefault event;
+        Js_of_ocaml.Dom_html.stopPropagation event;
+        let%map.Option str : string Option.t =
+          focus_input "num_id" this_model
+        in
+        Action.Edit (Create (Exp_num (int_of_string str)))
+    | KeyP -> (
+        match focus_input "pat_id" this_model with
+        | None ->
+            Js_of_ocaml.Dom.preventDefault event;
+            Js_of_ocaml.Dom_html.stopPropagation event;
+            None
+        | Some str -> Some (Edit (Create (Pat_var str))) )
+    | KeyV -> (
+        match focus_input "var_id" this_model with
+        | None ->
+            Js_of_ocaml.Dom.preventDefault event;
+            Js_of_ocaml.Dom_html.stopPropagation event;
+            None
+        | Some str -> Some (Edit (Create (Exp_var str))) )
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
     | Delete -> Some (Edit Destroy)

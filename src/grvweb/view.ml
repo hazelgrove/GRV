@@ -49,7 +49,7 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
     in
     span
       [ clickable ~inject model parent ]
-      (Lang.Index.show chars chars recur vertex.value)
+      (Lang.show chars chars recur vertex.value)
   in
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]

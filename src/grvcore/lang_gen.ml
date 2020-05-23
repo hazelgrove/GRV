@@ -368,23 +368,6 @@ let () =
     in
     cat mk_sort sorts
   in
-  (**** Function body for `show` ****)
-  let show : string =
-    let mk_show s c (show : show) : string =
-      match show with
-      | String s -> f "string %S" s
-      | Arg (i, s) -> f "arg (%s arg%d)" s i
-      | Index i -> f "index %s_%s_%s" s c i
-    in
-    let mk_constructor s (Constructor (c, ts, _, _, _, ss)) : string =
-      f "\n    | %s_%s%s -> [%s]" s c (bindings ts)
-        (cat ~sep:"; " (mk_show s c) ss)
-    in
-    let mk_sort ((lazy (s, cs)) : sort) : string =
-      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
-    in
-    cat mk_sort sorts
-  in
   (**** Module declaration ****)
   Printf.printf
     {|
@@ -422,11 +405,35 @@ module Index = struct
   (* Specifies where to go when the cursor moves left *)
   let left (i : t) : t option =
     match i with%s
-
-  (* Specifies how to show the given constructor and its children *)
-  let show (string : string -> 'a) (arg : string -> 'a) (index : t -> 'a) (c : Constructor.t) : 'a list =
-    match c with%s
 end
 |}
     t short_name parent_constructor child_indexes child_sort default_index down
-    right left show
+    right left
+
+(**** Module: <top-level> ****)
+let () =
+  (**** Function body for `show` ****)
+  let show : string =
+    let mk_show s c (show : show) : string =
+      match show with
+      | String s -> f "string %S" s
+      | Arg (i, s) -> f "arg (%s arg%d)" s i
+      | Index i -> f "index %s_%s_%s" s c i
+    in
+    let mk_constructor s (Constructor (c, ts, _, _, _, ss)) : string =
+      f "\n    | %s_%s%s -> [%s]" s c (bindings ts)
+        (cat ~sep:"; " (mk_show s c) ss)
+    in
+    let mk_sort ((lazy (s, cs)) : sort) : string =
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
+    in
+    cat mk_sort sorts
+  in
+  (**** Module declaration ****)
+  Printf.printf
+    {|
+(* Specifies how to show the given constructor and its children *)
+let show (string : string -> 'a) (arg : string -> 'a) (index : Index.t -> 'a) (c : Constructor.t) : 'a list =
+  match c with%s
+|}
+    show

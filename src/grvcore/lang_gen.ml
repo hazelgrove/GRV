@@ -137,12 +137,12 @@ let sorts = [ root; exp; pat; typ ]
 (**** Helpers for mode ideomatic code ****)
 let f : ('a, unit, string) format -> 'a = Printf.sprintf
 
-let cat ?(join : string option) ?(empty : string option) (f : 'a -> string)
+let cat ?(sep : string option) ?(empty : string option) (f : 'a -> string)
     (l : 'a list) : string =
-  let join = Option.value ~default:"" join in
+  let sep = Option.value ~default:"" sep in
   match (empty, l) with
   | Some empty, [] -> empty
-  | _ -> String.concat join (List.map f l)
+  | _ -> String.concat sep (List.map f l)
 
 let arg_pat (ts : arg list) : string = match ts with [] -> "" | _ -> " _"
 
@@ -187,7 +187,7 @@ let () =
     let mk_arg (Arg (t, _)) : string = t in
     let mk_constructor s (Constructor (c, ts, _, _, _, _)) : string =
       let args =
-        match ts with [] -> "" | _ -> f " of (%s)" (cat ~join:", " mk_arg ts)
+        match ts with [] -> "" | _ -> f " of (%s)" (cat ~sep:", " mk_arg ts)
       in
       f "\n    | %s_%s%s" s c args
     in
@@ -293,7 +293,7 @@ let () =
     let mk_index s c (Index (i, _)) : string = f "%s_%s_%s" s c i in
     let mk_constructor s (Constructor (c, ts, is, _, _, _)) : string =
       f "\n    | %s_%s%s -> [%s]" s c (arg_pat ts)
-        (cat ~join:"; " (mk_index s c) is)
+        (cat ~sep:"; " (mk_index s c) is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
@@ -378,7 +378,7 @@ let () =
     in
     let mk_constructor s (Constructor (c, ts, _, _, _, ss)) : string =
       f "\n    | %s_%s%s -> [%s]" s c (bindings ts)
-        (cat ~join:"; " (mk_show s c) ss)
+        (cat ~sep:"; " (mk_show s c) ss)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)

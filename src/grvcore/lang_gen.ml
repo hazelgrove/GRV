@@ -1,4 +1,4 @@
-(* TODO: generate parts of viz.ml and view.ml from this *)
+(* TODO: generate keybindings from this? *)
 
 type sort_name = string
 
@@ -17,23 +17,20 @@ type show =
   | Arg of (* zero-based index *) int * show_string_of
   | Index of index_name
 
-(*          [Chars "lam"; Arg "Int.to_string" 0; Child 0; chars ":"],*)
-
 (* TODO: variable name: ts -> ps? *)
 type arg = Arg of (typ * graphviz_string_of)
 
 type sort = (sort_name * constructor list) Lazy.t
 
-(* TODO: reorder *)
 and constructor =
   | Constructor of
       ( constructor_name
       * arg list
+      * index list
       * (* default *)
       index_name option
       * (* down *)
       index_name option
-      * index list
       * show list )
 
 and index = Index of (index_name * sort)
@@ -46,9 +43,9 @@ let rec root =
         Constructor
           ( "root",
             [],
-            Some "root",
-            Some "root",
             [ Index ("root", exp) ],
+            Some "root",
+            Some "root",
             [ Index "root" ] );
       ] )
 
@@ -59,20 +56,20 @@ and exp =
         Constructor
           ( "var",
             [ Arg ("string", "(fun x -> x)") ],
-            None,
-            None,
             [],
+            None,
+            None,
             [ Arg (0, "(fun x -> x)") ] );
         Constructor
           ( "lam",
             [],
-            Some "param",
-            Some "body",
             [
               Index ("param", pat);
               Index ("param_type", typ);
               Index ("body", exp);
             ],
+            Some "param",
+            Some "body",
             [
               String "(λ";
               Index "param";
@@ -85,23 +82,23 @@ and exp =
         Constructor
           ( "app",
             [],
-            Some "fun",
-            Some "fun",
             [ Index ("fun", exp); Index ("arg", exp) ],
+            Some "fun",
+            Some "fun",
             [ String "("; Index "fun"; String " "; Index "arg"; String ")" ] );
         Constructor
           ( "num",
             [ Arg ("int", "Int.to_string") ],
-            None,
-            None,
             [],
+            None,
+            None,
             [ Arg (0, "Int.to_string") ] );
         Constructor
           ( "plus",
             [],
-            Some "left",
-            Some "left",
             [ Index ("left", exp); Index ("right", exp) ],
+            Some "left",
+            Some "left",
             [ Index "left"; String "+"; Index "right" ] );
         (* TODO: sums and pairs *)
       ] )
@@ -113,9 +110,9 @@ and pat =
         Constructor
           ( "var",
             [ Arg ("string", "(fun x -> x)") ],
-            None,
-            None,
             [],
+            None,
+            None,
             [ Arg (0, "(fun x -> x)") ] );
       ] )
 
@@ -123,13 +120,13 @@ and typ =
   lazy
     ( "Typ",
       [
-        Constructor ("num", [], None, None, [], [ String "Num" ]);
+        Constructor ("num", [], [], None, None, [ String "Num" ]);
         Constructor
           ( "arrow",
             [],
-            Some "arg",
-            Some "arg",
             [ Index ("arg", typ); Index ("result", typ) ],
+            Some "arg",
+            Some "arg",
             [ Index "arg"; String "→"; Index "result" ] );
       ] )
 
@@ -250,7 +247,6 @@ end
 |}
     t sort_of graphviz_label
 
-(* TODO: generate of_vertex *)
 (* TODO: do not run a runtime *)
 (* TODO: rename Index to Field, Child_index, child position, child slot? *)
 (**** Module: Index ****)
@@ -258,7 +254,7 @@ let () =
   (**** Type declaration ****)
   let t =
     let mk_index s c (Index (i, _)) : string = f "\n    | %s_%s_%s" s c i in
-    let mk_constructor s (Constructor (c, _, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
     in
     let mk_sort (lazy (s, cs)) : string =
@@ -271,7 +267,7 @@ let () =
     let mk_index s c (Index (i, _)) : string =
       f "\n    | %s_%s_%s -> \"%s\"" s c i i
     in
-    let mk_constructor s (Constructor (c, _, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
@@ -284,7 +280,7 @@ let () =
     let mk_index s c (Index (i, _)) : string =
       f "\n    | %s_%s_%s -> %s_%s" s c i s c
     in
-    let mk_constructor s (Constructor (c, _, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
@@ -295,7 +291,7 @@ let () =
   (**** Function body for `child_indexes` ****)
   let child_indexes : string =
     let mk_index s c (Index (i, _)) : string = f "%s_%s_%s" s c i in
-    let mk_constructor s (Constructor (c, ts, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, ts, is, _, _, _)) : string =
       f "\n    | %s_%s%s -> [%s]" s c (arg_pat ts)
         (cat ~join:"; " (mk_index s c) is)
     in
@@ -309,7 +305,7 @@ let () =
     let mk_index s c (Index (i, (lazy (s_i, _)))) : string =
       f "\n    | %s_%s_%s -> %s" s c i s_i
     in
-    let mk_constructor s (Constructor (c, _, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) is
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
@@ -319,7 +315,7 @@ let () =
   in
   (**** Function body for `default_index` ****)
   let default_index : string =
-    let mk_constructor sort (Constructor (c, ts, def, _, _, _)) : string =
+    let mk_constructor sort (Constructor (c, ts, _, def, _, _)) : string =
       f "\n    | %s_%s%s -> " sort c (arg_pat ts)
       ^ match def with None -> "None" | Some d -> f "Some %s_%s_%s" sort c d
     in
@@ -330,7 +326,7 @@ let () =
   in
   (**** Function body for `down` ****)
   let down : string =
-    let mk_constructor sort (Constructor (c, ts, _, down, _, _)) : string =
+    let mk_constructor sort (Constructor (c, ts, _, _, down, _)) : string =
       f "\n    | %s_%s%s -> " sort c (arg_pat ts)
       ^ match down with None -> "None" | Some d -> f "Some %s_%s_%s" sort c d
     in
@@ -347,7 +343,7 @@ let () =
       | Some (Index (i2, _)) ->
           f "\n    | %s_%s_%s -> Some %s_%s_%s" s c i1 s c i2
     in
-    let mk_constructor s (Constructor (c, _, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) (shift_forward is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
@@ -363,7 +359,7 @@ let () =
       | Some (Index (i2, _)) ->
           f "\n    | %s_%s_%s -> Some %s_%s_%s" s c i1 s c i2
     in
-    let mk_constructor s (Constructor (c, _, _, _, is, _)) : string =
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
       f "\n    (* %s_%s *)" s c ^ cat ~empty (mk_index s c) (shift_backward is)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =

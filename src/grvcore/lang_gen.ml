@@ -247,8 +247,7 @@ end
 |}
     t sort_of graphviz_label
 
-(* TODO: do not run a runtime *)
-(* TODO: rename Index to Field, Child_index, child position, child slot? *)
+(* TODO: rename Index to Field, position, Child_index, child position, child slot? *)
 (**** Module: Index ****)
 let () =
   (**** Type declaration ****)

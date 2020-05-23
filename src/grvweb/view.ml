@@ -110,6 +110,10 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           @@ W.input_button "Var (ctrl-v)" "var_id" Lang.Sort.Exp
                (fun str -> Exp_var str)
                (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
+          mk
+          @@ W.input_button "Num (ctrl-m)" "num_id" Lang.Sort.Exp
+               (fun str -> Exp_num (int_of_string str))
+               (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
           mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
           mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
           mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;

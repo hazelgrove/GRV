@@ -26,6 +26,13 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
   | key ->
       let%map.Option action : Action.local Option.t =
         match key with
+        | KeyM ->
+            Js_of_ocaml.Dom.preventDefault event;
+            Js_of_ocaml.Dom_html.stopPropagation event;
+            let%map.Option str : string Option.t =
+              focus_input "num_id" this_model
+            in
+            Action.Edit (Create (Exp_num (int_of_string str)))
         | KeyP -> (
             match focus_input "pat_id" this_model with
             | None ->

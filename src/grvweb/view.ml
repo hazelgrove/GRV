@@ -1,6 +1,7 @@
 module Dom = Js_of_ocaml.Dom
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
+module W = Widget
 
 let chars (str : string) : Vdom.Node.t =
   Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
@@ -59,85 +60,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let button_ ?(disabled : bool = false) (label : string) (action : Action.app)
-      : Vdom.Node.t =
-    let attrs =
-      [
-        on_click (fun _ ->
-            Js.eval_to_unit
-              ("refocus('instance" ^ Int.to_string this_model.id ^ "')");
-            inject { instance_id = this_model.id; action });
-      ]
-    in
-    button
-      (attrs @ if disabled then [ Vdom.Attr.disabled ] else [])
-      [ text label ]
-  in
-  let create_button (label : string) (ctor : Lang.Constructor.t)
-      (sort : Lang.Sort.t) : Vdom.Node.t =
-    let disabled = not (Lang.Index.child_sort this_model.cursor.index = sort) in
-    button_ ~disabled label @@ Enqueue (Edit (Create ctor))
-  in
-  let move_button (label : string) (dir : Action.direction) : Vdom.Node.t =
-    let action = Enqueue (Move dir) in
-    button
-      [ on_click (fun _ -> inject { instance_id = this_model.id; action }) ]
-      [ text label ]
-  in
-  let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
-      (mk : string -> Lang.Constructor.t)
-      (unmk : Lang.Constructor.t -> string Option.t) : Vdom.Node.t =
-    let disabled = not (Lang.Index.child_sort this_model.cursor.index = sort) in
-    let () =
-      let children = Cache.children this_model.cursor this_model.graph.cache in
-      match Edge.Set.elements children with
-      | [ edge ] -> (
-          match unmk (Uuid.Wrap.unmk @@ Edge.target edge) with
-          | Some str ->
-              Js.eval_to_unit
-              @@ Printf.sprintf "setInput('%s', '%s')" id_
-              @@ String.escaped str
-          | None -> Js.eval_to_unit @@ "setInput('" ^ id_ ^ "', '')" )
-      | [] | _ :: _ -> Js.eval_to_unit @@ "setInput('" ^ id_ ^ "', '')"
-    in
-    let btn : Vdom.Node.t =
-      let attrs =
-        [
-          ( on_click @@ fun _ ->
-            let pat = Js.eval_to_string @@ "getInput('" ^ id_ ^ "')" in
-            Js.eval_to_unit
-              ("refocus('instance" ^ Int.to_string this_model.id ^ "')");
-            inject
-              {
-                instance_id = this_model.id;
-                action = Enqueue (Edit (Create (mk pat)));
-              } );
-        ]
-      in
-      button
-        (attrs @ if disabled then [ Vdom.Attr.disabled ] else [])
-        [ text label ]
-    in
-    let txt : Vdom.Node.t =
-      let attrs =
-        [
-          id id_;
-          type_ "text";
-          on_change (fun _ _ ->
-              match Key.focus_input id_ this_model with
-              | Some str ->
-                  inject
-                    {
-                      instance_id = this_model.id;
-                      action = Enqueue (Edit (Create (mk str)));
-                    }
-              | None -> Vdom.Event.Ignore);
-        ]
-      in
-      input (attrs @ if disabled then [ Vdom.Attr.disabled ] else []) []
-    in
-    div [] [ btn; txt ]
-  in
+  let mk (w : W.t) : Vdom.Node.t = W.mk w ~inject this_model in
   Graphviz.draw this_model;
   div
     [
@@ -179,29 +102,31 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       br [];
       div []
         [
-          input_button "Pat (ctrl-p)" "pat_id" Lang.Sort.Pat
-            (fun str -> Pat_var str)
-            (function Lang.Constructor.Pat_var str -> Some str | _ -> None);
-          input_button "Var (ctrl-v)" "var_id" Lang.Sort.Exp
-            (fun str -> Exp_var str)
-            (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
-          create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
-          create_button "App (space)" Exp_app Lang.Sort.Exp;
-          create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
-          create_button "Num (n)" Typ_num Lang.Sort.Typ;
-          create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
+          mk
+          @@ W.input_button "Pat (ctrl-p)" "pat_id" Lang.Sort.Pat
+               (fun str -> Pat_var str)
+               (function Lang.Constructor.Pat_var str -> Some str | _ -> None);
+          mk
+          @@ W.input_button "Var (ctrl-v)" "var_id" Lang.Sort.Exp
+               (fun str -> Exp_var str)
+               (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
+          mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
+          mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
+          mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
+          mk @@ W.create_button "Num (n)" Typ_num Lang.Sort.Typ;
+          mk @@ W.create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
         ];
       div []
         [
-          button_ "Delete (delete)" (Enqueue (Edit Destroy));
-          button_ "Send (ctrl-s)" Send;
-          move_button "In (↓)" In;
-          move_button "Out (↑)" Out;
-          move_button "Left (←)" Left;
-          move_button "Right (→)" Right;
+          mk @@ W.button "Delete (delete)" (Enqueue (Edit Destroy));
+          mk @@ W.button "Send (ctrl-s)" Send;
+          mk @@ W.move_button "In (↓)" In;
+          mk @@ W.move_button "Out (↑)" Out;
+          mk @@ W.move_button "Left (←)" Left;
+          mk @@ W.move_button "Right (→)" Right;
         ];
       select
-        [ create "size" "10"; bool_property "multiple" true; disabled ]
+        [ create "size" "10"; bool_property "multiple" true ]
         (List.rev_map
            (fun action ->
              option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])

@@ -44,45 +44,12 @@ and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    let recur : Cursor.t -> Vdom.Node.t = of_index ~inject model in
+    let recur (index : Lang.Index.t) : Vdom.Node.t =
+      of_index ~inject model { vertex; index }
+    in
     span
       [ clickable ~inject model parent ]
-      ( match vertex.value with
-      | Root_root -> failwith __LOC__
-      | Exp_var s -> [ chars s ]
-      | Exp_lam ->
-          [
-            chars "(λ";
-            recur { vertex; index = Exp_lam_param };
-            chars ":";
-            recur { vertex; index = Exp_lam_param_type };
-            chars ".";
-            recur { vertex; index = Exp_lam_body };
-            chars ")";
-          ]
-      | Exp_app ->
-          [
-            chars "(";
-            recur { vertex; index = Exp_app_fun };
-            chars " ";
-            recur { vertex; index = Exp_app_arg };
-            chars ")";
-          ]
-      | Exp_num n -> [ chars (Int.to_string n) ]
-      | Exp_plus ->
-          [
-            recur { vertex; index = Exp_plus_left };
-            chars "+";
-            recur { vertex; index = Exp_plus_right };
-          ]
-      | Pat_var s -> [ chars s ]
-      | Typ_num -> [ chars "Num" ]
-      | Typ_arrow ->
-          [
-            recur { vertex; index = Typ_arrow_arg };
-            chars "→";
-            recur { vertex; index = Typ_arrow_result };
-          ] )
+      (Lang.Index.show chars chars recur vertex.value)
   in
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]

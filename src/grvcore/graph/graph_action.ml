@@ -2,10 +2,9 @@ type t = { edge : Edge.t; state : Edge_state.t } [@@deriving show]
 
 let pp (fmt : Format.formatter) (edge_action : t) : unit =
   let edge = Uuid.Wrap.unmk edge_action.edge in
-  Format.fprintf fmt "%a (%a -> %s) [%s]" Edge_state.pp edge_action.state
-    Cursor.pp edge.source
+  Format.fprintf fmt "%a %a -> %s" Edge_state.pp edge_action.state Cursor.pp
+    edge.source
     (Uuid.Id.show edge.target.id)
-    (Uuid.Id.show edge_action.edge.id)
 
 let apply (edge_action : t) (graph : Graph.t) : Graph.t =
   let edge = edge_action.edge in

@@ -71,15 +71,6 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     ]
     [
       of_index ~inject this_model Cursor.root;
-      span []
-        ( match this_model.graph.cache.deleted with
-        | None -> []
-        | Some edge ->
-            [
-              chars "  [deleted ";
-              of_vertex ~inject this_model (Edge.target edge) (Edge.source edge);
-              chars "]";
-            ] );
       br [];
       br [];
       div []
@@ -111,12 +102,28 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           mk @@ W.move_button "Left (←)" Left;
           mk @@ W.move_button "Right (→)" Right;
         ];
-      select
-        [ create "size" "10"; bool_property "multiple" true ]
-        (List.rev_map
-           (fun action ->
-             option [] [ text @@ Format.asprintf "%a" Graph_action.pp action ])
-           this_model.actions);
+      div [ class_ "actions" ]
+        [
+          p [] [ text "Actions" ];
+          select
+            [ create "size" "10"; bool_property "multiple" true ]
+            (List.rev_map
+               (fun action ->
+                 option []
+                   [ text @@ Format.asprintf "%a" Graph_action.pp action ])
+               this_model.actions);
+        ];
+      div [ class_ "deleted" ]
+        ( [ p [] [ text "Deleted" ] ]
+        @
+        match this_model.graph.cache.deleted with
+        | None -> []
+        | Some edge ->
+            [
+              chars "[deleted ";
+              of_vertex ~inject this_model (Edge.target edge) (Edge.source edge);
+              chars "]";
+            ] );
       br [];
       br [];
       text "Cursor";

@@ -77,3 +77,16 @@ body > div {
     animation-iteration-count: infinite;
     animation-direction: alternate;
 }
+
+.actions,
+.deleted
+{
+    display: inline-block;
+    width: 50%;
+    margin: 0 .25ex;
+    vertical-align: top;
+}
+
+.actions > select {
+    width: 100%;
+}

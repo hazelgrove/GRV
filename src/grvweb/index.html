@@ -26,7 +26,8 @@
       }
 
       function refocus(id) {
-          document.getElementById(id).focus();
+          var obj = document.getElementById(id);
+          obj && obj.focus();
       }
 
       function getInput(id) {

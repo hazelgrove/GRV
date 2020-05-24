@@ -93,6 +93,4 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   ^ "}"
 
 let draw (model : Model.Instance.t) : unit =
-  Js.Unsafe.eval_string
-  @@ Printf.sprintf "drawViz('graph%d', '%s')" model.id
-       (String.escaped @@ draw_graph model.graph model.cursor)
+  Js.draw_viz model.id (String.escaped @@ draw_graph model.graph model.cursor)

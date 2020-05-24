@@ -1,23 +1,5 @@
 module Dom_html = Js_of_ocaml.Dom_html
-
-let focus_input (id : string) (this_model : Model.Instance.t) : string Option.t
-    =
-  Js.eval_to_unit @@ "refocus('" ^ id ^ "')";
-  match Js.eval_to_string @@ "getInput('" ^ id ^ "')" with
-  | "" -> None
-  | str ->
-      Js.eval_to_unit @@ "setInput('" ^ id ^ "', '')";
-      Js.eval_to_unit ("refocus('instance" ^ Int.to_string this_model.id ^ "')");
-      Some str
-
-let focus_instance (next_model_opt : Model.Instance.t Option.t)
-    (default_model : Model.Instance.t) : unit =
-  let next_id =
-    match next_model_opt with
-    | Some next_model -> next_model.id
-    | None -> default_model.id
-  in
-  Js.eval_to_unit ("refocus('instance" ^ Int.to_string next_id ^ "')")
+module Vdom = Virtual_dom.Vdom
 
 let ctrl (model : Model.t) (this_model : Model.Instance.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
@@ -25,16 +7,20 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
   | KeyS -> Some Send
   | key ->
       let%map.Option action : Action.local Option.t =
+        let refocus (next_id : int) (default_id : int) : unit =
+          Js.focus_instance
+            ( match Model.MapInt.find_opt next_id model with
+            | Some _ -> next_id
+            | None -> default_id )
+        in
         match key with
         | ArrowLeft ->
-            focus_instance
-              (Model.MapInt.find_opt (this_model.id - 1) model)
-              (snd @@ Model.MapInt.max_binding model);
+            refocus (this_model.id - 1)
+              (snd @@ Model.MapInt.max_binding model).id;
             None
         | ArrowRight ->
-            focus_instance
-              (Model.MapInt.find_opt (this_model.id + 1) model)
-              (snd @@ Model.MapInt.min_binding model);
+            refocus (this_model.id + 1)
+              (snd @@ Model.MapInt.min_binding model).id;
             None
         | _ -> None
       in
@@ -53,31 +39,29 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   in
   Action.Enqueue action
 
-let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
-    Action.app Option.t =
+let base (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   let%map.Option action : Action.local Option.t =
     match Dom_html.Keyboard_code.of_event event with
-    | KeyN ->
+    | KeyN -> (
         Js_of_ocaml.Dom.preventDefault event;
         Js_of_ocaml.Dom_html.stopPropagation event;
-        let%map.Option str : string Option.t =
-          focus_input "num_id" this_model
-        in
-        Action.Edit (Create (Exp_num (int_of_string str)))
+        match Js.focus_input "num_id" with
+        | "" -> None
+        | str -> Some (Action.Edit (Create (Exp_num (int_of_string str)))) )
     | KeyP -> (
-        match focus_input "pat_id" this_model with
-        | None ->
+        match Js.focus_input "pat_id" with
+        | "" ->
             Js_of_ocaml.Dom.preventDefault event;
             Js_of_ocaml.Dom_html.stopPropagation event;
             None
-        | Some str -> Some (Edit (Create (Pat_var str))) )
+        | str -> Some (Edit (Create (Pat_var str))) )
     | KeyV -> (
-        match focus_input "var_id" this_model with
-        | None ->
+        match Js.focus_input "var_id" with
+        | "" ->
             Js_of_ocaml.Dom.preventDefault event;
             Js_of_ocaml.Dom_html.stopPropagation event;
             None
-        | Some str -> Some (Edit (Create (Exp_var str))) )
+        | str -> Some (Edit (Create (Exp_var str))) )
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
     | Delete -> Some (Edit Destroy)
@@ -88,3 +72,26 @@ let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
     | _ -> None
   in
   Action.Enqueue action
+
+let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
+    (this_model : Model.Instance.t) :
+    Dom_html.keyboardEvent Js.t -> Vdom.Event.t =
+ fun event ->
+  let handle =
+    match
+      Js.
+        ( to_bool event##.shiftKey,
+          to_bool event##.ctrlKey,
+          to_bool event##.altKey )
+    with
+    | false, false, false -> base
+    | true, false, false -> shift
+    | false, true, false -> ctrl model this_model
+    | _, _, _ -> fun _ -> (None : Action.app Option.t)
+  in
+  match handle event with
+  | Some action ->
+      Js_of_ocaml.Dom.preventDefault event;
+      Js_of_ocaml.Dom_html.stopPropagation event;
+      inject { instance_id = this_model.id; action }
+  | None -> Vdom.Event.Ignore

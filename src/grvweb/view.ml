@@ -60,32 +60,14 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let mk (w : W.t) : Vdom.Node.t = W.mk w ~inject this_model in
+  let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = W.mk w ~inject this_model in
   Graphviz.draw this_model;
   div
     [
       id @@ "instance" ^ Int.to_string this_model.id;
       class_ "instance";
       tabindex this_model.id;
-      on_keydown (fun event ->
-          let handler =
-            match
-              Js.
-                ( to_bool event##.shiftKey,
-                  to_bool event##.ctrlKey,
-                  to_bool event##.altKey )
-            with
-            | false, false, false -> Key.base this_model
-            | true, false, false -> Key.shift
-            | false, true, false -> Key.ctrl model this_model
-            | _, _, _ -> fun _ -> (None : Action.app Option.t)
-          in
-          match handler event with
-          | Some action ->
-              Js_of_ocaml.Dom.preventDefault event;
-              Js_of_ocaml.Dom_html.stopPropagation event;
-              inject { instance_id = this_model.id; action }
-          | None -> Vdom.Event.Ignore);
+      on_keydown @@ Key.dispatch ~inject model this_model;
     ]
     [
       of_index ~inject this_model Cursor.root;
@@ -105,15 +87,15 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           mk
           @@ W.input_button "Pat (p)" "pat_id" Lang.Sort.Pat
                (fun str -> Pat_var str)
-               (function Lang.Constructor.Pat_var str -> Some str | _ -> None);
+               (function Lang.Constructor.Pat_var str -> str | _ -> "");
           mk
           @@ W.input_button "Var (v)" "var_id" Lang.Sort.Exp
                (fun str -> Exp_var str)
-               (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
+               (function Lang.Constructor.Exp_var str -> str | _ -> "");
           mk
           @@ W.input_button "Num (n)" "num_id" Lang.Sort.Exp
                (fun str -> Exp_num (int_of_string str))
-               (function Lang.Constructor.Exp_var str -> Some str | _ -> None);
+               (function Lang.Constructor.Exp_var str -> str | _ -> "");
           mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
           mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
           mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;

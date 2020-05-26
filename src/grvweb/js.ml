@@ -22,3 +22,6 @@ let focus_input (id : string) : string =
 
 let draw_viz (id : int) (dot_src : string) : unit =
   eval_to_unit @@ Printf.sprintf "drawViz('graph%d', '%s')" id dot_src
+
+let get_selection (id : string) : bool list =
+  Array.to_list @@ to_array @@ Unsafe.eval_string ("getSelection('" ^ id ^ "')")

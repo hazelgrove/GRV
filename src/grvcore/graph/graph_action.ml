@@ -1,4 +1,4 @@
-type t = { edge : Edge.t; state : Edge_state.t } [@@deriving show]
+type t = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp_of, show]
 
 let pp (fmt : Format.formatter) (edge_action : t) : unit =
   let edge = Uuid.Wrap.unmk edge_action.edge in

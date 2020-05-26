@@ -4,10 +4,11 @@ type edit = Create of Lang.Constructor.t | Destroy [@@deriving sexp_of]
 
 type local = Move of direction | Edit of edit [@@deriving sexp_of]
 
-(* TODO: Make `Send` be to a specific instance *)
-type app = Select of Cursor.t | Send | Enqueue of local [@@deriving sexp_of]
-
 open Sexplib0.Sexp_conv
+
+(* TODO: Make `Send` be to a specific instance *)
+type app = Select of Cursor.t | Send of Graph_action.t list | Enqueue of local
+[@@deriving sexp_of]
 
 type t = { instance_id : int; action : app } [@@deriving sexp_of]
 
@@ -115,8 +116,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
       with
       | Some receiver -> Model.MapInt.add action.instance_id receiver model
       | None -> model )
-  | Send ->
-      let actions = (Model.MapInt.find action.instance_id model).actions in
+  | Send actions ->
       let new_model =
         Model.MapInt.map
           (fun (receiver : Model.Instance.t) ->

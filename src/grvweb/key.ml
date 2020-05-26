@@ -4,7 +4,7 @@ module Vdom = Virtual_dom.Vdom
 let ctrl (model : Model.t) (this_model : Model.Instance.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   match Dom_html.Keyboard_code.of_event event with
-  | KeyS -> Some Send
+  | KeyS -> Some (Send this_model.actions)
   | key ->
       let%map.Option action : Action.local Option.t =
         let refocus (next_id : int) (default_id : int) : unit =

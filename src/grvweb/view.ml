@@ -88,7 +88,8 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       div []
         [
           mk @@ W.app_button "Delete (delete)" (Enqueue (Edit Destroy));
-          mk @@ W.app_button "Send (ctrl-s)" Send;
+          mk
+          @@ W.button "Send (ctrl-s)" (fun () -> Some (Send this_model.actions));
           mk @@ W.move_button "In (↓)" In;
           mk @@ W.move_button "Out (↑)" Out;
           mk @@ W.move_button "Left (←)" Left;

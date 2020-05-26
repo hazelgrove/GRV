@@ -1,6 +1,6 @@
-type t' = { source : Cursor.t; target : Vertex.t } [@@deriving show]
+type t' = { source : Cursor.t; target : Vertex.t } [@@deriving sexp_of, show]
 
-type t = t' Uuid.Wrap.t [@@deriving show]
+type t = t' Uuid.Wrap.t [@@deriving sexp_of, show]
 
 let mk (source : Cursor.t) (target : Vertex.t) : t =
   Uuid.Wrap.mk { source; target }

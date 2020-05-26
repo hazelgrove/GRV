@@ -42,6 +42,28 @@
           var obj = document.getElementById(id) || {value: ""};
           obj.value = val;
       }
+
+      function toggleItem(id, k) {
+          var obj = document.getElementById(id);
+          if (obj) {
+              var classes = obj.childNodes[k].classList;
+              if (classes.contains("selected")) {
+                  classes.remove("selected")
+              }
+              else {
+                  classes.add("selected")
+              }
+          }
+      }
+
+      function getSelection(id) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              return Array.from(obj.childNodes).map(function (item) {
+                  return item.classList.contains("selected");
+              });
+          }
+      }
     </script>
     <script src="main.bc.js"></script>
   </body>

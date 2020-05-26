@@ -8,6 +8,12 @@ let mk (widget : 'a t) ~(inject : Action.t -> Vdom.Event.t)
     (this_model : Model.Instance.t) : 'a =
   widget ~inject this_model
 
+let chars (str : string) : Vdom.Node.t =
+  Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
+
+let errs (str : string) : Vdom.Node.t =
+  Vdom.Node.span [ Vdom.Attr.class_ "errs" ] [ Vdom.Node.text str ]
+
 let button ?(disable : bool = false) (label : string) (action : Action.app) :
     Vdom.Node.t t =
  fun ~inject this_model ->
@@ -83,3 +89,23 @@ let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
     input (attrs @ if disable then [ Vdom.Attr.disabled ] else []) []
   in
   div [] [ btn; txt ]
+
+let select (id_ : string) (items : 'a List.t) (show : 'a -> Vdom.Node.t) :
+    Vdom.Node.t t =
+ fun ~inject:(_ : _) _this_model ->
+  let select_item (k : int) (item : 'a) : Vdom.Node.t =
+    div
+      [
+        classes [ "selectItem"; "selected" ];
+        on_click (fun _ ->
+            Js.eval_to_unit (Printf.sprintf "toggleItem('%s', %d)" id_ k);
+            Vdom.Event.Ignore);
+      ]
+      [ show item ]
+  in
+  let items = List.mapi select_item items in
+  div [ class_ "select" ]
+    [
+      h2 [] [ text @@ String.capitalize_ascii id_ ];
+      div [ id id_; class_ "selectItems" ] items;
+    ]

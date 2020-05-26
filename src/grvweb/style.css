@@ -21,6 +21,8 @@ body > div {
 .instance {
     flex: 1;
     margin: 1ex;
+    max-width: 50%;
+    overflow-x: auto;
 }
 
 .cursor {
@@ -80,15 +82,42 @@ body > div {
     animation-direction: alternate;
 }
 
-.actions,
-.deleted
-{
+.select {
     display: inline-block;
     width: 50%;
-    margin: 0 .25ex;
     vertical-align: top;
 }
 
-.actions > select {
+h2 {
+    height: 2ex;
+    font-size: larger;
+}
+
+.select > .selectItems {
+    display: flex;
+    flex-direction: column-reverse;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    align-content: flex-start;
     width: 100%;
+    height: 18ex;
+    padding: 0 .5ex;
+    overflow: auto;
+}
+
+.select > .selectItems > .selectItem { 
+    flex: 0 0;
+    display: inline-block;
+    width: 100%;
+    height: 3ex;
+    font-size: large;
+}
+
+#actions > .selected {
+    background-color: #91FF91;
+}
+
+.selectItem:not(.selected) {
+    background-color: white;
+    color: gray;
 }

@@ -2,7 +2,7 @@ type t = { edge : Edge.t; state : Edge_state.t } [@@deriving show]
 
 let pp (fmt : Format.formatter) (edge_action : t) : unit =
   let edge = Uuid.Wrap.unmk edge_action.edge in
-  Format.fprintf fmt "%a %a -> %s" Edge_state.pp edge_action.state Cursor.pp
+  Format.fprintf fmt "%a %a → %s" Edge_state.pp edge_action.state Cursor.pp
     edge.source
     (Uuid.Id.show edge.target.id)
 

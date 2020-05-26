@@ -71,17 +71,14 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       div []
         [
           mk
-          @@ W.input_button "Pat (p)" "pat_id" Lang.Sort.Pat
-               (fun str -> Pat_var str)
-               (function Lang.Constructor.Pat_var str -> str | _ -> "");
+          @@ W.input_button "Pat (p)" "pat_id" Lang.Sort.Pat (fun str ->
+                 Pat_var str);
           mk
-          @@ W.input_button "Var (v)" "var_id" Lang.Sort.Exp
-               (fun str -> Exp_var str)
-               (function Lang.Constructor.Exp_var str -> str | _ -> "");
+          @@ W.input_button "Var (v)" "var_id" Lang.Sort.Exp (fun str ->
+                 Exp_var str);
           mk
-          @@ W.input_button "Num (n)" "num_id" Lang.Sort.Exp
-               (fun str -> Exp_num (int_of_string str))
-               (function Lang.Constructor.Exp_var str -> str | _ -> "");
+          @@ W.input_button "Num (n)" "num_id" Lang.Sort.Exp (fun str ->
+                 Exp_num (int_of_string str));
           mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
           mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
           mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
@@ -90,8 +87,8 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
         ];
       div []
         [
-          mk @@ W.button "Delete (delete)" (Enqueue (Edit Destroy));
-          mk @@ W.button "Send (ctrl-s)" Send;
+          mk @@ W.app_button "Delete (delete)" (Enqueue (Edit Destroy));
+          mk @@ W.app_button "Send (ctrl-s)" Send;
           mk @@ W.move_button "In (↓)" In;
           mk @@ W.move_button "Out (↑)" Out;
           mk @@ W.move_button "Left (←)" Left;

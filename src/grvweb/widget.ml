@@ -14,81 +14,74 @@ let chars (str : string) : Vdom.Node.t =
 let errs (str : string) : Vdom.Node.t =
   Vdom.Node.span [ Vdom.Attr.class_ "errs" ] [ Vdom.Node.text str ]
 
-let button ?(disable : bool = false) (label : string) (action : Action.app) :
-    Vdom.Node.t t =
+let maybe_disabled ?(disable : bool = false)
+    (node : Vdom.Attr.t List.t -> Vdom.Node.t List.t -> Vdom.Node.t)
+    (attrs : Vdom.Attr.t List.t) (children : Vdom.Node.t List.t) : Vdom.Node.t =
+  node (attrs @ if disable then [ disabled ] else []) children
+
+let text_input ?(disable : bool = false) (id_ : string)
+    (change : string -> Action.app Option.t) : Vdom.Node.t t =
  fun ~inject this_model ->
-  ( let attrs =
-      [
-        on_click (fun _ ->
-            Js.focus_instance this_model.id;
-            inject { instance_id = this_model.id; action });
-      ]
-    in
-    Vdom.Node.button
-      (attrs @ if disable then [ disabled ] else [])
-      [ text label ]
-    : Vdom.Node.t )
+  maybe_disabled ~disable Vdom.Node.input
+    [
+      id id_;
+      type_ "text";
+      on_change (fun _ _ ->
+          match Js.focus_input id_ with
+          | "" -> Vdom.Event.Ignore
+          | str -> (
+              match change str with
+              | None -> Vdom.Event.Ignore
+              | Some action ->
+                  Js.focus_instance this_model.id;
+                  inject { instance_id = this_model.id; action } ));
+    ]
+    []
+
+let button ?(disable : bool = false) (label : string)
+    (click : unit -> Action.app Option.t) : Vdom.Node.t t =
+ fun ~inject this_model ->
+  maybe_disabled ~disable Vdom.Node.button
+    [
+      on_click (fun _ ->
+          match click () with
+          | None -> Vdom.Event.Ignore
+          | Some action ->
+              Js.focus_instance this_model.id;
+              inject { instance_id = this_model.id; action });
+    ]
+    [ text label ]
+
+let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
+    (mk : string -> Lang.Constructor.t) : Vdom.Node.t t =
+ fun ~inject this_model ->
+  let disable = not (Lang.Index.child_sort this_model.cursor.index = sort) in
+  let btn : Vdom.Node.t t =
+    button ~disable label (fun () ->
+        match Js.get_input id_ with
+        | "" -> None
+        | str -> Some (Enqueue (Edit (Create (mk str)))))
+  in
+  let txt : Vdom.Node.t t =
+    text_input ~disable id_ (function
+      | "" -> None
+      | str -> Some (Enqueue (Edit (Create (mk str)))))
+  in
+  Js.set_input id_ "";
+  div [] [ btn ~inject this_model; txt ~inject this_model ]
+
+let app_button ?(disable : bool = false) (label : string) (action : Action.app)
+    : Vdom.Node.t t =
+  button ~disable label (fun () -> Some action)
 
 let create_button (label : string) (ctor : Lang.Constructor.t)
     (sort : Lang.Sort.t) : Vdom.Node.t t =
  fun ~inject this_model ->
   let disable = not (Lang.Index.child_sort this_model.cursor.index = sort) in
-  button ~disable label (Enqueue (Edit (Create ctor))) ~inject this_model
+  app_button ~disable label (Enqueue (Edit (Create ctor))) ~inject this_model
 
 let move_button (label : string) (dir : Action.direction) : Vdom.Node.t t =
- fun ~inject this_model ->
-  let action : Action.app = Enqueue (Move dir) in
-  Vdom.Node.button
-    [ on_click (fun _ -> inject { instance_id = this_model.id; action }) ]
-    [ text label ]
-
-let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
-    (mk : string -> Lang.Constructor.t) (unmk : Lang.Constructor.t -> string) :
-    Vdom.Node.t t =
- fun ~inject this_model ->
-  let disable = not (Lang.Index.child_sort this_model.cursor.index = sort) in
-  let () =
-    let children = Cache.children this_model.cursor this_model.graph.cache in
-    match Edge.Set.elements children with
-    | [ edge ] -> Js.set_input id_ @@ unmk (Uuid.Wrap.unmk @@ Edge.target edge)
-    | [] | _ :: _ -> Js.set_input id_ ""
-  in
-  let btn : Vdom.Node.t =
-    let attrs =
-      [
-        ( on_click @@ fun _ ->
-          Js.focus_instance this_model.id;
-          inject
-            {
-              instance_id = this_model.id;
-              action = Enqueue (Edit (Create (mk @@ Js.get_input id_)));
-            } );
-      ]
-    in
-    Vdom.Node.button
-      (attrs @ if disable then [ Vdom.Attr.disabled ] else [])
-      [ text label ]
-  in
-  let txt : Vdom.Node.t =
-    let attrs =
-      [
-        id id_;
-        type_ "text";
-        on_change (fun _ _ ->
-            match Js.focus_input id_ with
-            | "" -> Vdom.Event.Ignore
-            | str ->
-                Js.focus_instance this_model.id;
-                inject
-                  {
-                    instance_id = this_model.id;
-                    action = Enqueue (Edit (Create (mk str)));
-                  });
-      ]
-    in
-    input (attrs @ if disable then [ Vdom.Attr.disabled ] else []) []
-  in
-  div [] [ btn; txt ]
+  app_button label (Enqueue (Move dir))
 
 let select (id_ : string) (items : 'a List.t) (show : 'a -> Vdom.Node.t) :
     Vdom.Node.t t =

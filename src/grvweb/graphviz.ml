@@ -16,17 +16,8 @@ let vertex_color (vertex : Vertex.t) (cursor : Cursor.t) (cache : Cache.t) :
 
 let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   let nodes =
-    let has_source_vertex (vertex : Vertex.t) (edge : Edge.t) : bool =
-      (Edge.source edge).vertex = vertex
-    in
-    let is_live_vertex _ vertex =
-      (not (Edge.Set.is_empty @@ Cache.parents vertex graph.cache))
-      || List.exists
-           (Edge.Set.exists @@ has_source_vertex vertex)
-           (List.map snd @@ Cursor.Map.bindings graph.cache.children)
-    in
-    let live_vertexes = Uuid.Map.filter is_live_vertex graph.cache.vertexes in
-    List.map (fun (key, vertex) ->
+    List.map
+      (fun (key, vertex) ->
         let id = Uuid.Id.show key in
         let constructor = Uuid.Wrap.unmk vertex in
         let label = Lang.Constructor.graphviz_label constructor in
@@ -41,7 +32,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
         let color = vertex_color vertex cursor graph.cache in
         Printf.sprintf {|n%s [label="{%s: %s|{%s}}",style=filled,fillcolor=%s]|}
           id id label children color)
-    @@ Uuid.Map.bindings live_vertexes
+      (Uuid.Map.bindings graph.cache.vertexes)
   in
   let edges =
     let open List in

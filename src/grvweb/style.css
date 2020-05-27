@@ -112,7 +112,7 @@ h2 {
     font-size: large;
 }
 
-#actions > .selected {
+.Actions > .selectItems > .selected {
     background-color: #91FF91;
 }
 

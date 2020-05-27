@@ -97,5 +97,6 @@ let select (id_ : string) (label : string) (items : 'a List.t)
       [ show item ]
   in
   let items = List.mapi select_item items in
-  div [ class_ "select" ]
+  div
+    [ classes [ "select"; label ] ]
     [ h2 [] [ text label ]; div [ id id_; class_ "selectItems" ] items ]

@@ -88,14 +88,17 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       div []
         [
           mk @@ W.app_button "Delete (delete)" (Enqueue (Edit Destroy));
-          mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send this_model.actions);
+          mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send this_model);
           mk @@ W.move_button "In (↓)" In;
           mk @@ W.move_button "Out (↑)" Out;
           mk @@ W.move_button "Left (←)" Left;
           mk @@ W.move_button "Right (→)" Right;
         ];
       mk
-      @@ W.select "actions" this_model.actions (fun action ->
+      @@ W.select
+           ("actions" ^ Int.to_string this_model.id)
+           "Actions" this_model.actions
+           (fun action ->
              W.chars @@ Format.asprintf "%a" Graph_action.pp action);
       div [ class_ "select" ]
         ( [ h2 [] [ text "Deleted" ] ]

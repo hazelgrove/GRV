@@ -83,8 +83,8 @@ let create_button (label : string) (ctor : Lang.Constructor.t)
 let move_button (label : string) (dir : Action.direction) : Vdom.Node.t t =
   app_button label (Enqueue (Move dir))
 
-let select (id_ : string) (items : 'a List.t) (show : 'a -> Vdom.Node.t) :
-    Vdom.Node.t t =
+let select (id_ : string) (label : string) (items : 'a List.t)
+    (show : 'a -> Vdom.Node.t) : Vdom.Node.t t =
  fun ~inject:(_ : _) _this_model ->
   let select_item (k : int) (item : 'a) : Vdom.Node.t =
     div
@@ -98,7 +98,4 @@ let select (id_ : string) (items : 'a List.t) (show : 'a -> Vdom.Node.t) :
   in
   let items = List.mapi select_item items in
   div [ class_ "select" ]
-    [
-      h2 [] [ text @@ String.capitalize_ascii id_ ];
-      div [ id id_; class_ "selectItems" ] items;
-    ]
+    [ h2 [] [ text label ]; div [ id id_; class_ "selectItems" ] items ]

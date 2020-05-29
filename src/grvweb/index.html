@@ -56,12 +56,27 @@
           }
       }
 
+      function selectItem(id, k) {
+          var obj = document.getElementById(id);
+          if (obj) {
+              clearSelection(id);
+              obj.childNodes[k].classList.add("selected");
+          }
+      }
+
       function getSelection(id) {
           let obj = document.getElementById(id);
           if (obj) {
               return Array.from(obj.childNodes).map(function (item) {
                   return item.classList.contains("selected");
               });
+          }
+      }
+
+      function clearSelection(id) {
+          var obj = document.getElementById(id);
+          if (obj) {
+              obj.childNodes.forEach(item => item.classList.remove("selected"));
           }
       }
     </script>

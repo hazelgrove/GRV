@@ -10,6 +10,9 @@ let send (this_model : Model.Instance.t) : Action.app Option.t =
       in
       Some (Send actions)
 
+let restore (this_model : Model.Instance.t) : Action.app Option.t =
+  send this_model
+
 let ctrl (model : Model.t) (this_model : Model.Instance.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   match Dom_html.Keyboard_code.of_event event with
@@ -54,7 +57,8 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   in
   Action.Enqueue action
 
-let base (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
+let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
+    Action.app Option.t =
   let%map.Option action : Action.local Option.t =
     match Dom_html.Keyboard_code.of_event event with
     | KeyN -> (
@@ -79,7 +83,9 @@ let base (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
         | str -> Some (Edit (Create (Exp_var str))) )
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
-    | Delete -> Some (Edit Destroy)
+    | Delete ->
+        Js.clear_selection ("deleted" ^ Int.to_string this_model.id);
+        Some (Edit Destroy)
     | ArrowUp -> Some (Move Out)
     | ArrowDown -> Some (Move In)
     | ArrowLeft -> Some (Move Left)
@@ -99,7 +105,7 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           to_bool event##.ctrlKey,
           to_bool event##.altKey )
     with
-    | false, false, false -> base
+    | false, false, false -> base this_model
     | true, false, false -> shift
     | false, true, false -> ctrl model this_model
     | _, _, _ -> fun _ -> (None : Action.app Option.t)

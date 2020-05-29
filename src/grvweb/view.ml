@@ -87,30 +87,39 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
         ];
       div []
         [
-          mk @@ W.app_button "Delete (delete)" (Enqueue (Edit Destroy));
-          mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send this_model);
+          mk
+          @@ W.button "Delete (delete)" (fun () ->
+                 Js.clear_selection ("deleted" ^ Int.to_string this_model.id);
+                 Some (Enqueue (Edit Destroy)));
+        ];
+      div []
+        [
           mk @@ W.move_button "In (↓)" In;
           mk @@ W.move_button "Out (↑)" Out;
           mk @@ W.move_button "Left (←)" Left;
           mk @@ W.move_button "Right (→)" Right;
         ];
-      mk
-      @@ W.select
-           ("actions" ^ Int.to_string this_model.id)
-           "Actions" this_model.actions
-           (fun action ->
-             W.chars @@ Format.asprintf "%a" Graph_action.pp action);
-      div [ class_ "select" ]
-        ( [ h2 [] [ text "Deleted" ] ]
-        @
-        match this_model.graph.cache.deleted with
-        | None -> []
-        | Some edge ->
-            [
-              W.chars "[deleted ";
-              of_vertex ~inject this_model edge.target edge.source;
-              W.chars "]";
-            ] );
+      div [ class_ "selector" ]
+        [
+          mk
+          @@ W.select
+               ("actions" ^ Int.to_string this_model.id)
+               "Actions" this_model.actions
+               (fun (item : Graph_action.t) ->
+                 W.chars @@ Format.asprintf "%a" Graph_action.pp item);
+          mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send this_model);
+        ];
+      div [ class_ "selector" ]
+        [
+          mk
+          @@ W.select ~multi:false ~default:false
+               ("deleted" ^ Int.to_string this_model.id)
+               "Deleted"
+               (Edge.Set.elements this_model.graph.cache.deleted)
+               (fun (edge : Edge.t) ->
+                 of_vertex ~inject this_model edge.target edge.source);
+          mk @@ W.button "Restore (ctrl-r)" (fun () -> Key.restore this_model);
+        ];
       h2 [] [ text "Cursor" ];
       W.chars @@ Format.asprintf "%a@." Cursor.pp this_model.cursor;
       h2 [] [ text "Graph" ];

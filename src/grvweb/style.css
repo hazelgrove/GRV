@@ -82,9 +82,13 @@ body > div {
     animation-direction: alternate;
 }
 
-.select {
+.selector {
     display: inline-block;
     width: 50%;
+    vertical-align: top;
+}
+
+.select {
     vertical-align: top;
 }
 
@@ -114,6 +118,10 @@ h2 {
 
 .Actions > .selectItems > .selected {
     background-color: #91FF91;
+}
+
+.Deleted > .selectItems > .selected {
+    background-color: #C4D9FF;
 }
 
 .selectItem:not(.selected) {

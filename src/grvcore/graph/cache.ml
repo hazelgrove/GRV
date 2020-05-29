@@ -4,7 +4,7 @@ type t = {
   (* Contains only Created *)
   parents : Edge.Set.t Vertex.Map.t;
   children : Edge.Set.t Cursor.Map.t;
-  deleted : Edge.t Option.t;
+  deleted : Edge.Set.t;
 }
 
 let mk vertexes parents children deleted : t =
@@ -14,7 +14,7 @@ let empty : t =
   let vertexes = Uuid.Map.singleton Vertex.root.id Vertex.root in
   let parents = Vertex.Map.empty in
   let children = Cursor.Map.empty in
-  mk vertexes parents children None
+  mk vertexes parents children Edge.Set.empty
 
 let parents (vertex : Vertex.t) (cache : t) : Edge.Set.t =
   Option.value
@@ -30,6 +30,21 @@ let pp (fmt : Format.formatter) (cache : t) : unit =
   let open Format in
   fprintf fmt "vertexes\n";
   Uuid.Map.iter (fun _ v -> fprintf fmt "%a\n" Vertex.pp v) cache.vertexes
+
+(* let is_rooted (edge : Edge.t) (cache : t) : bool =
+ *   (\* WARNING: This is a breadth-first search for trees. It could diverge if
+ *      the graph contains a cycle. *\)
+ *   let rec loop (queue : Edge.Set.t) : bool =
+ *     match Edge.Set.choose_opt queue with
+ *     | None -> false
+ *     | Some e ->
+ *         e = edge
+ *         ||
+ *         let siblings = children e.source cache in
+ *         let new_queue = Edge.Set.(queue |> union siblings |> remove e) in
+ *         loop new_queue
+ *   in
+ *   loop (children Cursor.root cache) *)
 
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let create (edge : Edge.t) (cache : t) : t =
@@ -68,4 +83,4 @@ let destroy (edge : Edge.t) (cache : t) : t =
   let children =
     Cursor.Map.add cursor (Edge.Set.remove edge children) cache.children
   in
-  { vertexes; children; parents; deleted = Some edge }
+  { vertexes; children; parents; deleted = Edge.Set.add edge cache.deleted }

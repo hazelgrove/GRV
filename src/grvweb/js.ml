@@ -25,3 +25,6 @@ let draw_viz (id : int) (dot_src : string) : unit =
 
 let get_selection (id : string) : bool list =
   Array.to_list @@ to_array @@ Unsafe.eval_string ("getSelection('" ^ id ^ "')")
+
+let clear_selection (id : string) : unit =
+  eval_to_unit ("clearSelection('" ^ id ^ "')")

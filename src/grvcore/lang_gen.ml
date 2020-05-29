@@ -409,6 +409,51 @@ end
     t short_name parent_constructor child_indexes child_sort default_index down
     right left
 
+(**** Module: Gadt ****)
+let () =
+  (**** Type declaration ****)
+  let types =
+    let mk_constructor s (Constructor (c, _, _is, _, _, _)) : string =
+      f "\n  type %s_%s = %s_%s (*of %%s*) [@@deriving show, eq, ord, sexp_of]"
+        (String.lowercase_ascii s) c s c
+      (* TODO: is *)
+    in
+    let mk_sort (lazy (s, cs)) : string =
+      f "\n  type %s%s" (String.lowercase_ascii s) (cat (mk_constructor s) cs)
+    in
+    cat mk_sort sorts
+  in
+  (**** Function body for `sort_of_ctor` ****)
+  (**** Function body for `sort_of_child` ****)
+  (**** Function body for `short_name` ****)
+  let short_name : string =
+    let mk_index s c (Index (i, _)) : string =
+      f "\n    | %s_%s_%s -> \"%s\"" s c i i
+    in
+    let mk_constructor s (Constructor (c, _, is, _, _, _)) : string =
+      f "\n    (* %s_%s *)%s" s c (cat ~empty (mk_index s c) is)
+    in
+    let mk_sort ((lazy (s, cs)) : sort) : string =
+      f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
+    in
+    cat mk_sort sorts
+  in
+  (**** Module declaration ****)
+  Printf.printf
+    {|
+module Gadt = struct
+  %s
+
+(*type ('ctor, 'sort) sort_of_ctor =*)
+
+(*
+  let short_name (i : t) : string =
+    match i with%s
+    *)
+end
+|}
+    types short_name
+
 (**** Module: <top-level> ****)
 let () =
   (**** Function body for `show` ****)

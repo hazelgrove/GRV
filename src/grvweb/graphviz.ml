@@ -8,9 +8,9 @@ let vertex_color (vertex : Vertex.t) (cursor : Cursor.t) (cache : Cache.t) :
     | None -> "white"
     | Some edges ->
         if
-          List.exists
-            (fun edge -> Edge.source edge = cursor && Edge.target edge = vertex)
-            (List.of_seq @@ Edge.Set.to_seq edges)
+          Edge.Set.exists
+            (fun edge -> edge.source = cursor && edge.target = vertex)
+            edges
         then cursor_color
         else "white"
 
@@ -45,19 +45,18 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
       concat @@ map of_seq @@ map Edge.Set.to_seq live_children
     in
     map
-      (fun edge ->
-        let source : Vertex.t = (Edge.source edge).vertex in
-        let target : Vertex.t = Edge.target edge in
+      (fun (edge : Edge.t) ->
+        let source : Vertex.t = edge.source.vertex in
+        let target : Vertex.t = edge.target in
         let source_id = Uuid.Id.show source.id in
         let target_id = Uuid.Id.show target.id in
         let color =
-          if
-            length @@ filter (fun e -> Edge.(source e = source edge)) live_edges
-            < 2
-          then "black"
-          else "red"
+          let siblings =
+            filter (fun (e : Edge.t) -> e.source = edge.source) live_edges
+          in
+          if length siblings < 2 then "black" else "red"
         in
-        let field = Lang.Index.short_name (Edge.source edge).index in
+        let field = Lang.Index.short_name edge.source.index in
         Printf.sprintf "n%s:%s -> n%s [color=%s]" source_id field target_id
           color)
       live_edges

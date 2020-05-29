@@ -1,10 +1,9 @@
 type t = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp_of, show]
 
 let pp (fmt : Format.formatter) (edge_action : t) : unit =
-  let edge = Uuid.Wrap.unmk edge_action.edge in
   Format.fprintf fmt "%a %a → %s" Edge_state.pp edge_action.state Cursor.pp
-    edge.source
-    (Uuid.Id.show edge.target.id)
+    edge_action.edge.source
+    (Uuid.Id.show edge_action.edge.target.id)
 
 let apply (action : t) (graph : Graph.t) : Graph.t =
   let old_state = Edge.Map.find_opt action.edge graph.states in

@@ -24,10 +24,10 @@ let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
     match Edge.Set.elements (Cache.children child model.graph.cache) with
     | [] ->
         span [ class_ "hole"; clickable ~inject model child ] [ W.chars "_" ]
-    | [ edge ] -> recur (Edge.target edge) child
+    | [ edge ] -> recur edge.target child
     | edges ->
         let nodes =
-          List.map (fun edge -> recur (Edge.target edge) child) edges
+          List.map (fun (edge : Edge.t) -> recur edge.target child) edges
         in
         span
           [ class_ "conflict"; clickable ~inject model child ]
@@ -108,7 +108,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
         | Some edge ->
             [
               W.chars "[deleted ";
-              of_vertex ~inject this_model (Edge.target edge) (Edge.source edge);
+              of_vertex ~inject this_model edge.target edge.source;
               W.chars "]";
             ] );
       h2 [] [ text "Cursor" ];

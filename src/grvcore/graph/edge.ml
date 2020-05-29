@@ -1,17 +1,7 @@
-type t' = { source : Cursor.t; target : Vertex.t } [@@deriving sexp_of, show]
+type t = { source : Cursor.t; target : Vertex.t }
+[@@deriving ord, sexp_of, show]
 
-type t = t' Uuid.Wrap.t [@@deriving sexp_of, show]
-
-let mk (source : Cursor.t) (target : Vertex.t) : t =
-  Uuid.Wrap.mk { source; target }
-
-let compare : t -> t -> int = Uuid.Wrap.compare
-
-let equal (edge1 : t) (edge2 : t) : bool = compare edge1 edge2 = 0
-
-let source (edge : t) : Cursor.t = (Uuid.Wrap.unmk edge).source
-
-let target (edge : t) : Vertex.t = (Uuid.Wrap.unmk edge).target
+let mk (source : Cursor.t) (target : Vertex.t) : t = { source; target }
 
 module OrderedType = struct
   type nonrec t = t

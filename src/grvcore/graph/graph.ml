@@ -15,3 +15,9 @@ let pp (fmt : Format.formatter) (graph : t) : unit =
       fprintf fmt "%s = %a\n" (Uuid.Id.show edge.id) Edge_state.pp state)
     graph.states;
   fprintf fmt "@?"
+
+let parents (vertex : Vertex.t) (graph : t) : Edge.Set.t =
+  Cache.parents vertex graph.cache
+
+let children (cursor : Cursor.t) (graph : t) : Edge.Set.t =
+  Cache.children cursor graph.cache

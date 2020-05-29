@@ -55,6 +55,16 @@ type typ_var = Typ_var
 
 (* TODO: some way to "kind-check" uses of ctor versus sort *)
 
+type 'ctor ctor_in_exp =
+  | Lam_in_exp : exp_lam ctor_in_exp
+  | App_in_exp : exp_app ctor_in_exp
+  | Var_in_exp : exp_var ctor_in_exp
+
+type ('ctor, 'sort) sort_of_ctor =
+  | Root_root : (root_root, root) sort_of_ctor
+  | Id_id : (id_id, id) sort_of_ctor
+  | Exp : 'ctor ctor_in_exp -> ('ctor, exp) sort_of_ctor
+
 (* Connecting constructors to sorts *)
 (* TODO: maybe one constructor per sort and have type in sort to further specifics *)
 type ('ctor, 'sort) sort_of_ctor =

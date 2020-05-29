@@ -36,14 +36,12 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   in
   let edges =
     let open List in
-    let children = map snd (of_seq @@ Cursor.Map.to_seq graph.cache.children) in
+    let children = map snd (Cursor.Map.bindings graph.cache.children) in
     let live_children =
       let is_live edge = Edge.Map.find_opt edge graph.states = Some Created in
       filter (Edge.Set.exists is_live) children
     in
-    let live_edges =
-      concat @@ map of_seq @@ map Edge.Set.to_seq live_children
-    in
+    let live_edges = concat (map Edge.Set.elements live_children) in
     map
       (fun (edge : Edge.t) ->
         let source : Vertex.t = edge.source.vertex in

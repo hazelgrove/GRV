@@ -18,7 +18,7 @@ let fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
 let rec syn_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
-  | [ edge ] -> syn_typ_vertex graph edge.target
+  | [ edge ] -> syn_typ_vertex graph (Edge.target edge)
   | _edges ->
       (* Recur anyway?  Could check if all synth to same type? *) Unknown
 
@@ -39,14 +39,14 @@ let rec syn_exp_cursor (graph : Graph.t) (env : env) (cursor : Cursor.t) :
     Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
-  | [ edge ] -> syn_exp_vertex graph env edge.target
+  | [ edge ] -> syn_exp_vertex graph env (Edge.target edge)
   | _edges -> (*TODO*) Unknown
 
 and ann_exp_cursor (graph : Graph.t) (env : env) (cursor : Cursor.t)
     (typ : Type.t) : bool =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> false
-  | [ edge ] -> ann_exp_vertex graph env edge.target typ
+  | [ edge ] -> ann_exp_vertex graph env (Edge.target edge) typ
   | _edges -> (*TODO*) false
 
 and syn_exp_vertex (graph : Graph.t) (env : env) (vertex : Vertex.t) : Type.t =

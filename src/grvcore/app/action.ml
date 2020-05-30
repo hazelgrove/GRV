@@ -28,7 +28,7 @@ let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
             List.map
               (fun (old_edge : Edge.t) ->
                 ( let source = Cursor.mk new_vertex new_index in
-                  let edge = Edge.mk source old_edge.target in
+                  let edge = Edge.mk source (Edge.target old_edge) in
                   Graph_action.{ state = Created; edge }
                   : Graph_action.t ))
               (Edge.Set.elements old_children)
@@ -55,7 +55,7 @@ let apply_move (d : direction) (cursor : Cursor.t) (cache : Cache.t) :
   | In -> (
       match Edge.Set.elements (Cache.children cursor cache) with
       | [ edge ] -> (
-          let vertex = edge.target in
+          let vertex = Edge.target edge in
           match Lang.Index.down vertex.value with
           | None -> None
           | Some index -> Some { vertex; index }
@@ -63,7 +63,7 @@ let apply_move (d : direction) (cursor : Cursor.t) (cache : Cache.t) :
       | _ -> None )
   | Out -> (
       match Edge.Set.elements (Cache.parents cursor.vertex cache) with
-      | [ edge ] -> Some edge.source
+      | [ edge ] -> Some (Edge.source edge)
       | _ -> None )
   | Left -> (
       match Lang.Index.left cursor.index with

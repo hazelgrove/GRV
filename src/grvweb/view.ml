@@ -20,14 +20,18 @@ let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    let recur : Vertex.t -> Cursor.t -> Vdom.Node.t = of_vertex ~inject model in
+    let recur : Vertex.t -> Cursor.t option -> Vdom.Node.t =
+      of_vertex ~inject model
+    in
     match Edge.Set.elements (Cache.children child model.graph.cache) with
     | [] ->
         span [ class_ "hole"; clickable ~inject model child ] [ W.chars "_" ]
-    | [ edge ] -> recur (Edge.target edge) child
+    | [ edge ] -> recur (Edge.target edge) (Some child)
     | edges ->
         let nodes =
-          List.map (fun (edge : Edge.t) -> recur (Edge.target edge) child) edges
+          List.map
+            (fun (edge : Edge.t) -> recur (Edge.target edge) (Some child))
+            edges
         in
         span
           [ class_ "conflict"; clickable ~inject model child ]
@@ -36,16 +40,17 @@ let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
   if model.cursor = child then span [ class_ "cursor" ] [ node ] else node
 
 and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
-    (parent : Cursor.t) : Vdom.Node.t =
+    (parent : Cursor.t option) : Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
     let recur (index : Lang.Index.t) : Vdom.Node.t =
       of_index ~inject model { vertex; index }
     in
-    span
-      [ clickable ~inject model parent ]
-      (Lang.show W.chars W.chars recur vertex.value)
+    let attr =
+      match parent with None -> [] | Some p -> [ clickable ~inject model p ]
+    in
+    span attr (Lang.show W.chars W.chars recur vertex.value)
   in
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]
@@ -115,10 +120,10 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           @@ W.select ~multi:false ~default:false
                ("deleted" ^ Int.to_string this_model.id)
                "Deleted"
-               (Edge.Set.elements this_model.graph.cache.deleted)
-               (fun (edge : Edge.t) ->
-                 of_vertex ~inject this_model (Edge.target edge)
-                   (Edge.source edge));
+               (Vertex.Set.elements
+                  (Vertex.Set.remove Vertex.root (Roots.roots this_model.graph)))
+               (fun (vertex : Vertex.t) ->
+                 of_vertex ~inject this_model vertex None);
           mk @@ W.button "Restore (ctrl-r)" (fun () -> Key.restore this_model);
         ];
       h2 [] [ text "Cursor" ];

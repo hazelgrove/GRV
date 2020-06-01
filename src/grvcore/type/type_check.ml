@@ -1,4 +1,4 @@
-type env = Type.t Env.t
+type type_env = Type.t Env.t
 
 (* TODO: analyze against vertex instead of type? *)
 
@@ -13,15 +13,26 @@ let fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
   else
     failwith (Printf.sprintf "%s: Non-Typ vertex %s" loc (Vertex.show vertex))
 
+type error = Error of Vertex.t * Lang.Index.t option * string
+
+type syn = Success of Type.t | Error of error list
+
+type ana = Success | Error of error list
+
 (* let rec consistent_cursor (graph : Grapht.t) (cursor1 : Cursor.t) (cursor2 : Cursor.t) *)
 
+(* TODO: Print out final type or None *)
+(* Free var, type inconsistency, sort errors(?), conflicts *)
+(* Return vertex set of where incosistencies *)
+
+(* More of an eval than a syn *)
 let rec syn_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
   | [ edge ] -> syn_typ_vertex graph edge.target
-  | _edges ->
-      (* Recur anyway?  Could check if all synth to same type? *) Unknown
+  | _edges -> (* Recur anyway? no *) Unknown
 
+(* Technically indeterminate / a type conflict *)
 and syn_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t =
   match vertex.value with
   | Typ_num -> Num
@@ -31,56 +42,64 @@ and syn_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t =
       Arrow (t_arg, t_result)
   | _ -> fail __LOC__ Lang.Sort.Typ vertex
 
-let ann_pat_cursor (_graph : Graph.t) (_env : env) (_pat_cursor : Cursor.t)
-    (_typ : Type.t) : env =
+let ana_pat_cursor (_graph : Graph.t) (_env : type_env) (_pat_cursor : Cursor.t)
+    (_typ : Type.t) : type_env =
   failwith __LOC__
 
-let rec syn_exp_cursor (graph : Graph.t) (env : env) (cursor : Cursor.t) :
+(* TODO: what if conflict? add all. *)
+
+let rec syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
   | [ edge ] -> syn_exp_vertex graph env edge.target
-  | _edges -> (*TODO*) Unknown
+  | _edges ->
+      (* (* Could check if all synth to same type? *) TODO: join type? *)
+      Unknown
 
-and ann_exp_cursor (graph : Graph.t) (env : env) (cursor : Cursor.t)
+and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : bool =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> false
-  | [ edge ] -> ann_exp_vertex graph env edge.target typ
+  | [ edge ] -> ana_exp_vertex graph env edge.target typ
   | _edges -> (*TODO*) false
 
-and syn_exp_vertex (graph : Graph.t) (env : env) (vertex : Vertex.t) : Type.t =
+and syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
+    Type.t (* TODO: option*) =
   match vertex.value with
   | Exp_var string -> (
       match Hashtbl.find_opt env string with None -> Unknown | Some t -> t )
   | Exp_lam ->
       let typ = syn_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type) in
       let env' =
-        ann_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) typ
+        ana_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) typ
       in
       let body = syn_exp_cursor graph env' (Cursor.mk vertex Exp_lam_body) in
       Arrow (typ, body)
   | Exp_app -> (
       let func = syn_exp_cursor graph env (Cursor.mk vertex Exp_app_fun) in
       match func with
+      (* Matched arrow type *)
       | Arrow (param_type, result_type) ->
-          if ann_exp_cursor graph env (Cursor.mk vertex Exp_app_arg) param_type
+          if ana_exp_cursor graph env (Cursor.mk vertex Exp_app_arg) param_type
           then result_type
-          else Unknown
-      | _ -> Unknown )
+          else failwith __LOC__ (* TODO None *)
+      | Unknown -> failwith __LOC__ (* TODO: treat as Unknown -> Unknown*)
+      | Num -> Unknown )
   | Exp_num _ -> Num
   | Exp_plus ->
       let (*TODO*) _left =
-        ann_exp_cursor graph env (Cursor.mk vertex Exp_plus_left) Num
+        ana_exp_cursor graph env (Cursor.mk vertex Exp_plus_left) Num
       in
       let (*TODO*) _right =
-        ann_exp_cursor graph env (Cursor.mk vertex Exp_plus_right) Num
+        ana_exp_cursor graph env (Cursor.mk vertex Exp_plus_right) Num
       in
       (* TODO*) Num
   | _ -> fail __LOC__ Lang.Sort.Exp vertex
 
-and ann_exp_vertex (graph : Graph.t) (env : env) (vertex : Vertex.t)
+and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
     (typ : Type.t) : bool =
+  (* TODO: check type consistency after defering to synthesis *)
   match vertex.value with
   | Exp_var string -> (
       match Hashtbl.find_opt env string with
@@ -91,13 +110,13 @@ and ann_exp_vertex (graph : Graph.t) (env : env) (vertex : Vertex.t)
         syn_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type)
       in
       let _env' =
-        ann_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) param_type
+        ana_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) param_type
       in
       match typ with
       | Unknown -> failwith __LOC__
       | Arrow (arg_type, result_type) ->
           param_type = arg_type
-          && ann_exp_cursor graph env
+          && ana_exp_cursor graph env
                (Cursor.mk vertex Exp_lam_body)
                result_type
       | _ -> failwith __LOC__ )
@@ -107,17 +126,17 @@ and ann_exp_vertex (graph : Graph.t) (env : env) (vertex : Vertex.t)
       | Unknown -> failwith __LOC__
       | Arrow (param_type, result_type) ->
           let arg =
-            ann_exp_cursor graph env (Cursor.mk vertex Exp_app_arg) param_type
+            ana_exp_cursor graph env (Cursor.mk vertex Exp_app_arg) param_type
           in
           arg && typ = result_type
       | _ -> failwith __LOC__ )
   | Exp_num _ -> typ = Num
   | Exp_plus ->
       let left =
-        ann_exp_cursor graph env (Cursor.mk vertex Exp_plus_left) Num
+        ana_exp_cursor graph env (Cursor.mk vertex Exp_plus_left) Num
       in
       let right =
-        ann_exp_cursor graph env (Cursor.mk vertex Exp_plus_right) Num
+        ana_exp_cursor graph env (Cursor.mk vertex Exp_plus_right) Num
       in
       (* TODO*) left && right && typ = Num
   | _ -> fail __LOC__ Lang.Sort.Exp vertex

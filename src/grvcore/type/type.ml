@@ -1,1 +1,1 @@
-type t = Cursor of Cursor.t | Unknown | Num | Arrow of t * t
+type t = Unknown | Num | Arrow of t * t

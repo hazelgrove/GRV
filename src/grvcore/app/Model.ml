@@ -3,7 +3,7 @@ module Instance = struct
     id : Uuid.Id.t;
     graph : Graph.t;
     cursor : Cursor.t;
-    actions : Graph_action.t list; (* known_actions : Graph_action. *)
+    actions : Graph_action.t list; (* TODO: known_actions : Graph_action.Set.t *)
   }
 
   let cutoff (m1 : t) (m2 : t) : bool = m1 == m2

@@ -7,10 +7,14 @@ type local = Move of direction | Edit of edit [@@deriving sexp_of]
 open Sexplib0.Sexp_conv
 
 (* TODO: Make `Send` be to a specific instance *)
-type app = Select of Cursor.t | Send of Graph_action.t list | Enqueue of local
+type app =
+  (* TODO: Move to local *)
+  | Select of Cursor.t
+  | Send of Graph_action.t list
+  | Enqueue of local
 [@@deriving sexp_of]
 
-type t = { instance_id : int; action : app } [@@deriving sexp_of]
+type t = { instance_id : Uuid.Id.t; action : app } [@@deriving sexp_of]
 
 let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
     bool * Graph_action.t list =
@@ -79,28 +83,36 @@ let rec apply_instance (local_action : local) (model : Model.Instance.t) :
   match local_action with
   | Move direction ->
       let cursor =
-        Option.value ~default:model.cursor
-          (apply_move direction model.cursor model.graph.cache)
+        Option.value ~default:model.value.cursor
+          (apply_move direction model.value.cursor model.value.graph.cache)
       in
-      { model with cursor }
+      { model with value = { model.value with cursor } }
   | Edit edit ->
       let allowed =
         match edit with
         | Destroy -> true
         | Create constructor ->
-            Lang.Index.child_sort model.cursor.index
+            Lang.Index.child_sort model.value.cursor.index
             = Lang.Constructor.sort_of constructor
       in
       if not allowed then model
       else
         let move_in, graph_actions =
-          apply_edit edit model.cursor model.graph.cache
+          apply_edit edit model.value.cursor model.value.graph.cache
         in
         let graph =
-          List.fold_right Graph_action.apply graph_actions model.graph
+          List.fold_right Graph_action.apply graph_actions model.value.graph
         in
         let model =
-          { model with graph; actions = model.actions @ graph_actions }
+          {
+            model with
+            value =
+              {
+                model.value with
+                graph;
+                actions = model.value.actions @ graph_actions;
+              };
+          }
         in
         if move_in then apply_instance (Move In) model else model
 
@@ -110,27 +122,29 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   | Select cursor -> (
       match
         let%map.Util.Option receiver : Model.Instance.t Option.t =
-          Model.find_opt action.instance_id model
+          Uuid.Map.find_opt action.instance_id model
         in
-        { receiver with Model.Instance.cursor }
+        (* TODO: fix this *)
+        let open Uuid.Wrap in
+        { receiver with value = { receiver.value with Model.Instance.cursor } }
       with
-      | Some receiver -> Model.add action.instance_id receiver model
+      | Some receiver -> Uuid.Map.add action.instance_id receiver model
       | None -> model )
   | Send actions ->
       let new_model =
-        Model.map
+        Uuid.Map.map
           (fun (receiver : Model.Instance.t) ->
             let graph =
-              List.fold_right Graph_action.apply actions receiver.graph
+              List.fold_right Graph_action.apply actions receiver.value.graph
             in
-            { receiver with graph })
+            { receiver with value = { receiver.value with graph } })
           model
       in
-      Model.update action.instance_id
+      Uuid.Map.update action.instance_id
         ( Option.map @@ fun (sender : Model.Instance.t) ->
-          { sender with actions = [] } )
+          { sender with value = { sender.value with actions = [] } } )
         new_model
   | Enqueue inst_action ->
-      Model.update action.instance_id
+      Uuid.Map.update action.instance_id
         (Option.map @@ apply_instance inst_action)
         model

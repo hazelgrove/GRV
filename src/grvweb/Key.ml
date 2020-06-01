@@ -2,18 +2,19 @@ module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
 let send (this_model : Model.Instance.t) : Action.app Option.t =
-  match Js.get_selection ("actions" ^ Int.to_string this_model.id) with
+  match Js.get_selection ("actions" ^ Uuid.Id.show this_model.id) with
   | [] -> None
   | selection ->
       let actions =
-        List.(map fst (filter snd @@ combine this_model.actions selection))
+        List.(
+          map fst (filter snd @@ combine this_model.value.actions selection))
       in
       Some (Send actions)
 
 let restore (this_model : Model.Instance.t) : Action.app Option.t =
   send this_model
 
-let ctrl (model : Model.t) (this_model : Model.Instance.t)
+let ctrl (_model : Model.t) (this_model : Model.Instance.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   match Dom_html.Keyboard_code.of_event event with
   | KeyS -> (
@@ -25,19 +26,19 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
       | result -> result )
   | key ->
       let%map.Util.Option action : Action.local Option.t =
-        let refocus (next_id : int) (default_id : int) : unit =
-          Js.focus_instance
-            ( match Model.find_opt next_id model with
-            | Some _ -> next_id
-            | None -> default_id )
-        in
+        (* let refocus (next_id : Uuid.Id.t) (default_id : Uuid.Id.t) : unit =
+             Js.focus_instance
+               ( match Uuid.Map.find_opt next_id model with
+               | Some _ -> next_id
+               | None -> default_id )
+           in *)
         match key with
-        | ArrowLeft ->
-            refocus (this_model.id - 1) (snd @@ Model.max_binding model).id;
-            None
-        | ArrowRight ->
-            refocus (this_model.id + 1) (snd @@ Model.min_binding model).id;
-            None
+        (* TODO: Map.find_least | ArrowLeft ->
+               refocus (this_model.id - 1) (snd @@ Model.max_binding model).id;
+               None
+           | ArrowRight ->
+               refocus (this_model.id + 1) (snd @@ Model.min_binding model).id;
+               None *)
         | _ -> None
       in
       Action.Enqueue action
@@ -82,7 +83,7 @@ let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
     | Delete ->
-        Js.clear_selection ("deleted" ^ Int.to_string this_model.id);
+        Js.clear_selection ("deleted" ^ Uuid.Id.show this_model.id);
         Some (Edit Destroy)
     | ArrowUp -> Some (Move Out)
     | ArrowDown -> Some (Move In)

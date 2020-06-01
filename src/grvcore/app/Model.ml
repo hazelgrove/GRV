@@ -1,23 +1,30 @@
 module Instance = struct
-  type t = {
-    id : int;
+  type t' = {
     graph : Graph.t;
     cursor : Cursor.t;
     actions : Graph_action.t list;
   }
 
+  type t = t' Uuid.Wrap.t
+
   let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
-  let empty (id : int) : t =
-    { id; graph = Graph.empty; cursor = Cursor.root; actions = [] }
+  let mk () : t =
+    Uuid.Wrap.mk { graph = Graph.empty; cursor = Cursor.root; actions = [] }
+
+  module OrderedType = struct
+    type nonrec t = t
+
+    let compare (i1 : t) (i2 : t) : int = Uuid.Id.compare i1.id i2.id
+  end
 end
 
-include Util.Int.Map
+type t = Instance.t Uuid.Map.t
 
-type t = Instance.t Util.Int.Map.t
-
-let empty =
-  Util.Int.Map.of_seq
-    (List.to_seq [ (0, Instance.empty 0); (1, Instance.empty 1) ])
+let empty : t =
+  let inst1 = Instance.mk () in
+  let inst2 = Instance.mk () in
+  (* TODO: helper for this *)
+  Uuid.Map.of_seq (List.to_seq [ (inst1.id, inst1); (inst2.id, inst2) ])
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2

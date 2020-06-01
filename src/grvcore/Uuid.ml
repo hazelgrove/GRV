@@ -61,3 +61,13 @@ module Wrap = struct
       (u : 'a t) : unit =
     Format.fprintf fmt "%s=%a" (Id.show u.id) pp' u.value
 end
+
+(* TODO: *)
+module Embedded = struct
+  (* TODO: module defining how to extract an ID *)
+  (* module GetId = struct
+       type nonrec t = t
+       let id (i : t) = i.id
+     end
+     module OrderedType = Uuid.OrderedType(GetId) *)
+end

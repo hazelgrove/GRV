@@ -29,8 +29,10 @@ type ana = Success | Error of error list
 let rec syn_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
-  | [ edge ] -> syn_typ_vertex graph edge.target
-  | _edges -> (* Recur anyway? no *) Unknown
+  | [ edge ] -> syn_typ_vertex graph (Edge.target edge)
+  | _edges ->
+      (* Recur anyway? (* Recur anyway? no *)  Could check if all synth to same type? *)
+      Unknown
 
 (* Technically indeterminate / a type conflict *)
 and syn_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t =
@@ -52,7 +54,7 @@ let rec syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
-  | [ edge ] -> syn_exp_vertex graph env edge.target
+  | [ edge ] -> syn_exp_vertex graph env (Edge.target edge)
   | _edges ->
       (* (* Could check if all synth to same type? *) TODO: join type? *)
       Unknown
@@ -61,7 +63,7 @@ and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : bool =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> false
-  | [ edge ] -> ana_exp_vertex graph env edge.target typ
+  | [ edge ] -> ana_exp_vertex graph env (Edge.target edge) typ
   | _edges -> (*TODO*) false
 
 and syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :

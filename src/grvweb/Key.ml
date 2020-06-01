@@ -6,8 +6,7 @@ let send (this_model : Model.Instance.t) : Action.app Option.t =
   | [] -> None
   | selection ->
       let actions =
-        List.(
-          map fst (filter snd @@ combine this_model.value.actions selection))
+        List.(map fst (filter snd @@ combine this_model.actions selection))
       in
       Some (Send actions)
 

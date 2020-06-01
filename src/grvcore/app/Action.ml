@@ -16,6 +16,34 @@ type app =
 
 type t = { instance_id : Uuid.Id.t; action : app } [@@deriving sexp_of]
 
+module Global = struct
+  let filter_instance_actions (globally_known : Graph_action.Set.t)
+      (instance : Model.Instance.t) : Model.Instance.t =
+    let actions =
+      List.filter
+        (fun a -> not (Graph_action.Set.mem a globally_known))
+        instance.actions
+    in
+    { instance with actions }
+
+  let globally_known_actions (_model : Model.t) : Graph_action.Set.t =
+    Graph_action.Set.empty
+
+  (* let knowns =
+       List.map
+         (fun (_, i) -> i.graph.cache.known_actions)
+         (Uuid.Map.bindings model.instances)
+     in
+     List.fold_left (fun x z -> Graph_action.Set.union .... ) knowns *)
+
+  let remove_known_actions (model : Model.t) : Model.t =
+    let known_actions : Graph_action.Set.t = globally_known_actions model in
+    let f : Model.Instance.t -> Model.Instance.t =
+      filter_instance_actions known_actions
+    in
+    Uuid.Map.map f model
+end
+
 let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
     bool * Graph_action.t list =
   let old_children = Cache.children cursor cache in
@@ -23,7 +51,10 @@ let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
   | Create constructor -> (
       let new_vertex = Vertex.mk constructor in
       let create_parent_edge =
-        [ Graph_action.{ state = Created; edge = Edge.mk cursor new_vertex } ]
+        [
+          Uuid.Wrap.mk
+            Graph_action.{ state = Created; edge = Edge.mk cursor new_vertex };
+        ]
       in
       match Lang.Index.default_index constructor with
       | None -> (false, create_parent_edge)
@@ -33,13 +64,14 @@ let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
               (fun (old_edge : Edge.t) ->
                 ( let source = Cursor.mk new_vertex new_index in
                   let edge = Edge.mk source (Edge.target old_edge) in
-                  Graph_action.{ state = Created; edge }
+                  Uuid.Wrap.mk Graph_action.{ state = Created; edge }
                   : Graph_action.t ))
               (Edge.Set.elements old_children)
           in
           let destroy_old_children_edges =
             List.map
-              (fun edge -> Graph_action.{ state = Destroyed; edge })
+              (fun edge ->
+                Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
               (Edge.Set.elements old_children)
           in
           ( true,
@@ -48,7 +80,7 @@ let apply_edit (edit : edit) (cursor : Cursor.t) (cache : Cache.t) :
   | Destroy ->
       let destroy_edges =
         List.map
-          (fun edge -> Graph_action.{ state = Destroyed; edge })
+          (fun edge -> Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
           (Edge.Set.elements old_children)
       in
       (false, destroy_edges)
@@ -83,36 +115,28 @@ let rec apply_instance (local_action : local) (model : Model.Instance.t) :
   match local_action with
   | Move direction ->
       let cursor =
-        Option.value ~default:model.value.cursor
-          (apply_move direction model.value.cursor model.value.graph.cache)
+        Option.value ~default:model.cursor
+          (apply_move direction model.cursor model.graph.cache)
       in
-      { model with value = { model.value with cursor } }
+      { model with cursor }
   | Edit edit ->
       let allowed =
         match edit with
         | Destroy -> true
         | Create constructor ->
-            Lang.Index.child_sort model.value.cursor.index
+            Lang.Index.child_sort model.cursor.index
             = Lang.Constructor.sort_of constructor
       in
       if not allowed then model
       else
         let move_in, graph_actions =
-          apply_edit edit model.value.cursor model.value.graph.cache
+          apply_edit edit model.cursor model.graph.cache
         in
         let graph =
-          List.fold_right Graph_action.apply graph_actions model.value.graph
+          List.fold_right Graph_action.apply graph_actions model.graph
         in
         let model =
-          {
-            model with
-            value =
-              {
-                model.value with
-                graph;
-                actions = model.value.actions @ graph_actions;
-              };
-          }
+          { model with graph; actions = model.actions @ graph_actions }
         in
         if move_in then apply_instance (Move In) model else model
 
@@ -125,8 +149,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
           Uuid.Map.find_opt action.instance_id model
         in
         (* TODO: fix this *)
-        let open Uuid.Wrap in
-        { receiver with value = { receiver.value with Model.Instance.cursor } }
+        { receiver with Model.Instance.cursor }
       with
       | Some receiver -> Uuid.Map.add action.instance_id receiver model
       | None -> model )
@@ -135,15 +158,12 @@ let apply (model : Model.t) (action : t) (_state : State.t)
         Uuid.Map.map
           (fun (receiver : Model.Instance.t) ->
             let graph =
-              List.fold_right Graph_action.apply actions receiver.value.graph
+              List.fold_right Graph_action.apply actions receiver.graph
             in
-            { receiver with value = { receiver.value with graph } })
+            { receiver with graph })
           model
       in
-      Uuid.Map.update action.instance_id
-        ( Option.map @@ fun (sender : Model.Instance.t) ->
-          { sender with value = { sender.value with actions = [] } } )
-        new_model
+      Global.remove_known_actions new_model
   | Enqueue inst_action ->
       Uuid.Map.update action.instance_id
         (Option.map @@ apply_instance inst_action)

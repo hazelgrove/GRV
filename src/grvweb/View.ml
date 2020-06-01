@@ -18,7 +18,7 @@ let rec view_cursor ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
     let view_vertex' : Vertex.t -> Cursor.t option -> Vdom.Node.t =
       view_vertex ~inject model
     in
-    match Edge.Set.elements (Cache.children cursor model.value.graph.cache) with
+    match Edge.Set.elements (Cache.children cursor model.graph.cache) with
     | [] ->
         span [ class_ "hole"; clickable ~inject model cursor ] [ W.chars "_" ]
     | [ edge ] -> view_vertex' (Edge.target edge) (Some cursor)
@@ -35,8 +35,7 @@ let rec view_cursor ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
           @ Util.List.intersperse (W.errs "|") nodes
           @ [ W.errs "}" ] )
   in
-  if model.value.cursor = cursor then span [ class_ "cursor" ] [ node ]
-  else node
+  if model.cursor = cursor then span [ class_ "cursor" ] [ node ] else node
 
 and view_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
     (parent : Cursor.t option) : Vdom.Node.t =
@@ -117,7 +116,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           mk
           @@ W.select
                ("actions" ^ Uuid.Id.show this_model.id)
-               "Actions" this_model.value.actions
+               "Actions" this_model.actions
                (fun (item : Graph_action.t) ->
                  W.chars @@ Format.asprintf "%a" Graph_action.pp item);
           mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send this_model);
@@ -129,14 +128,13 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
                ("deleted" ^ Uuid.Id.show this_model.id)
                "Deleted"
                (Vertex.Set.elements
-                  (Vertex.Set.remove Vertex.root
-                     (Roots.roots this_model.value.graph)))
+                  (Vertex.Set.remove Vertex.root (Roots.roots this_model.graph)))
                (fun (vertex : Vertex.t) ->
                  view_vertex ~inject this_model vertex None);
           mk @@ W.button "Restore (ctrl-r)" (fun () -> Key.restore this_model);
         ];
       h2 [] [ text "Cursor" ];
-      W.chars @@ Format.asprintf "%a@." Cursor.pp this_model.value.cursor;
+      W.chars @@ Format.asprintf "%a@." Cursor.pp this_model.cursor;
       h2 [] [ text "Graph" ];
       div [ id ("graph" ^ Uuid.Id.show this_model.id) ] [ span [] [] ];
     ]

@@ -55,9 +55,7 @@ let button ?(disable : bool = false) (label : string)
 let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
     (mk : string -> Lang.Constructor.t) : Vdom.Node.t t =
  fun ~inject this_model ->
-  let disable =
-    not (Lang.Index.child_sort this_model.value.cursor.index = sort)
-  in
+  let disable = not (Lang.Index.child_sort this_model.cursor.index = sort) in
   let btn : Vdom.Node.t t =
     button ~disable label (fun () ->
         match Js.get_input id_ with
@@ -79,9 +77,7 @@ let app_button ?(disable : bool = false) (label : string) (action : Action.app)
 let create_button (label : string) (ctor : Lang.Constructor.t)
     (sort : Lang.Sort.t) : Vdom.Node.t t =
  fun ~inject this_model ->
-  let disable =
-    not (Lang.Index.child_sort this_model.value.cursor.index = sort)
-  in
+  let disable = not (Lang.Index.child_sort this_model.cursor.index = sort) in
   app_button ~disable label (Enqueue (Edit (Create ctor))) ~inject this_model
 
 let move_button (label : string) (dir : Action.direction) : Vdom.Node.t t =

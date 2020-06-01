@@ -1,16 +1,20 @@
 module Instance = struct
-  type t' = {
+  type t = {
+    id : Uuid.Id.t;
     graph : Graph.t;
     cursor : Cursor.t;
-    actions : Graph_action.t list;
+    actions : Graph_action.t list; (* known_actions : Graph_action. *)
   }
-
-  type t = t' Uuid.Wrap.t
 
   let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
   let mk () : t =
-    Uuid.Wrap.mk { graph = Graph.empty; cursor = Cursor.root; actions = [] }
+    {
+      id = Uuid.Id.next ();
+      graph = Graph.empty;
+      cursor = Cursor.root;
+      actions = [];
+    }
 
   module OrderedType = struct
     type nonrec t = t

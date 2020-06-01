@@ -8,6 +8,8 @@ let pp (fmt : Format.formatter) (cursor : t) : unit =
   Format.fprintf fmt "%a.%s" Uuid.Id.pp cursor.vertex.id
     (Lang.Index.short_name cursor.index)
 
+(* TODO: add a target function *)
+
 module OrderedType = struct
   type nonrec t = t
 

@@ -38,6 +38,7 @@ end = struct
 end
 
 module Map = Map.Make (Id)
+module Set = Set.Make (Id)
 
 (* TODO: use `private` types for Wrap.t *)
 module Wrap = struct

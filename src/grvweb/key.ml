@@ -27,18 +27,16 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
       let%map.Util.Option action : Action.local Option.t =
         let refocus (next_id : int) (default_id : int) : unit =
           Js.focus_instance
-            ( match Model.MapInt.find_opt next_id model with
+            ( match Model.find_opt next_id model with
             | Some _ -> next_id
             | None -> default_id )
         in
         match key with
         | ArrowLeft ->
-            refocus (this_model.id - 1)
-              (snd @@ Model.MapInt.max_binding model).id;
+            refocus (this_model.id - 1) (snd @@ Model.max_binding model).id;
             None
         | ArrowRight ->
-            refocus (this_model.id + 1)
-              (snd @@ Model.MapInt.min_binding model).id;
+            refocus (this_model.id + 1) (snd @@ Model.min_binding model).id;
             None
         | _ -> None
       in

@@ -12,15 +12,12 @@ module Instance = struct
     { id; graph = Graph.empty; cursor = Cursor.root; actions = [] }
 end
 
-module MapInt = Map.Make (struct
-  type t = int
+include Util.Int.Map
 
-  let compare = Int.compare
-end)
-
-type t = Instance.t MapInt.t
+type t = Instance.t Util.Int.Map.t
 
 let empty =
-  MapInt.of_seq (List.to_seq [ (0, Instance.empty 0); (1, Instance.empty 1) ])
+  Util.Int.Map.of_seq
+    (List.to_seq [ (0, Instance.empty 0); (1, Instance.empty 1) ])
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2

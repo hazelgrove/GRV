@@ -143,4 +143,4 @@ let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []
     (List.map
        (fun (_, this_model) -> view_instance ~inject model this_model)
-       (Model.MapInt.bindings model))
+       (Model.bindings model))

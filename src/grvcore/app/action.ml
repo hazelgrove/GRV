@@ -110,15 +110,15 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   | Select cursor -> (
       match
         let%map.Util.Option receiver : Model.Instance.t Option.t =
-          Model.MapInt.find_opt action.instance_id model
+          Model.find_opt action.instance_id model
         in
         { receiver with Model.Instance.cursor }
       with
-      | Some receiver -> Model.MapInt.add action.instance_id receiver model
+      | Some receiver -> Model.add action.instance_id receiver model
       | None -> model )
   | Send actions ->
       let new_model =
-        Model.MapInt.map
+        Model.map
           (fun (receiver : Model.Instance.t) ->
             let graph =
               List.fold_right Graph_action.apply actions receiver.graph
@@ -126,11 +126,11 @@ let apply (model : Model.t) (action : t) (_state : State.t)
             { receiver with graph })
           model
       in
-      Model.MapInt.update action.instance_id
+      Model.update action.instance_id
         ( Option.map @@ fun (sender : Model.Instance.t) ->
           { sender with actions = [] } )
         new_model
   | Enqueue inst_action ->
-      Model.MapInt.update action.instance_id
+      Model.update action.instance_id
         (Option.map @@ apply_instance inst_action)
         model

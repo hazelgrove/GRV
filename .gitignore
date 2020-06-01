@@ -52,3 +52,8 @@ setup.log
 
 # opam package files
 *.opam
+
+# LaTeX files
+
+src/grvdoc/master.log
+src/grvdoc/master.pdf

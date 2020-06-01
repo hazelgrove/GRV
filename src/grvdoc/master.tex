@@ -1,0 +1,386 @@
+\documentclass[letterpaper,12pt]{article}
+
+\title{GRV Formal Syntax and Operational Semantics}
+\author{Eric Griffis \\ egriffis@umich.edu}
+
+% Page Layout
+
+\usepackage[margin=1in]{geometry}
+
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+
+% Content Layout
+
+\usepackage{array}
+\newcolumntype{C}{>{$}c<{$}}
+\newcolumntype{L}{>{$}l<{$}}
+\newcolumntype{R}{>{$}r<{$\ \:\!}}
+
+\newenvironment{Grammar}
+{
+  \begin{tabular*}{\textwidth}{
+    >{$}l<{$}
+    >{$}c<{$}
+    >{$}l<{$}
+    @{\extracolsep{\fill}}
+    r}
+}{
+  \end{tabular*}
+}
+
+\newcommand\OR{\ensuremath{~|~}}
+
+\newenvironment{alignRL}{%
+\begingroup
+\setlength{\tabcolsep}{0pt}
+\begin{tabular}{RL}%
+  }{%
+\end{tabular}
+\endgroup%
+}
+
+% Notation
+
+\usepackage{amsmath,amssymb}
+\usepackage{semantic}
+\usepackage{colonequals}
+
+\mathlig{::=}{\coloncolonequals}
+\mathlig{|-}{\vdash}
+\mathlig{:->}{\mapsto}
+\mathlig{-->a}{\overset{a}{\longrightarrow}}
+\mathlig{:}{\!:\!}
+
+\def\Cup{\cup\ \:\!}
+
+% Inference Rules
+
+\usepackage{mathpartir}
+
+\newcommand\Rule[1]{\text{rule \RULE{#1}}}
+\newcommand\RULE[1]{\text{\textsc{#1}}}
+\newcommand\Inferrule[3][]{\inferrule{#2}{#3}~\RULE{#1}}
+
+\def\A{\mathcal{A}}
+\def\C{\mathcal{C}}
+\def\E{\mathcal{E}}
+\def\G{\mathcal{G}}
+\def\I{\mathcal{I}}
+\def\K{\mathcal{K}}
+\def\S{\mathcal{S}}
+\def\U{\mathcal{U}}
+\def\V{\mathcal{V}}
+
+\def\GG{\text{G}}
+
+\def\e{\varepsilon}
+
+\def\Create{\text{Create}}
+\def\Destroy{\text{Destroy}}
+\def\Down{\text{Down}}
+\def\Enqueue{\text{Enqueue}}
+\def\Left{\text{Left}}
+\def\Move{\text{Move}}
+\def\Num{\text{Num}}
+\def\Right{\text{Right}}
+\def\Select{\text{Select}}
+\def\Send{\text{Send}}
+\def\Up{\text{Up}}
+
+\DeclareMathOperator{\children}{\text{children}}
+\DeclareMathOperator{\domain}{\text{domain}}
+\DeclareMathOperator{\parents}{\text{parents}}
+
+\def\None{\varnothing}
+\DeclareMathOperator{\publish}{\text{publish}}
+\DeclareMathOperator{\leftIndex}{\text{leftIndex}}
+\DeclareMathOperator{\rightIndex}{\text{rightIndex}}
+\DeclareMathOperator{\downIndex}{\text{downIndex}}
+\DeclareMathOperator{\defaultIndex}{\text{defaultIndex}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+% ==============================================================================
+
+\section{Formal Syntax}
+\label{sec:formal-syntax}
+
+\begin{minipage}[t]{0.5\textwidth}
+  \vspace{0pt}
+  \begin{Grammar}
+    e
+    & ::= & \lambda p : \tau.e & abstraction \\
+    & \OR & e~e                & application \\
+    & \OR & e+e                & addition    \\
+    & \OR & n                  & number      \\
+    \\
+    p
+    & ::= & x & variable pattern \\
+    \\
+    \tau
+    & ::= & \tau -> \tau & function type \\
+    & \OR & \Num         & number type   \\
+  \end{Grammar}
+\end{minipage}
+
+% ==============================================================================
+
+\section{Concepts}
+\label{sec:concepts}
+
+\begin{tabular}{cl@{\hspace{1.5cm}}cl@{\hspace{1.5cm}}cl}
+  $\A$ & Actions    & $\G$ & Graphs          & $\S$ & States   \\
+  $\C$ & Cursors    & $\I$ & Indices         & $\U$ & UUIDs    \\
+  $\E$ & Edges      & $\K$ & Constructors    & $\V$ & Vertices \\
+\end{tabular}
+
+% ------------------------------------------------------------------------------
+
+\subsection{Unique IDs}
+\label{sec:unique-ids}
+
+$u \in \U$
+
+% ------------------------------------------------------------------------------
+
+\subsection{The Target Language}
+\label{sec:the-target-language}
+
+A \emph{constructor} represents a node in the target language's abstract
+syntax tree.
+
+$k \in \K$
+
+An \emph{index} names a potential child vertex.
+
+$i \in \I$
+
+% ------------------------------------------------------------------------------
+
+\subsection{The Graph}
+\label{sec:the-graph}
+
+% ..............................................................................
+
+\subsubsection{Vertex}
+\label{sec:vertex}
+
+A \emph{vertex} is a uniquely identifiable instance of a constructor.
+
+$\V = \U \times \K$
+
+$v \in \V$
+
+$v = (u, k)$
+
+% ..............................................................................
+
+\subsubsection{Cursor}
+\label{sec:cursor}
+
+A \emph{cursor} is a ``soft'' link---the target vertex is referenced by index
+and may not exist.
+
+$\C$ = $\V \times \I$
+
+$c \in \C$
+
+$c = (v, i)$
+
+% ..............................................................................
+
+\subsubsection{Edge}
+\label{sec:edge}
+
+An \emph{edge} is a ``hard'' link---the target vertex must exist.
+
+$\E = \C \times \V$
+
+$\e \in \E$
+
+$\e = (c, v)$
+
+% ..............................................................................
+
+\subsubsection{State}
+\label{sec:state}
+
+The \emph{state} of an edge determines whether it has been created or
+destroyed.
+
+$\S = \{\bot,+,-\}$
+
+$s \in \S$
+
+% ..............................................................................
+
+\subsubsection{Graph}
+\label{sec:graph}
+
+A \emph{graph} is a map from edges to states.
+
+$\G = \bigcup\limits_{n \ge 0}\G^n = \bigcup\limits_{n \ge 0}(\E \times \S)^n$
+
+$\Gamma \in \G$
+
+$\Gamma = \{\e_1 :-> s_1, \e_2 :-> s_2, \ldots, \e_n :-> s_n\} = \{\e_k :-> s_k\}_{k=1}^n$
+
+$\Gamma(\e) = \{s_k\}_{k=1}^n \iff \{\e :-> s_k\}_{k=1}^n \subseteq \Gamma
+\land (\Gamma \setminus \{\e :-> s_k\}_{k=1}^n)(\e) = \None$
+
+$\forall \Gamma, \exists n \in \mathbb{N} \,:\, \Gamma \in \G^n$
+
+$| \Gamma | = n \iff \Gamma \in \G^n$
+
+% ------------------------------------------------------------------------------
+
+\subsection{The Editor}
+\label{sec:the-editor}
+
+An \emph{editor} models a graph that evolves according to a stream of actions.
+
+$E = \G \times \C \times \A^{\mathbb{N}} \times \E^{\mathbb{N}}$
+
+% ..............................................................................
+
+\subsubsection{Actions}
+\label{sec:actions}
+
+An \emph{action} describes a change to one or more editors.
+
+\begin{alignRL}
+  \A &= \A^{move} \cup \A^{edit} \cup \A^{ctrl} \\
+  a &\in \A
+\end{alignRL}
+
+\paragraph{Move actions} reposition the cursor.
+
+\begin{alignRL}
+  \A^{move}
+  &= \{ \Left,\Right,\Up,\Down \} \\
+  &\Cup \{ \Select \} \! \times \C
+\end{alignRL}
+
+\paragraph{Edit actions} add or remove an edge at the cursor.
+
+\begin{alignRL}
+  \A^{edit}
+  &= \{ \Create \} \times \K \\
+  &\Cup \{ \Destroy \}
+\end{alignRL}
+
+\paragraph{Control actions} replicate actions from one context to another.
+
+$\A^{ctrl} = \{ \Send \} \times (\A^{edit})^{\mathbb{N}}$
+
+% ==============================================================================
+
+\section{Operational Semantics}
+\label{sec:operational-semantics}
+
+\begin{alignRL}
+   \parents(\Gamma,v) &= \{ \e_i=(c_i,v_i) \,:\, \Gamma(\e_i)=+, v_i=v \} \\
+  \children(\Gamma,c) &= \{ \e_i=(c_i,v_i) \,:\, \Gamma(\e_i)=+, c_i=c \}
+\end{alignRL}
+
+\vspace*{2ex}
+
+$\boxed{\Gamma,c,\e^{*},a^{*} |- a --> \Gamma,c,\e^{*},a^{*}}$
+
+\begin{mathpar}
+  \Inferrule{
+    a \in \A^{edit} \\
+    \Gamma,c,\e^{*} -->a \Gamma',c',\e'^{*}
+  }{
+    \Gamma,c,\e^{*},a^{*} |- a --> \Gamma',c',\e'^{*},a^{*}a
+  }
+
+  \Inferrule{
+    a \notin \A^{edit} \\
+    \Gamma,c,\e^{*} -->a \Gamma',c',\e'^{*}
+  }{
+    \Gamma,c,\e^{*},a^{*} |- a --> \Gamma',c',\e'^{*},a^{*}
+  }
+
+  \Inferrule{
+    \publish(a'^{*}) = ()
+  }{
+    \Gamma,c,\e^{*},a^{*} |-  \Send~a'^{*} -->
+    \Gamma,c,\e^{*},a^{*} \setminus a'^{*}
+  }
+\end{mathpar}
+ 
+$\boxed{\Gamma,c,\e^{*} -->a \Gamma,c,\e^{*}}$
+
+\vspace*{1ex}
+
+\begin{mathpar}
+  \Inferrule{
+    \leftIndex(i) = i'
+  }{
+    \Gamma,(v,i),\e^{*} \xrightarrow{\Left} \Gamma,(v,i'),\e^{*}
+  }
+
+  \Inferrule{
+    \rightIndex(i) = i'
+  }{
+    \Gamma,(v,i),\e^{*} \xrightarrow{\Right} \Gamma,(v,i'),\e^{*}
+  }
+
+  \Inferrule{
+    \parents(v) = (c',v')
+  }{
+    \Gamma,(v,i),\e^{*} \xrightarrow{\Up} \Gamma,c',\e^{*}
+  }
+
+  \Inferrule{
+    \children(c) = (c',v') \\
+    v' = (u,k) \\
+    \downIndex(k) = i
+  }{
+    \Gamma,c,\e^{*} \xrightarrow{\Down} \Gamma,(v',i),\e^{*}
+  }
+
+  \Inferrule{}{
+    \Gamma,c,\e^{*} \xrightarrow{\Select~c'} \Gamma,c',\e^{*}
+  }
+
+  \Inferrule{
+    \defaultIndex(c) = \None \\
+    v = (u,k) \\
+    u \in \U \text{ fresh} \\
+    \e = (c,v) \\
+    \Gamma(\e) \ne -
+  }{
+    \Gamma,c,\e^{*} \xrightarrow{\Create~k}
+    \Gamma[\e :-> +],c,\e^{*}
+  }
+
+  \Inferrule{
+    \defaultIndex(c) = i' \\
+    v = (u,k) \\
+    u \in \U \text{ fresh} \\
+    \e = (c,v) \\
+    \Gamma(\e) \ne -
+    \\\\
+    \children(\Gamma,c) = \{\e_k\}_{k=1}^n = \{(c_k,v_k)\}_{k=1}^n \\
+    c' = (v,i')
+  }{
+    \Gamma,c,\e^{*} \xrightarrow{\Create~k}
+    \Gamma[\e :-> +][(c',v_k) :-> +]_{k=1}^n[\e_k :-> -]_{k=1}^n,c',\e^{*}
+  }
+
+  \Inferrule{
+    \children(\Gamma,c) = \{\e_k\}_{k=1}^n \\
+    c = (\e,v)
+  }{
+    \Gamma,c,\e^{*} \xrightarrow{\Destroy} \Gamma[\e_k :-> -]_{k=1}^n,c,\e^{*}\e
+  }
+\end{mathpar}
+
+\end{document}

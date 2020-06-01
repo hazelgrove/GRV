@@ -15,42 +15,42 @@ let clickable ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
       Dom_html.stopPropagation event;
       inject { Action.instance_id = model.id; action = Select cursor })
 
-let rec of_index ~inject (model : Model.Instance.t) (child : Cursor.t) :
+let rec view_cursor ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
     Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    let recur : Vertex.t -> Cursor.t option -> Vdom.Node.t =
-      of_vertex ~inject model
+    let view_vertex' : Vertex.t -> Cursor.t option -> Vdom.Node.t =
+      view_vertex ~inject model
     in
-    match Edge.Set.elements (Cache.children child model.graph.cache) with
+    match Edge.Set.elements (Cache.children cursor model.graph.cache) with
     | [] ->
-        span [ class_ "hole"; clickable ~inject model child ] [ W.chars "_" ]
-    | [ edge ] -> recur (Edge.target edge) (Some child)
+        span [ class_ "hole"; clickable ~inject model cursor ] [ W.chars "_" ]
+    | [ edge ] -> view_vertex' (Edge.target edge) (Some cursor)
     | edges ->
         let nodes =
           List.map
-            (fun (edge : Edge.t) -> recur (Edge.target edge) (Some child))
+            (fun (edge : Edge.t) -> view_vertex' (Edge.target edge) (Some cursor))
             edges
         in
         span
-          [ class_ "conflict"; clickable ~inject model child ]
+          [ class_ "conflict"; clickable ~inject model cursor ]
           ([ W.errs "{" ] @ intersperse (W.errs "|") nodes @ [ W.errs "}" ])
   in
-  if model.cursor = child then span [ class_ "cursor" ] [ node ] else node
+  if model.cursor = cursor then span [ class_ "cursor" ] [ node ] else node
 
-and of_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
+and view_vertex ~inject (model : Model.Instance.t) (vertex : Vertex.t)
     (parent : Cursor.t option) : Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    let recur (index : Lang.Index.t) : Vdom.Node.t =
-      of_index ~inject model { vertex; index }
+    let view_cursor' (index : Lang.Index.t) : Vdom.Node.t =
+      view_cursor ~inject model { vertex; index }
     in
     let attr =
       match parent with None -> [] | Some p -> [ clickable ~inject model p ]
     in
-    span attr (Lang.show W.chars W.chars recur vertex.value)
+    span attr (Lang.show W.chars W.chars view_cursor' vertex.value)
   in
   span [ class_ "vertex" ]
     [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ]
@@ -70,7 +70,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       on_keydown @@ Key.dispatch ~inject model this_model;
     ]
     [
-      of_index ~inject this_model Cursor.root;
+      view_cursor ~inject this_model Cursor.root;
       br [];
       br [];
       div []
@@ -132,7 +132,7 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
                (Vertex.Set.elements
                   (Vertex.Set.remove Vertex.root (Roots.roots this_model.graph)))
                (fun (vertex : Vertex.t) ->
-                 of_vertex ~inject this_model vertex None);
+                 view_vertex ~inject this_model vertex None);
           mk @@ W.button "Restore (ctrl-r)" (fun () -> Key.restore this_model);
         ];
       h2 [] [ text "Cursor" ];

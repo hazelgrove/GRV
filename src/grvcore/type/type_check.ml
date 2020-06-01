@@ -25,30 +25,53 @@ type ana = Success | Error of error list
 (* Free var, type inconsistency, sort errors(?), conflicts *)
 (* Return vertex set of where incosistencies *)
 
-(* More of an eval than a syn *)
-let rec syn_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t =
+(**************)
+(**** Type ****)
+(**************)
+
+let rec eval_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t =
   match Edge.Set.elements (Graph.children cursor graph) with
   | [] -> Unknown
-  | [ edge ] -> syn_typ_vertex graph (Edge.target edge)
+  | [ edge ] -> eval_typ_vertex graph (Edge.target edge)
   | _edges ->
       (* Recur anyway? (* Recur anyway? no *)  Could check if all synth to same type? *)
+      (* Technically indeterminate / a type conflict *)
       Unknown
 
-(* Technically indeterminate / a type conflict *)
-and syn_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t =
+and eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t =
   match vertex.value with
   | Typ_num -> Num
   | Typ_arrow ->
-      let t_arg = syn_typ_cursor graph (Cursor.mk vertex Typ_arrow_arg)
-      and t_result = syn_typ_cursor graph (Cursor.mk vertex Typ_arrow_result) in
+      let t_arg = eval_typ_cursor graph (Cursor.mk vertex Typ_arrow_arg)
+      and t_result =
+        eval_typ_cursor graph (Cursor.mk vertex Typ_arrow_result)
+      in
       Arrow (t_arg, t_result)
   | _ -> fail __LOC__ Lang.Sort.Typ vertex
 
-let ana_pat_cursor (_graph : Graph.t) (_env : type_env) (_pat_cursor : Cursor.t)
-    (_typ : Type.t) : type_env =
-  failwith __LOC__
+(*************)
+(**** Pat ****)
+(*************)
+
+let rec ana_pat_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
+    (typ : Type.t) : type_env =
+  let edges = Edge.Set.elements (Graph.children cursor graph) in
+  (* Note that we add all bindings if there is a conflict.
+     Also, we are not checking for shadowing between conflicting bindings. *)
+  List.fold_left
+    (fun env edge -> ana_pat_vertex graph env (Edge.target edge) typ)
+    env edges
 
 (* TODO: what if conflict? add all. *)
+and ana_pat_vertex (_graph : Graph.t) (env : type_env) (vertex : Vertex.t)
+    (typ : Type.t) : type_env =
+  match vertex.value with
+  | Pat_var string -> Env.add string typ env
+  | _ -> fail __LOC__ Lang.Sort.Pat vertex
+
+(*************)
+(**** Exp ****)
+(*************)
 
 let rec syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t =
@@ -70,9 +93,9 @@ and syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
     Type.t (* TODO: option*) =
   match vertex.value with
   | Exp_var string -> (
-      match Hashtbl.find_opt env string with None -> Unknown | Some t -> t )
+      match Env.find_opt string env with None -> Unknown | Some t -> t )
   | Exp_lam ->
-      let typ = syn_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type) in
+      let typ = eval_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type) in
       let env' =
         ana_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) typ
       in
@@ -104,12 +127,12 @@ and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
   (* TODO: check type consistency after defering to synthesis *)
   match vertex.value with
   | Exp_var string -> (
-      match Hashtbl.find_opt env string with
+      match Env.find_opt string env with
       | None -> (* TODO: what if typ is Unknown *) false
       | Some s -> typ = s )
   | Exp_lam -> (
       let param_type =
-        syn_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type)
+        eval_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type)
       in
       let _env' =
         ana_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) param_type
@@ -143,7 +166,4 @@ and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
       (* TODO*) left && right && typ = Num
   | _ -> fail __LOC__ Lang.Sort.Exp vertex
 
-(* let syn_typ
-let syn_pat
-let syn_exp
-let syn_root *)
+(* TODO: syn_root *)

@@ -16,3 +16,25 @@ module Option = struct
     end
   end
 end
+
+module String = struct
+  module OrderedType = struct
+    type nonrec t = string
+
+    let compare = String.compare
+  end
+
+  module Map = Map.Make (OrderedType)
+  module Set = Set.Make (OrderedType)
+end
+
+module Int = struct
+  module OrderedType = struct
+    type nonrec t = int
+
+    let compare = Int.compare
+  end
+
+  module Map = Map.Make (OrderedType)
+  module Set = Set.Make (OrderedType)
+end

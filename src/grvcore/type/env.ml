@@ -1,1 +1,1 @@
-type 'a t = (string, 'a) Hashtbl.t
+include Util.String.Map

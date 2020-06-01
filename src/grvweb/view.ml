@@ -30,7 +30,8 @@ let rec view_cursor ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
     | edges ->
         let nodes =
           List.map
-            (fun (edge : Edge.t) -> view_vertex' (Edge.target edge) (Some cursor))
+            (fun (edge : Edge.t) ->
+              view_vertex' (Edge.target edge) (Some cursor))
             edges
         in
         span

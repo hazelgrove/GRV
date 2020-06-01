@@ -3,11 +3,6 @@ module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 module W = Widget
 
-let rec intersperse (delim : 'a) (xs : 'a list) : 'a list =
-  match xs with
-  | [] | [ _ ] -> xs
-  | x :: xs' -> x :: delim :: intersperse delim xs'
-
 let clickable ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
     Vdom.Attr.t =
   Vdom.Attr.on_click (fun event ->
@@ -36,7 +31,9 @@ let rec view_cursor ~inject (model : Model.Instance.t) (cursor : Cursor.t) :
         in
         span
           [ class_ "conflict"; clickable ~inject model cursor ]
-          ([ W.errs "{" ] @ intersperse (W.errs "|") nodes @ [ W.errs "}" ])
+          ( [ W.errs "{" ]
+          @ Util.List.intersperse (W.errs "|") nodes
+          @ [ W.errs "}" ] )
   in
   if model.cursor = cursor then span [ class_ "cursor" ] [ node ] else node
 

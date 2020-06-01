@@ -109,7 +109,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   match action.action with
   | Select cursor -> (
       match
-        let%map.Option receiver : Model.Instance.t Option.t =
+        let%map.Util.Option receiver : Model.Instance.t Option.t =
           Model.MapInt.find_opt action.instance_id model
         in
         { receiver with Model.Instance.cursor }

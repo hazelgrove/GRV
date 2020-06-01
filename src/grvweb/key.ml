@@ -24,7 +24,7 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
           None
       | result -> result )
   | key ->
-      let%map.Option action : Action.local Option.t =
+      let%map.Util.Option action : Action.local Option.t =
         let refocus (next_id : int) (default_id : int) : unit =
           Js.focus_instance
             ( match Model.MapInt.find_opt next_id model with
@@ -45,10 +45,10 @@ let ctrl (model : Model.t) (this_model : Model.Instance.t)
       Action.Enqueue action
 
 let shift (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
-  let%bind.Option jstr : Js.js_string Js.t Option.t =
+  let%bind.Util.Option jstr : Js.js_string Js.t Option.t =
     Js.Optdef.to_option event##.key
   in
-  let%map.Option action : Action.local Option.t =
+  let%map.Util.Option action : Action.local Option.t =
     match Js.to_string jstr with
     | "N" -> Some (Edit (Create Typ_num))
     | "+" -> Some (Edit (Create Exp_plus))
@@ -59,7 +59,7 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
 
 let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
     Action.app Option.t =
-  let%map.Option action : Action.local Option.t =
+  let%map.Util.Option action : Action.local Option.t =
     match Dom_html.Keyboard_code.of_event event with
     | KeyN -> (
         Js_of_ocaml.Dom.preventDefault event;

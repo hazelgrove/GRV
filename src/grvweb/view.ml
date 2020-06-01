@@ -75,9 +75,14 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
       br [];
       div []
         [
+          text "Patterns: ";
           mk
           @@ W.input_button "Pat (p)" "pat_id" Lang.Sort.Pat (fun str ->
                  Pat_var str);
+        ];
+      div []
+        [
+          text "Expressions: ";
           mk
           @@ W.input_button "Var (v)" "var_id" Lang.Sort.Exp (fun str ->
                  Exp_var str);
@@ -87,6 +92,10 @@ let view_instance ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
           mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
           mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
+        ];
+      div []
+        [
+          text "Types: ";
           mk @@ W.create_button "Num (N)" Typ_num Lang.Sort.Typ;
           mk @@ W.create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
         ];

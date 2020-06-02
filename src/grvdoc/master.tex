@@ -50,6 +50,7 @@
 \mathlig{|-}{\vdash}
 \mathlig{:->}{\mapsto}
 \mathlig{-->a}{\overset{a}{\longrightarrow}}
+\mathlig{:~}{:}
 \mathlig{:}{\!:\!}
 
 \def\Cup{\cup\ \:\!}
@@ -72,9 +73,8 @@
 \def\U{\mathcal{U}}
 \def\V{\mathcal{V}}
 
-\def\GG{\text{G}}
-
 \def\e{\varepsilon}
+\def\Eup{\text{E}}
 
 \def\Create{\text{Create}}
 \def\Destroy{\text{Destroy}}
@@ -89,8 +89,13 @@
 \def\Up{\text{Up}}
 
 \DeclareMathOperator{\children}{\text{children}}
+\DeclareMathOperator{\deleted}{\text{deleted}}
 \DeclareMathOperator{\domain}{\text{domain}}
+\DeclareMathOperator{\orphans}{\text{orphans}}
 \DeclareMathOperator{\parents}{\text{parents}}
+\DeclareMathOperator{\seen}{\text{seen}}
+\DeclareMathOperator{\unseen}{\text{unseen}}
+\DeclareMathOperator{\vertexes}{\text{vertexes}}
 
 \def\None{\varnothing}
 \DeclareMathOperator{\publish}{\text{publish}}
@@ -136,7 +141,7 @@
 \begin{tabular}{cl@{\hspace{1.5cm}}cl@{\hspace{1.5cm}}cl}
   $\A$ & Actions    & $\G$ & Graphs          & $\S$ & Edge States \\
   $\C$ & Cursors    & $\I$ & Indices         & $\U$ & UUIDs       \\
-  $\E$ & Edges      & $\K$ & Constructors    & $\V$ & Vertices    \\
+  $\E$ & Edges      & $\K$ & Constructors    & $\V$ & Vertexes    \\
 \end{tabular}
 
 % ------------------------------------------------------------------------------
@@ -185,7 +190,7 @@ uuid $u$.
 
 $\C = \V \times \I$
 
-A \emph{cursor} is a reference to the (potentially empty) set of all vertices
+A \emph{cursor} is a reference to the (potentially empty) set of all vertexes
 with parent vertex $v$ and child index $i$.
 
 % ..............................................................................
@@ -213,34 +218,32 @@ and, if so, whether it has been destroyed.
 \subsubsection{Graph}
 \label{sec:graph}
 
-$\G = \bigcup_{n \ge 0} (\E \times \S)^n$
+$\G = (\E \times \S)^{*}$
 
-A \emph{graph} $\Gamma \in \G$ is a function from edges to edge states. Denote
-by by $\Gamma(\e) = s$ the state $s$ of edge $\e$ in graph $\Gamma$.
+A \emph{graph} $(\Gamma : \E -> \S) \in \G$ is a function from edges to edge
+states. Denote by $\Gamma(\e) = s$ the state $s$ of edge $\e$ in graph
+$\Gamma$.
 
 % ------------------------------------------------------------------------------
 
 \subsection{The Editor}
 \label{sec:the-editor}
 
-An \emph{editor} models a graph and cursor that evolve according to a stream
-of actions.
+E $= \G \times \C \times \A^{*} \times \U$
 
-$E = \G \times \C \times \A^{*}$
+An \emph{editor} $E = (\Gamma,c,a^{*}) \in$ E is an instance of graph $\Gamma$
+with cursor $c$ and action queue $a^{*}$.
 
 % ..............................................................................
 
 \subsubsection{Actions}
 \label{sec:actions}
 
-An \emph{action} describes a change to one or more editors.
+$\A = \A^{move} \cup \A^{edit} \cup \A^{comm}$
 
-\begin{alignRL}
-  \A &= \A^{move} \cup \A^{edit} \cup \A^{comm} \\
-  a &\in \A
-\end{alignRL}
+An \emph{action} $a \in \A$ describes a change to one or more editors.
 
-\paragraph{Move actions} reposition the cursor.
+\paragraph{Move Actions} ~
 
 \begin{alignRL}
   \A^{move}
@@ -248,7 +251,9 @@ An \emph{action} describes a change to one or more editors.
   &\Cup \{ \Select \} \! \times \C
 \end{alignRL}
 
-\paragraph{Edit actions} add or remove an edge at the cursor.
+A \emph{move action} $a \in \A^{move}$ repositions the cursor.
+
+\paragraph{Edit Actions} ~
 
 \begin{alignRL}
   \A^{edit}
@@ -256,10 +261,14 @@ An \emph{action} describes a change to one or more editors.
   &\Cup \{ \Destroy \}
 \end{alignRL}
 
-\paragraph{Communication actions} replicate edit actions from one editor to
-another.
+An \emph{edit action} $a \in \A^{edit}$ adds or removes an edge at the cursor.
 
-$\A^{ctrl} = \{ \Send \} \times (\A^{edit})^{*}$
+\paragraph{Communication Actions} ~
+
+$\A^{comm} = \{ \Send \} \times (\A^{edit})^{*} \times \U$
+
+A \emph{communication action} $a \in \A^{comm}$ copies edit actions from one
+editor to all of the others.
 
 % ==============================================================================
 
@@ -267,102 +276,135 @@ $\A^{ctrl} = \{ \Send \} \times (\A^{edit})^{*}$
 \label{sec:operational-semantics}
 
 \begin{alignRL}
-   \parents(\Gamma,v) &= \{ \e_i=(c_i,v_i) \,:\, \Gamma(\e_i)=+, v_i=v \} \\
-  \children(\Gamma,c) &= \{ \e_i=(c_i,v_i) \,:\, \Gamma(\e_i)=+, c_i=c \}
+  \children(\Gamma,c) &= \{ \e=(c',v) :~ c=c', \Gamma(\e)=+ \} \\
+  \parents(\Gamma,v) &= \{ \e=(c,v') :~ v=v', \Gamma(\e)=+ \}
+\end{alignRL}
+\\
+\begin{alignRL}
+  \orphans(\Gamma) &= \{ v :~ \parents(\Gamma,v) = \None \} \\
+  \seen(\Gamma) &= \{ v :~ \parents(\Gamma,v) \subseteq \orphans(\Gamma) \cup \seen(\Gamma) \} \\
+  \unseen(\Gamma) &= \vertexes(\Gamma) \setminus \orphans(\Gamma) \setminus \seen(\Gamma) \\
+  \deleted(\Gamma) &= \orphans(\Gamma) \cup \unseen(\Gamma)
 \end{alignRL}
 
 \vspace*{2ex}
 
-$\boxed{\Gamma,c,\e^{*},a^{*} |- a --> \Gamma,c,\e^{*},a^{*}}$
+\subsection{Movement}
+\label{sec:movement}
 
-\begin{mathpar}
-  \Inferrule{
-    a \in \A^{edit} \\
-    \Gamma,c,\e^{*} -->a \Gamma',c',\e'^{*}
-  }{
-    \Gamma,c,\e^{*},a^{*} |- a --> \Gamma',c',\e'^{*},a^{*}a
-  }
-
-  \Inferrule{
-    a \notin \A^{edit} \\
-    \Gamma,c,\e^{*} -->a \Gamma',c',\e'^{*}
-  }{
-    \Gamma,c,\e^{*},a^{*} |- a --> \Gamma',c',\e'^{*},a^{*}
-  }
-
-  \Inferrule{
-    \publish(a'^{*}) = ()
-  }{
-    \Gamma,c,\e^{*},a^{*} |-  \Send~a'^{*} -->
-    \Gamma,c,\e^{*},a^{*} \setminus a'^{*}
-  }
-\end{mathpar}
- 
-$\boxed{\Gamma,c,\e^{*} -->a \Gamma,c,\e^{*}}$
-
-\vspace*{1ex}
-
+$\boxed{E -->a E}$
+%
 \begin{mathpar}
   \Inferrule{
     \leftIndex(i) = i'
   }{
-    \Gamma,(v,i),\e^{*} \xrightarrow{\Left} \Gamma,(v,i'),\e^{*}
+    \Gamma,(v,i),a^{*} \xrightarrow{\Left} \Gamma,(v,i'),a^{*}
   }
 
   \Inferrule{
     \rightIndex(i) = i'
   }{
-    \Gamma,(v,i),\e^{*} \xrightarrow{\Right} \Gamma,(v,i'),\e^{*}
+    \Gamma,(v,i),a^{*} \xrightarrow{\Right} \Gamma,(v,i'),a^{*}
   }
 
   \Inferrule{
     \parents(v) = (c',v')
   }{
-    \Gamma,(v,i),\e^{*} \xrightarrow{\Up} \Gamma,c',\e^{*}
+    \Gamma,(v,i),a^{*} \xrightarrow{\Up} \Gamma,c',a^{*}
   }
 
   \Inferrule{
     \children(c) = (c',v') \\
-    v' = (u,k) \\
+    v' = (k,u) \\
     \downIndex(k) = i
   }{
-    \Gamma,c,\e^{*} \xrightarrow{\Down} \Gamma,(v',i),\e^{*}
+    \Gamma,c,a^{*} \xrightarrow{\Down} \Gamma,(v',i),a^{*}
   }
 
   \Inferrule{}{
-    \Gamma,c,\e^{*} \xrightarrow{\Select~c'} \Gamma,c',\e^{*}
+    \Gamma,c,a^{*} \xrightarrow{\Select~c'} \Gamma,c',a^{*}
   }
+\end{mathpar}
 
+\subsection{Editing}
+\label{sec:editing}
+
+\begin{mathpar}
   \Inferrule{
     \defaultIndex(c) = \None \\
-    v = (u,k) \\
-    u \in \U \text{ fresh} \\
-    \e = (c,v) \\
-    \Gamma(\e) \ne -
+    u \in \U \text{ fresh}
+    \\\\
+    \e = (c,(k,u))
   }{
-    \Gamma,c,\e^{*} \xrightarrow{\Create~k}
-    \Gamma[\e :-> +],c,\e^{*}
+    \Gamma,c,a^{*} \xrightarrow{\Create~k} \Gamma[\e :-> +],c,a^{*}
   }
 
   \Inferrule{
     \defaultIndex(c) = i' \\
-    v = (u,k) \\
-    u \in \U \text{ fresh} \\
-    \e = (c,v) \\
-    \Gamma(\e) \ne -
+    \children(\Gamma,c) = \{(c_j,v_j)\}_{j=1}^n \\
+    u \in \U \text{ fresh}
     \\\\
-    \children(\Gamma,c) = \{\e_k\}_{k=1}^n = \{(c_k,v_k)\}_{k=1}^n \\
-    c' = (v,i')
+    \e = (c,(k,u)) \\
+    \e_j = (c_j,v_j) \\
+    \e_j' = (c_j',v_j) \\
+    c' = ((k,u),i')
   }{
-    \Gamma,c,\e^{*} \xrightarrow{\Create~k}
-    \Gamma[\e :-> +][(c',v_k) :-> +]_{k=1}^n[\e_k :-> -]_{k=1}^n,c',\e^{*}
+    \Gamma,c,a^{*} \xrightarrow{\Create~k}
+    \Gamma[\e :-> +][\e_j' :-> +]_{j=1}^n[\e_j :-> -]_{j=1}^n,c',a^{*}
   }
 
   \Inferrule{
-    \children(\Gamma,c) = \{\e_k\}_{k=1}^n \\
-    c = (\e,v)
+    \children(\Gamma,c) = \{\e_j\}_{j=1}^n
   }{
-    \Gamma,c,\e^{*} \xrightarrow{\Destroy} \Gamma[\e_k :-> -]_{k=1}^n,c,\e^{*}\e
+    \Gamma,c,a^{*} \xrightarrow{\Destroy} \Gamma[\e_j :-> -]_{j=1}^n,c,a^{*}
+  }
+\end{mathpar}
+
+\subsection{Communication}
+\label{sec:communication}
+
+\begin{mathpar}
+  \Inferrule{
+    a \in \A^{edit} \\
+    \Gamma,c,a^{*} -->a \Gamma',c',a^{*}
+  }{
+    \Gamma,c,a^{*} -->a \Gamma',c',a^{*}a
+  }
+\end{mathpar}
+
+\subsubsection{Replay}
+\label{sec:replay}
+
+$\boxed{E \xrightarrow{a^{*}} E}$
+%
+\begin{mathpar}
+  \Inferrule{
+    E -->a E'' \\
+    E'' \xrightarrow{a^{*}} E' \\
+  }{
+    E \xrightarrow{aa^{*}} E'
+  }
+\end{mathpar}
+
+$\boxed{E,\ldots,E -->a E,\ldots,E}$
+%
+\begin{mathpar}
+  \Inferrule{
+    E_j = (\Gamma_j,c_j,a_j^{*},u_j) \\
+    u_j \ne u \\
+    E_j \xrightarrow{a'^{*}} E_j' \\
+    E_j' = (\Gamma_j',c_j',a_j^{*},u_j) \\
+    j = 1,\ldots,n
+  }{
+    E_1,\ldots,E_n \xrightarrow{\Send~a'^{*},u} E_1',\ldots,E_n'
+  }
+
+  \Inferrule{
+    E_j = (\Gamma_j,c_j,a_j^{*},u_j) \\
+    E_j' = (\Gamma_j,c_j,a_j^{*} \setminus a'^{*},u_j) \\
+    j = 1,\ldots,n \\
+  }{
+    E_1,\ldots,E_n \xrightarrow{\Send~a'^{*},u} E_1',\ldots,E_n'
   }
 \end{mathpar}
 

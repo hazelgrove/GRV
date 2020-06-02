@@ -134,31 +134,34 @@
 \label{sec:concepts}
 
 \begin{tabular}{cl@{\hspace{1.5cm}}cl@{\hspace{1.5cm}}cl}
-  $\A$ & Actions    & $\G$ & Graphs          & $\S$ & States   \\
-  $\C$ & Cursors    & $\I$ & Indices         & $\U$ & UUIDs    \\
-  $\E$ & Edges      & $\K$ & Constructors    & $\V$ & Vertices \\
+  $\A$ & Actions    & $\G$ & Graphs          & $\S$ & Edge States \\
+  $\C$ & Cursors    & $\I$ & Indices         & $\U$ & UUIDs       \\
+  $\E$ & Edges      & $\K$ & Constructors    & $\V$ & Vertices    \\
 \end{tabular}
 
 % ------------------------------------------------------------------------------
 
-\subsection{Unique IDs}
-\label{sec:unique-ids}
+\subsection{The Environment}
+\label{sec:the-environment}
 
-$u \in \U$
+\subsubsection{Uuid}
+\label{sec:uuid}
+
+A \emph{uuid} $u \in \U$ is a unique identifier.
 
 % ------------------------------------------------------------------------------
 
-\subsection{The Target Language}
-\label{sec:the-target-language}
+\subsubsection{Constructor}
+\label{sec:constructor}
 
-A \emph{constructor} represents a node in the target language's abstract
-syntax tree.
+A \emph{constructor} $k \in \K$ represents a node in the target language's
+abstract syntax tree, or AST.
 
-$k \in \K$
+\subsubsection{Index}
+\label{sec:index}
 
-An \emph{index} names a potential child vertex.
-
-$i \in \I$
+An \emph{index} $i \in \I$ names a position, relative to some parent
+constructor, of a potential child node in the target language's AST.
 
 % ------------------------------------------------------------------------------
 
@@ -170,81 +173,60 @@ $i \in \I$
 \subsubsection{Vertex}
 \label{sec:vertex}
 
-A \emph{vertex} is a uniquely identifiable instance of a constructor.
+$\V = \K \times \U$
 
-$\V = \U \times \K$
-
-$v \in \V$
-
-$v = (u, k)$
+A \emph{vertex} $v = (k, u) \in \V$ is an instance of constructor $k$ with
+uuid $u$.
 
 % ..............................................................................
 
 \subsubsection{Cursor}
 \label{sec:cursor}
 
-A \emph{cursor} is a ``soft'' link---the target vertex is referenced by index
-and may not exist.
+$\C = \V \times \I$
 
-$\C$ = $\V \times \I$
-
-$c \in \C$
-
-$c = (v, i)$
+A \emph{cursor} is a reference to the (potentially empty) set of all vertices
+with parent vertex $v$ and child index $i$.
 
 % ..............................................................................
 
 \subsubsection{Edge}
 \label{sec:edge}
 
-An \emph{edge} is a ``hard'' link---the target vertex must exist.
-
 $\E = \C \times \V$
 
-$\e \in \E$
-
-$\e = (c, v)$
+An \emph{edge} $\e = (c, v) \in \E$ connects a cursor $c$ to a specific vertex
+$v$.
 
 % ..............................................................................
 
-\subsubsection{State}
-\label{sec:state}
-
-The \emph{state} of an edge determines whether it has been created or
-destroyed.
+\subsubsection{Edge State}
+\label{sec:edge-state}
 
 $\S = \{\bot,+,-\}$
 
-$s \in \S$
+An \emph{edge state} $s \in \S$ determines whether an edge has been created
+and, if so, whether it has been destroyed.
 
 % ..............................................................................
 
 \subsubsection{Graph}
 \label{sec:graph}
 
-A \emph{graph} is a map from edges to states.
+$\G = \bigcup_{n \ge 0} (\E \times \S)^n$
 
-$\G = \bigcup\limits_{n \ge 0}\G^n = \bigcup\limits_{n \ge 0}(\E \times \S)^n$
-
-$\Gamma \in \G$
-
-$\Gamma = \{\e_1 :-> s_1, \e_2 :-> s_2, \ldots, \e_n :-> s_n\} = \{\e_k :-> s_k\}_{k=1}^n$
-
-$\Gamma(\e) = \{s_k\}_{k=1}^n \iff \{\e :-> s_k\}_{k=1}^n \subseteq \Gamma
-\land (\Gamma \setminus \{\e :-> s_k\}_{k=1}^n)(\e) = \None$
-
-$\forall \Gamma, \exists n \in \mathbb{N} \,:\, \Gamma \in \G^n$
-
-$| \Gamma | = n \iff \Gamma \in \G^n$
+A \emph{graph} $\Gamma \in \G$ is a function from edges to edge states. Denote
+by by $\Gamma(\e) = s$ the state $s$ of edge $\e$ in graph $\Gamma$.
 
 % ------------------------------------------------------------------------------
 
 \subsection{The Editor}
 \label{sec:the-editor}
 
-An \emph{editor} models a graph that evolves according to a stream of actions.
+An \emph{editor} models a graph and cursor that evolve according to a stream
+of actions.
 
-$E = \G \times \C \times \A^{\mathbb{N}} \times \E^{\mathbb{N}}$
+$E = \G \times \C \times \A^{*}$
 
 % ..............................................................................
 
@@ -254,7 +236,7 @@ $E = \G \times \C \times \A^{\mathbb{N}} \times \E^{\mathbb{N}}$
 An \emph{action} describes a change to one or more editors.
 
 \begin{alignRL}
-  \A &= \A^{move} \cup \A^{edit} \cup \A^{ctrl} \\
+  \A &= \A^{move} \cup \A^{edit} \cup \A^{comm} \\
   a &\in \A
 \end{alignRL}
 
@@ -274,9 +256,10 @@ An \emph{action} describes a change to one or more editors.
   &\Cup \{ \Destroy \}
 \end{alignRL}
 
-\paragraph{Control actions} replicate actions from one context to another.
+\paragraph{Communication actions} replicate edit actions from one editor to
+another.
 
-$\A^{ctrl} = \{ \Send \} \times (\A^{edit})^{\mathbb{N}}$
+$\A^{ctrl} = \{ \Send \} \times (\A^{edit})^{*}$
 
 % ==============================================================================
 

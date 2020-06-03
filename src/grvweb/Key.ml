@@ -54,26 +54,18 @@ let ctrl (_model : Model.t) (editor : Editor.t)
              None *)
       | _ -> None )
 
-(* in
- * Action.Enqueue action *)
-
 let shift (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   let%bind.Util.Option jstr : Js.js_string Js.t Option.t =
     Js.Optdef.to_option event##.key
   in
-  (* let%map.Util.Option action : Action.local Option.t = *)
   match Js.to_string jstr with
   | "N" -> Some (Action.Edit (Create Typ_num))
   | "+" -> Some (Action.Edit (Create Exp_plus))
   | ">" -> Some (Action.Edit (Create Typ_arrow))
   | _ -> None
 
-(* in
- * Action.Enqueue action *)
-
 let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
     Action.t' Option.t =
-  (* let%map.Util.Option action : Action.local Option.t = *)
   match Dom_html.Keyboard_code.of_event event with
   | KeyN -> (
       Js_of_ocaml.Dom.preventDefault event;
@@ -105,9 +97,6 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | ArrowLeft -> Some (Move Left)
   | ArrowRight -> Some (Move Right)
   | _ -> None
-
-(* in
- * Action.Enqueue action *)
 
 let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     (editor : Editor.t) : Dom_html.keyboardEvent Js.t -> Vdom.Event.t =

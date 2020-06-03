@@ -82,5 +82,6 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   ^ String.concat ";\n" (nodes @ hole @ edges @ hole_edge)
   ^ "}"
 
-let draw (model : Model.Instance.t) : unit =
-  Js.draw_viz model.id (String.escaped @@ draw_graph model.graph model.cursor)
+let draw (editor : Editor.t) : unit =
+  Js.draw_viz editor.id
+    (String.escaped @@ draw_graph editor.value.graph editor.value.cursor)

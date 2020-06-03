@@ -8,7 +8,7 @@ let eval_to_unit (js : string) : unit =
 
 let focus (id : string) : unit = eval_to_unit ("refocus('" ^ id ^ "')")
 
-let focus_instance (id : Uuid.Id.t) : unit = focus ("instance" ^ Uuid.Id.show id)
+let focus_editor (id : Uuid.Id.t) : unit = focus ("editor" ^ Uuid.Id.show id)
 
 let get_input (id : string) : string =
   eval_to_string @@ "getInput('" ^ id ^ "')"

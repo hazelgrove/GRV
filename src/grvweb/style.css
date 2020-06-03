@@ -18,7 +18,7 @@ body > div {
     flex-direction: row;
 }
 
-.instance {
+.editor {
     flex: 1;
     margin: 1ex;
     max-width: 50%;
@@ -74,7 +74,7 @@ body > div {
     }
 }
 
-.instance:focus .cursor > .hole:only-child {
+.editor:focus .cursor > .hole:only-child {
     animation-name: blink-left;
     animation-duration: .5s;
     animation-timing-function: step-end;

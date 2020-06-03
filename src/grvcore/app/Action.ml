@@ -6,7 +6,7 @@ type local = Move of direction | Edit of edit [@@deriving sexp_of]
 
 open Sexplib0.Sexp_conv
 
-(* TODO: Make `Send` be to a specific instance *)
+(* TODO: Make `Send` be to a specific editor *)
 type app =
   (* TODO: Move to local *)
   | Select of Cursor.t
@@ -14,17 +14,17 @@ type app =
   | Enqueue of local
 [@@deriving sexp_of]
 
-type t = { instance_id : Uuid.Id.t; action : app } [@@deriving sexp_of]
+type t = { editor_id : Uuid.Id.t; action : app } [@@deriving sexp_of]
 
 module Global = struct
-  let filter_instance_actions (globally_known : Graph_action.Set.t)
-      (instance : Model.Instance.t) : Model.Instance.t =
+  let filter_editor_actions (globally_known : Graph_action.Set.t)
+      (editor : Editor.t) : Editor.t =
     let actions =
       List.filter
         (fun a -> not (Graph_action.Set.mem a globally_known))
-        instance.actions
+        editor.value.actions
     in
-    { instance with actions }
+    { editor with value = { editor.value with actions } }
 
   let globally_known_actions (_model : Model.t) : Graph_action.Set.t =
     Graph_action.Set.empty
@@ -38,9 +38,7 @@ module Global = struct
 
   let remove_known_actions (model : Model.t) : Model.t =
     let known_actions : Graph_action.Set.t = globally_known_actions model in
-    let f : Model.Instance.t -> Model.Instance.t =
-      filter_instance_actions known_actions
-    in
+    let f : Editor.t -> Editor.t = filter_editor_actions known_actions in
     Uuid.Map.map f model
 end
 
@@ -110,61 +108,66 @@ let apply_move (d : direction) (cursor : Cursor.t) (cache : Cache.t) :
       | None -> None
       | Some index -> Some { cursor with index } )
 
-let rec apply_instance (local_action : local) (model : Model.Instance.t) :
-    Model.Instance.t =
+let rec apply_editor (local_action : local) (editor : Editor.t) : Editor.t =
   match local_action with
   | Move direction ->
       let cursor =
-        Option.value ~default:model.cursor
-          (apply_move direction model.cursor model.graph.cache)
+        Option.value ~default:editor.value.cursor
+          (apply_move direction editor.value.cursor editor.value.graph.cache)
       in
-      { model with cursor }
+      { editor with value = { editor.value with cursor } }
   | Edit edit ->
       let allowed =
         match edit with
         | Destroy -> true
         | Create constructor ->
-            Lang.Index.child_sort model.cursor.index
+            Lang.Index.child_sort editor.value.cursor.index
             = Lang.Constructor.sort_of constructor
       in
-      if not allowed then model
+      if not allowed then editor
       else
         let move_in, graph_actions =
-          apply_edit edit model.cursor model.graph.cache
+          apply_edit edit editor.value.cursor editor.value.graph.cache
         in
         let graph =
-          List.fold_right Graph_action.apply graph_actions model.graph
+          List.fold_right Graph_action.apply graph_actions editor.value.graph
         in
-        let model =
-          { model with graph; actions = model.actions @ graph_actions }
+        let value =
+          {
+            editor.value with
+            graph;
+            actions = editor.value.actions @ graph_actions;
+          }
         in
-        if move_in then apply_instance (Move In) model else model
+        let editor = { editor with value } in
+        if move_in then apply_editor (Move In) editor else editor
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   match action.action with
   | Select cursor -> (
       match
-        let%map.Util.Option receiver : Model.Instance.t Option.t =
-          Uuid.Map.find_opt action.instance_id model
+        let%map.Util.Option editor : Editor.t Option.t =
+          Uuid.Map.find_opt action.editor_id model
         in
         (* TODO: fix this *)
-        { receiver with Model.Instance.cursor }
+        let editor : Editor.t = editor in
+        { editor with value = { editor.value with cursor } }
       with
-      | Some receiver -> Uuid.Map.add action.instance_id receiver model
+      | Some editor -> Uuid.Map.add action.editor_id editor model
       | None -> model )
   | Send actions ->
-      let new_model =
+      let new_model : Model.t =
         Uuid.Map.map
-          (fun (receiver : Model.Instance.t) ->
+          (fun (editor : Editor.t) ->
             let graph =
-              List.fold_right Graph_action.apply actions receiver.graph
+              List.fold_right Graph_action.apply actions editor.value.graph
             in
-            { receiver with graph })
+            { editor with value = { editor.value with graph } })
           model
       in
       Global.remove_known_actions new_model
-  | Enqueue inst_action ->
-      Uuid.Map.update action.instance_id
-        (Option.map @@ apply_instance inst_action)
+  | Enqueue edit_action ->
+      Uuid.Map.update action.editor_id
+        (Option.map @@ apply_editor edit_action)
         model

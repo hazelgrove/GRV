@@ -1,23 +1,22 @@
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
-let send (this_model : Model.Instance.t) : Action.app Option.t =
-  match Js.get_selection ("actions" ^ Uuid.Id.show this_model.id) with
+let send (editor : Editor.t) : Action.app Option.t =
+  match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
   | [] -> None
   | selection ->
       let actions =
-        List.(map fst (filter snd @@ combine this_model.actions selection))
+        List.(map fst (filter snd @@ combine editor.value.actions selection))
       in
       Some (Send actions)
 
-let restore (this_model : Model.Instance.t) : Action.app Option.t =
-  send this_model
+let restore (editor : Editor.t) : Action.app Option.t = send editor
 
-let ctrl (_model : Model.t) (this_model : Model.Instance.t)
+let ctrl (_model : Model.t) (editor : Editor.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   match Dom_html.Keyboard_code.of_event event with
   | KeyS -> (
-      match send this_model with
+      match send editor with
       | None ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;
@@ -26,17 +25,17 @@ let ctrl (_model : Model.t) (this_model : Model.Instance.t)
   | key ->
       let%map.Util.Option action : Action.local Option.t =
         (* let refocus (next_id : Uuid.Id.t) (default_id : Uuid.Id.t) : unit =
-             Js.focus_instance
+             Js.focus_editor
                ( match Uuid.Map.find_opt next_id model with
                | Some _ -> next_id
                | None -> default_id )
            in *)
         match key with
         (* TODO: Map.find_least | ArrowLeft ->
-               refocus (this_model.id - 1) (snd @@ Model.max_binding model).id;
+               refocus (editor.id - 1) (snd @@ Model.max_binding model).id;
                None
            | ArrowRight ->
-               refocus (this_model.id + 1) (snd @@ Model.min_binding model).id;
+               refocus (editor.id + 1) (snd @@ Model.min_binding model).id;
                None *)
         | _ -> None
       in
@@ -55,7 +54,7 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.app Option.t =
   in
   Action.Enqueue action
 
-let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
+let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
     Action.app Option.t =
   let%map.Util.Option action : Action.local Option.t =
     match Dom_html.Keyboard_code.of_event event with
@@ -82,7 +81,7 @@ let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
     | Space -> Some (Edit (Create Exp_app))
     | Backslash -> Some (Edit (Create Exp_lam))
     | Delete ->
-        Js.clear_selection ("deleted" ^ Uuid.Id.show this_model.id);
+        Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
         Some (Edit Destroy)
     | ArrowUp -> Some (Move Out)
     | ArrowDown -> Some (Move In)
@@ -93,8 +92,7 @@ let base (this_model : Model.Instance.t) (event : Dom_html.keyboardEvent Js.t) :
   Action.Enqueue action
 
 let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
-    (this_model : Model.Instance.t) :
-    Dom_html.keyboardEvent Js.t -> Vdom.Event.t =
+    (editor : Editor.t) : Dom_html.keyboardEvent Js.t -> Vdom.Event.t =
  fun event ->
   let handle =
     match
@@ -103,14 +101,14 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           to_bool event##.ctrlKey,
           to_bool event##.altKey )
     with
-    | false, false, false -> base this_model
+    | false, false, false -> base editor
     | true, false, false -> shift
-    | false, true, false -> ctrl model this_model
+    | false, true, false -> ctrl model editor
     | _, _, _ -> fun _ -> (None : Action.app Option.t)
   in
   match handle event with
   | Some action ->
       Js_of_ocaml.Dom.preventDefault event;
       Js_of_ocaml.Dom_html.stopPropagation event;
-      inject { instance_id = this_model.id; action }
+      inject { editor_id = editor.id; action }
   | None -> Vdom.Event.Ignore

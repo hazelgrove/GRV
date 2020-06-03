@@ -37,21 +37,6 @@ let pp (fmt : Format.formatter) (cache : t) : unit =
     (fun id e -> fprintf fmt "%s = %a\n" (Uuid.Id.show id) Edge.pp e)
     cache.edges
 
-(* let is_rooted (edge : Edge.t) (cache : t) : bool =
- *   (\* WARNING: This is a breadth-first search for trees. It could diverge if
- *      the graph contains a cycle. *\)
- *   let rec loop (queue : Edge.Set.t) : bool =
- *     match Edge.Set.choose_opt queue with
- *     | None -> false
- *     | Some e ->
- *         e = edge
- *         ||
- *         let siblings = children e.source cache in
- *         let new_queue = Edge.Set.(queue |> union siblings |> remove e) in
- *         loop new_queue
- *   in
- *   loop (children Cursor.root cache) *)
-
 (* TODO: review this carefully (note only parents/children maps updated) *)
 let create (edge : Edge.t) (cache : t) : t =
   let edges = Uuid.Map.add edge.id edge cache.edges in

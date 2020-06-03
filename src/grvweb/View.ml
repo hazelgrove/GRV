@@ -115,7 +115,8 @@ let view_editor ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           mk
           @@ W.select
                ("actions" ^ Uuid.Id.show editor.id)
-               "Actions" editor.actions
+               "Actions"
+               (Graph_action.Set.elements editor.actions)
                (fun (item : Graph_action.t) ->
                  W.chars @@ Format.asprintf "%a" Graph_action.pp item);
           mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send editor);

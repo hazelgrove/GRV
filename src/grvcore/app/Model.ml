@@ -15,7 +15,7 @@ let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 let filter_editor_actions (globally_known : Graph_action.Set.t)
     (editor : Editor.t) : Editor.t =
   let actions =
-    List.filter
+    Graph_action.Set.filter
       (fun a -> not (Graph_action.Set.mem a globally_known))
       editor.actions
   in

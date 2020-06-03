@@ -2,7 +2,7 @@ type t = {
   id : Uuid.Id.t;
   graph : Graph.t;
   cursor : Cursor.t;
-  actions : Graph_action.t list;
+  actions : Graph_action.Set.t;
   known_actions : Graph_action.Set.t;
 }
 
@@ -11,7 +11,7 @@ let mk () : t =
     id = Uuid.Id.next ();
     graph = Graph.empty;
     cursor = Cursor.root;
-    actions = [];
+    actions = Graph_action.Set.empty;
     known_actions = Graph_action.Set.empty;
   }
 

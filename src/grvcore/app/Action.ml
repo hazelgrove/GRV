@@ -47,7 +47,8 @@ let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
     Editor.t =
   let graph : Graph.t = Graph_action.apply graph_action editor.graph in
   let known_actions = Graph_action.Set.add graph_action editor.known_actions in
-  { editor with Editor.graph; Editor.known_actions }
+  let actions = Graph_action.Set.add graph_action editor.actions in
+  { editor with graph; known_actions; actions }
 
 let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
@@ -93,8 +94,6 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
                (Cache.children editor.cursor editor.graph.cache)) )
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in
-  let actions = editor.actions @ graph_actions in
-  let editor = { editor with actions } in
   let editors = Uuid.Map.add editor_id editor model.editors in
   let model = { model with editors } in
   if move_in then apply_move model editor_id Down else Some model

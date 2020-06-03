@@ -1,6 +1,7 @@
 type move = Left | Right | Up | Down | Select of Cursor.t [@@deriving sexp_of]
 
-type edit = Create of Lang.Constructor.t | Destroy [@@deriving sexp_of]
+type edit = Create of Lang.Constructor.t | Destroy | Restore of Vertex.t
+[@@deriving sexp_of]
 
 open Sexplib0.Sexp_conv
 
@@ -92,6 +93,9 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
             (fun edge -> Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
             (Edge.Set.elements
                (Cache.children editor.cursor editor.graph.cache)) )
+    | Restore vertex ->
+        let edge : Edge.t = Edge.mk editor.cursor vertex in
+        (false, [ Uuid.Wrap.mk Graph_action.{ state = Created; edge } ])
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in
   let editors = Uuid.Map.add editor_id editor model.editors in

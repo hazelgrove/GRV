@@ -16,16 +16,16 @@ let send (editor : Editor.t) : Action.t' Option.t =
       Js.fill_selection id;
       Some (Comm (Send actions))
 
+(* TODO: creating a cycle breaks the GUI (javascript stack overflow) *)
 let restore (editor : Editor.t) : Action.t' Option.t =
   let selection : bool list =
     Js.get_selection ("deleted" ^ Uuid.Id.show editor.id)
   in
   let vertexes : Vertex.t list = Vertex.Set.elements (Editor.deleted editor) in
-  let%map.Util.Option result =
+  let%map.Util.Option result : (bool * Vertex.t) Option.t =
     List.find_opt fst (List.combine selection vertexes)
   in
-  let _vertex : Vertex.t = snd result in
-  failwith __LOC__
+  Action.Edit (Restore (snd result))
 
 let ctrl (_model : Model.t) (editor : Editor.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =

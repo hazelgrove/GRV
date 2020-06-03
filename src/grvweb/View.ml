@@ -130,7 +130,7 @@ let view_editor ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
                (Vertex.Set.elements (Editor.deleted editor))
                (fun (vertex : Vertex.t) ->
                  view_vertex ~inject editor vertex None);
-          mk @@ W.button "Restore (ctrl-r)" (fun () -> Key.restore editor);
+          mk @@ W.button "Restore" (fun () -> Key.restore editor);
         ];
       h2 [] [ text "Cursor" ];
       W.chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;

@@ -20,7 +20,7 @@ let maybe_disabled ?(disable : bool = false)
   node (attrs @ if disable then [ disabled ] else []) children
 
 let text_input ?(disable : bool = false) (id_ : string)
-    (change : string -> Action.app Option.t) : Vdom.Node.t t =
+    (change : string -> Action.t' Option.t) : Vdom.Node.t t =
  fun ~inject editor ->
   maybe_disabled ~disable Vdom.Node.input
     [
@@ -39,7 +39,7 @@ let text_input ?(disable : bool = false) (id_ : string)
     []
 
 let button ?(disable : bool = false) (label : string)
-    (click : unit -> Action.app Option.t) : Vdom.Node.t t =
+    (click : unit -> Action.t' Option.t) : Vdom.Node.t t =
  fun ~inject editor ->
   maybe_disabled ~disable Vdom.Node.button
     [
@@ -60,28 +60,28 @@ let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
     button ~disable label (fun () ->
         match Js.get_input id_ with
         | "" -> None
-        | str -> Some (Enqueue (Edit (Create (mk str)))))
+        | str -> Some (Edit (Create (mk str))))
   in
   let txt : Vdom.Node.t t =
     text_input ~disable id_ (function
       | "" -> None
-      | str -> Some (Enqueue (Edit (Create (mk str)))))
+      | str -> Some (Edit (Create (mk str))))
   in
   Js.set_input id_ "";
   div [] [ btn ~inject editor; txt ~inject editor ]
 
-let app_button ?(disable : bool = false) (label : string) (action : Action.app)
-    : Vdom.Node.t t =
+let app_button ?(disable : bool = false) (label : string) (action : Action.t') :
+    Vdom.Node.t t =
   button ~disable label (fun () -> Some action)
 
 let create_button (label : string) (ctor : Lang.Constructor.t)
     (sort : Lang.Sort.t) : Vdom.Node.t t =
  fun ~inject editor ->
   let disable = not (Lang.Index.child_sort editor.value.cursor.index = sort) in
-  app_button ~disable label (Enqueue (Edit (Create ctor))) ~inject editor
+  app_button ~disable label (Edit (Create ctor)) ~inject editor
 
-let move_button (label : string) (dir : Action.direction) : Vdom.Node.t t =
-  app_button label (Enqueue (Move dir))
+let move_button (label : string) (dir : Action.move) : Vdom.Node.t t =
+  app_button label (Move dir)
 
 let select ?(multi : bool = true) ?(default : bool = true) (id_ : string)
     (label : string) (items : 'a List.t) (show : 'a -> Vdom.Node.t) :

@@ -7,7 +7,7 @@ let clickable ~inject (editor : Editor.t) (cursor : Cursor.t) : Vdom.Attr.t =
   Vdom.Attr.on_click (fun event ->
       Dom.preventDefault event;
       Dom_html.stopPropagation event;
-      inject { Action.editor_id = editor.id; action = Enqueue (Select cursor) })
+      inject { Action.editor_id = editor.id; action = Move (Select cursor) })
 
 let rec view_cursor ~inject (editor : Editor.t) (cursor : Cursor.t) :
     Vdom.Node.t =
@@ -104,12 +104,12 @@ let view_editor ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           mk
           @@ W.button "Delete (delete)" (fun () ->
                  Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
-                 Some (Enqueue (Edit Destroy)));
+                 Some (Edit Destroy));
         ];
       div []
         [
-          mk @@ W.move_button "In (↓)" In;
-          mk @@ W.move_button "Out (↑)" Out;
+          mk @@ W.move_button "Up (↑)" Up;
+          mk @@ W.move_button "Down (↓)" Down;
           mk @@ W.move_button "Left (←)" Left;
           mk @@ W.move_button "Right (→)" Right;
         ];

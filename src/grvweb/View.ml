@@ -129,9 +129,7 @@ let view_editor ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           @@ W.select ~multi:false ~default:false
                ("deleted" ^ Uuid.Id.show editor.id)
                "Deleted"
-               (Vertex.Set.elements
-                  (Vertex.Set.remove Vertex.root
-                     (Roots.roots editor.value.graph)))
+               (Vertex.Set.elements (Editor.deleted editor))
                (fun (vertex : Vertex.t) ->
                  view_vertex ~inject editor vertex None);
           mk @@ W.button "Restore (ctrl-r)" (fun () -> Key.restore editor);

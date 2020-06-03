@@ -1,6 +1,7 @@
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
+(* TODO: where do these functions go? *)
 let send (editor : Editor.t) : Action.t' Option.t =
   match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
   | [] -> None
@@ -10,7 +11,16 @@ let send (editor : Editor.t) : Action.t' Option.t =
       in
       Some (Comm (Send actions))
 
-let restore (editor : Editor.t) : Action.t' Option.t = send editor
+let restore (editor : Editor.t) : Action.t' Option.t =
+  let selection : bool list =
+    Js.get_selection ("deleted" ^ Uuid.Id.show editor.id)
+  in
+  let vertexes : Vertex.t list = Vertex.Set.elements (Editor.deleted editor) in
+  let%map.Util.Option result =
+    List.find_opt fst (List.combine selection vertexes)
+  in
+  let _vertex : Vertex.t = snd result in
+  failwith __LOC__
 
 let ctrl (_model : Model.t) (editor : Editor.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =

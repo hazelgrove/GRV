@@ -17,22 +17,22 @@ let filter_editor_actions (globally_known : Graph_action.Set.t)
   let actions =
     List.filter
       (fun a -> not (Graph_action.Set.mem a globally_known))
-      editor.value.actions
+      editor.actions
   in
-  { editor with value = { editor.value with actions } }
+  { editor with actions }
 
 let globally_known_actions (model : t) : Graph_action.Set.t =
-  model.known_actions
-
-(* let knowns =
-     List.map
-       (fun (_, i) -> i.graph.cache.known_actions)
-       (Uuid.Map.bindings model.instances)
-   in
-   List.fold_left (fun x z -> Graph_action.Set.union .... ) knowns *)
+  let knowns =
+    List.map
+      (fun (_, (e : Editor.t)) -> e.known_actions)
+      (Uuid.Map.bindings model.editors)
+  in
+  List.fold_left Graph_action.Set.inter (List.hd knowns) knowns
 
 let remove_known_actions (model : t) : t =
+  let known_actions = globally_known_actions model in
+  Printf.printf "known_actions: %d\n" (Graph_action.Set.cardinal known_actions);
   let editors =
-    Uuid.Map.map (filter_editor_actions model.known_actions) model.editors
+    Uuid.Map.map (filter_editor_actions known_actions) model.editors
   in
   { model with editors }

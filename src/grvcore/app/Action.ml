@@ -14,8 +14,8 @@ type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
 let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
     Model.t Option.t =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
-  let cache : Cache.t = editor.value.graph.cache in
-  let cursor : Cursor.t = editor.value.cursor in
+  let cache : Cache.t = editor.graph.cache in
+  let cursor : Cursor.t = editor.cursor in
   let cursor : Cursor.t Option.t =
     match move_action with
     | Left ->
@@ -39,14 +39,20 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
     | Select cursor -> Some cursor
   in
   let%map.Util.Option cursor = cursor in
-  let editor = { editor with value = { editor.value with cursor } } in
+  let editor = { editor with cursor } in
   let editors = Uuid.Map.add editor_id editor model.editors in
   { model with editors }
+
+let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
+    Editor.t =
+  let graph : Graph.t = Graph_action.apply graph_action editor.graph in
+  let known_actions = Graph_action.Set.add graph_action editor.known_actions in
+  { editor with Editor.graph; Editor.known_actions }
 
 let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
-  let children = Cache.children editor.value.cursor editor.value.graph.cache in
+  let children = Cache.children editor.cursor editor.graph.cache in
   let move_in, graph_actions =
     match edit_action with
     | Create constructor -> (
@@ -55,7 +61,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
           [
             Uuid.Wrap.mk
               Graph_action.
-                { state = Created; edge = Edge.mk editor.value.cursor vertex };
+                { state = Created; edge = Edge.mk editor.cursor vertex };
           ]
         in
         match Lang.Index.default_index constructor with
@@ -84,13 +90,11 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
           List.map
             (fun edge -> Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
             (Edge.Set.elements
-               (Cache.children editor.value.cursor editor.value.graph.cache)) )
+               (Cache.children editor.cursor editor.graph.cache)) )
   in
-  let graph =
-    List.fold_right Graph_action.apply graph_actions editor.value.graph
-  in
-  let actions = editor.value.actions @ graph_actions in
-  let editor = { editor with value = { editor.value with graph; actions } } in
+  let editor = List.fold_right apply_graph_action graph_actions editor in
+  let actions = editor.actions @ graph_actions in
+  let editor = { editor with actions } in
   let editors = Uuid.Map.add editor_id editor model.editors in
   let model = { model with editors } in
   if move_in then apply_move model editor_id Down else Some model
@@ -101,11 +105,7 @@ let apply_comm (model : Model.t) (_editor_id : Uuid.Id.t) (comm_action : comm) :
   | Send edit_actions ->
       let editors : Editor.t Uuid.Map.t =
         Uuid.Map.map
-          (fun (editor : Editor.t) ->
-            let graph =
-              List.fold_right Graph_action.apply edit_actions editor.value.graph
-            in
-            { editor with value = { editor.value with graph } })
+          (List.fold_right apply_graph_action edit_actions)
           model.editors
       in
       let model = { model with editors } in

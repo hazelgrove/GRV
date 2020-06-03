@@ -7,7 +7,7 @@ let send (editor : Editor.t) : Action.t' Option.t =
   | [] -> None
   | selection ->
       let actions =
-        List.(map fst (filter snd @@ combine editor.value.actions selection))
+        List.(map fst (filter snd @@ combine editor.actions selection))
       in
       Some (Comm (Send actions))
 

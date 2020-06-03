@@ -83,5 +83,4 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   ^ "}"
 
 let draw (editor : Editor.t) : unit =
-  Js.draw_viz editor.id
-    (String.escaped @@ draw_graph editor.value.graph editor.value.cursor)
+  Js.draw_viz editor.id (String.escaped @@ draw_graph editor.graph editor.cursor)

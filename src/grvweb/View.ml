@@ -146,4 +146,4 @@ let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []
     (List.map
        (fun (_, editor) -> view_editor ~inject model editor)
-       (Uuid.Map.bindings model))
+       (Uuid.Map.bindings model.editors))

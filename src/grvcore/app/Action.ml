@@ -11,35 +11,9 @@ type t' = Move of move | Edit of edit | Comm of comm [@@deriving sexp_of]
 
 type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
 
-module Global = struct
-  let filter_editor_actions (globally_known : Graph_action.Set.t)
-      (editor : Editor.t) : Editor.t =
-    let actions =
-      List.filter
-        (fun a -> not (Graph_action.Set.mem a globally_known))
-        editor.value.actions
-    in
-    { editor with value = { editor.value with actions } }
-
-  let globally_known_actions (_model : Model.t) : Graph_action.Set.t =
-    Graph_action.Set.empty
-
-  (* let knowns =
-       List.map
-         (fun (_, i) -> i.graph.cache.known_actions)
-         (Uuid.Map.bindings model.instances)
-     in
-     List.fold_left (fun x z -> Graph_action.Set.union .... ) knowns *)
-
-  let remove_known_actions (model : Model.t) : Model.t =
-    let known_actions : Graph_action.Set.t = globally_known_actions model in
-    let f : Editor.t -> Editor.t = filter_editor_actions known_actions in
-    Uuid.Map.map f model
-end
-
 let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
     Model.t Option.t =
-  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model in
+  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let cache : Cache.t = editor.value.graph.cache in
   let cursor : Cursor.t = editor.value.cursor in
   let cursor : Cursor.t Option.t =
@@ -66,11 +40,12 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
   in
   let%map.Util.Option cursor = cursor in
   let editor = { editor with value = { editor.value with cursor } } in
-  Uuid.Map.add editor_id editor model
+  let editors = Uuid.Map.add editor_id editor model.editors in
+  { model with editors }
 
 let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
-  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model in
+  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let children = Cache.children editor.value.cursor editor.value.graph.cache in
   let move_in, graph_actions =
     match edit_action with
@@ -116,23 +91,25 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
   in
   let actions = editor.value.actions @ graph_actions in
   let editor = { editor with value = { editor.value with graph; actions } } in
-  let model = Uuid.Map.add editor_id editor model in
+  let editors = Uuid.Map.add editor_id editor model.editors in
+  let model = { model with editors } in
   if move_in then apply_move model editor_id Down else Some model
 
 let apply_comm (model : Model.t) (_editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
   match comm_action with
   | Send edit_actions ->
-      let model : Model.t =
+      let editors : Editor.t Uuid.Map.t =
         Uuid.Map.map
           (fun (editor : Editor.t) ->
             let graph =
               List.fold_right Graph_action.apply edit_actions editor.value.graph
             in
             { editor with value = { editor.value with graph } })
-          model
+          model.editors
       in
-      Some (Global.remove_known_actions model)
+      let model = { model with editors } in
+      Some (Model.remove_known_actions model)
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =

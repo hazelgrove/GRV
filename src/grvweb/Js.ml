@@ -29,3 +29,6 @@ let get_selection (id : string) : bool list =
 
 let clear_selection (id : string) : unit =
   eval_to_unit ("clearSelection('" ^ id ^ "')")
+
+let fill_selection (id : string) : unit =
+  eval_to_unit ("fillSelection('" ^ id ^ "')")

@@ -3,7 +3,8 @@ module Vdom = Virtual_dom.Vdom
 
 (* TODO: where do these functions go? *)
 let send (editor : Editor.t) : Action.t' Option.t =
-  match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
+  let id : string = "actions" ^ Uuid.Id.show editor.id in
+  match Js.get_selection id with
   | [] -> None
   | selection ->
       let actions =
@@ -12,6 +13,7 @@ let send (editor : Editor.t) : Action.t' Option.t =
             (filter snd
                (combine (Graph_action.Set.elements editor.actions) selection)))
       in
+      Js.fill_selection id;
       Some (Comm (Send actions))
 
 let restore (editor : Editor.t) : Action.t' Option.t =

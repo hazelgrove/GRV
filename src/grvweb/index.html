@@ -79,6 +79,13 @@
               obj.childNodes.forEach(item => item.classList.remove("selected"));
           }
       }
+
+      function fillSelection(id) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              obj.childNodes.forEach(item => item.classList.add("selected"));
+          }
+      }
     </script>
     <script src="main.bc.js"></script>
   </body>

@@ -2,17 +2,13 @@ type direction = In | Out | Left | Right [@@deriving sexp_of]
 
 type edit = Create of Lang.Constructor.t | Destroy [@@deriving sexp_of]
 
-type local = Move of direction | Edit of edit [@@deriving sexp_of]
+type local = Move of direction | Select of Cursor.t | Edit of edit
+[@@deriving sexp_of]
 
 open Sexplib0.Sexp_conv
 
 (* TODO: Make `Send` be to a specific editor *)
-type app =
-  (* TODO: Move to local *)
-  | Select of Cursor.t
-  | Send of Graph_action.t list
-  | Enqueue of local
-[@@deriving sexp_of]
+type app = Send of Graph_action.t list | Enqueue of local [@@deriving sexp_of]
 
 type t = { editor_id : Uuid.Id.t; action : app } [@@deriving sexp_of]
 
@@ -116,6 +112,7 @@ let rec apply_editor (local_action : local) (editor : Editor.t) : Editor.t =
           (apply_move direction editor.value.cursor editor.value.graph.cache)
       in
       { editor with value = { editor.value with cursor } }
+  | Select cursor -> { editor with value = { editor.value with cursor } }
   | Edit edit ->
       let allowed =
         match edit with
@@ -145,17 +142,6 @@ let rec apply_editor (local_action : local) (editor : Editor.t) : Editor.t =
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   match action.action with
-  | Select cursor -> (
-      match
-        let%map.Util.Option editor : Editor.t Option.t =
-          Uuid.Map.find_opt action.editor_id model
-        in
-        (* TODO: fix this *)
-        let editor : Editor.t = editor in
-        { editor with value = { editor.value with cursor } }
-      with
-      | Some editor -> Uuid.Map.add action.editor_id editor model
-      | None -> model )
   | Send actions ->
       let new_model : Model.t =
         Uuid.Map.map

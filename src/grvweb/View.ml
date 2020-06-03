@@ -7,7 +7,7 @@ let clickable ~inject (editor : Editor.t) (cursor : Cursor.t) : Vdom.Attr.t =
   Vdom.Attr.on_click (fun event ->
       Dom.preventDefault event;
       Dom_html.stopPropagation event;
-      inject { Action.editor_id = editor.id; action = Select cursor })
+      inject { Action.editor_id = editor.id; action = Enqueue (Select cursor) })
 
 let rec view_cursor ~inject (editor : Editor.t) (cursor : Cursor.t) :
     Vdom.Node.t =

@@ -83,6 +83,7 @@
 \def\Left{\text{Left}}
 \def\Move{\text{Move}}
 \def\Num{\text{Num}}
+\def\Restore{\text{Restore}}
 \def\Right{\text{Right}}
 \def\Select{\text{Select}}
 \def\Send{\text{Send}}
@@ -258,7 +259,8 @@ A \emph{move action} $a \in \A^{move}$ repositions the cursor.
 \begin{alignRL}
   \A^{edit}
   &= \{ \Create \} \times \K \\
-  &\Cup \{ \Destroy \}
+  &\Cup \{ \Destroy \} \\
+  &\Cup \{ \Restore \} \times \V
 \end{alignRL}
 
 An \emph{edit action} $a \in \A^{edit}$ adds or removes an edge at the cursor.
@@ -361,6 +363,10 @@ $\boxed{E -->a E}$
     \children(\Gamma,c) = \{\e_j\}_{j=1}^n
   }{
     \Gamma,c,a^{*} \xrightarrow{\Destroy} \Gamma[\e_j :-> -]_{j=1}^n,c,a^{*}
+  }
+
+  \Inferrule{}{
+    \Gamma,c,a^{*} \xrightarrow{\Restore~v} \Gamma[(c,v) :-> +],c,a^{*}
   }
 \end{mathpar}
 

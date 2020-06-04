@@ -199,10 +199,10 @@ with parent vertex $v$ and child index $i$.
 \subsubsection{Edge}
 \label{sec:edge}
 
-$\E = \C \times \V$
+$\E = \C \times \V \times \U$
 
-An \emph{edge} $\e = (c, v) \in \E$ connects a cursor $c$ to a specific vertex
-$v$.
+An \emph{edge} $\e = (c, v, u) \in \E$ connects a cursor $c$ to a specific
+vertex $v$.
 
 % ..............................................................................
 
@@ -278,8 +278,8 @@ editor to all of the others.
 \label{sec:operational-semantics}
 
 \begin{alignRL}
-  \children(\Gamma,c) &= \{ \e=(c',v) :~ c=c', \Gamma(\e)=+ \} \\
-  \parents(\Gamma,v) &= \{ \e=(c,v') :~ v=v', \Gamma(\e)=+ \}
+  \children(\Gamma,c) &= \{ \e=(c',v,u) :~ c=c', \Gamma(\e)=+ \} \\
+  \parents(\Gamma,v) &= \{ \e=(c,v',u) :~ v=v', \Gamma(\e)=+ \}
 \end{alignRL}
 
 \paragraph{Deleted Vertexes} ~
@@ -312,17 +312,16 @@ $\boxed{E -->a E}$
   }
 
   \Inferrule{
-    \parents(v) = (c',v')
+    \parents(v) = \{(c',v',u')\}
   }{
     \Gamma,(v,i),a^{*} \xrightarrow{\Up} \Gamma,c',a^{*}
   }
 
   \Inferrule{
-    \children(c) = (c',v') \\
-    v' = (k,u) \\
+    \children(c) = \{(c',(k,u_k),u')\} \\
     \downIndex(k) = i
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Down} \Gamma,(v',i),a^{*}
+    \Gamma,c,a^{*} \xrightarrow{\Down} \Gamma,((k,u_k),i),a^{*}
   }
 
   \Inferrule{}{
@@ -336,27 +335,23 @@ $\boxed{E -->a E}$
 \begin{mathpar}
   \Inferrule{
     \defaultIndex(c) = \None \\
-    u \in \U \text{ fresh}
-    \\\\
-    \e = (c,(k,u))
+    u, u_k \in \U \text{ fresh}
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Create~k} \Gamma[\e :-> +],c,a^{*}
+    \Gamma,c,a^{*} \xrightarrow{\Create~k} \Gamma[(c,(k,u_k),u) :-> +],c,a^{*}
   }
 
   \Inferrule{
     \defaultIndex(c) = i' \\
-    \children(\Gamma,c) = \{(c_j,v_j)\}_{j=1}^n \\
+    c' = ((k,u_k),i') \\
+    u, u_k \in \U \text{ fresh} \\
     \\\\
-    \e = (c,(k,u)) \\
-    c' = ((k,u),i') \\
-    u \in \U \text{ fresh} \\
-    \\\\
-    \e_j = (c_j,v_j) \\
-    \e_j' = (c_j',v_j) \\
-    j = 1, \ldots, n
+    \children(\Gamma,c) = \{(c_j,v_j,u_j)\}_{j=1}^n
   }{
     \Gamma,c,a^{*} \xrightarrow{\Create~k}
-    \Gamma[\e :-> +][\e_j' :-> +]_{j=1}^n[\e_j :-> -]_{j=1}^n,c',a^{*}
+    \Gamma
+    [(c   ,(k,u_k),u  ) :-> +]
+    [(c_j',v_j    ,u_j) :-> +]_{j=1}^n
+    [(c_j ,v_j    ,u_j) :-> -]_{j=1}^n,c',a^{*}
   }
 
   \Inferrule{
@@ -365,8 +360,10 @@ $\boxed{E -->a E}$
     \Gamma,c,a^{*} \xrightarrow{\Destroy} \Gamma[\e_j :-> -]_{j=1}^n,c,a^{*}
   }
 
-  \Inferrule{}{
-    \Gamma,c,a^{*} \xrightarrow{\Restore~v} \Gamma[(c,v) :-> +],c,a^{*}
+  \Inferrule{
+    u \text{ fresh}
+  }{
+    \Gamma,c,a^{*} \xrightarrow{\Restore~v} \Gamma[(c,v,u) :-> +],c,a^{*}
   }
 \end{mathpar}
 

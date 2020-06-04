@@ -279,12 +279,14 @@ editor to all of the others.
   \children(\Gamma,c) &= \{ \e=(c',v) :~ c=c', \Gamma(\e)=+ \} \\
   \parents(\Gamma,v) &= \{ \e=(c,v') :~ v=v', \Gamma(\e)=+ \}
 \end{alignRL}
-\\
+
+\paragraph{Deleted Vertexes} ~
+
 \begin{alignRL}
+  \deleted(\Gamma) &= \orphans(\Gamma) \cup \unseen(\Gamma) \\
   \orphans(\Gamma) &= \{ v :~ \parents(\Gamma,v) = \None \} \\
-  \seen(\Gamma) &= \{ v :~ \parents(\Gamma,v) \subseteq \orphans(\Gamma) \cup \seen(\Gamma) \} \\
   \unseen(\Gamma) &= \vertexes(\Gamma) \setminus \orphans(\Gamma) \setminus \seen(\Gamma) \\
-  \deleted(\Gamma) &= \orphans(\Gamma) \cup \unseen(\Gamma)
+  \seen(\Gamma) &= \{ v :~ \parents(\Gamma,v) \subseteq \orphans(\Gamma) \cup \seen(\Gamma) \}
 \end{alignRL}
 
 \vspace*{2ex}
@@ -342,12 +344,14 @@ $\boxed{E -->a E}$
   \Inferrule{
     \defaultIndex(c) = i' \\
     \children(\Gamma,c) = \{(c_j,v_j)\}_{j=1}^n \\
-    u \in \U \text{ fresh}
     \\\\
     \e = (c,(k,u)) \\
+    c' = ((k,u),i') \\
+    u \in \U \text{ fresh} \\
+    \\\\
     \e_j = (c_j,v_j) \\
     \e_j' = (c_j',v_j) \\
-    c' = ((k,u),i')
+    j = 1, \ldots, n
   }{
     \Gamma,c,a^{*} \xrightarrow{\Create~k}
     \Gamma[\e :-> +][\e_j' :-> +]_{j=1}^n[\e_j :-> -]_{j=1}^n,c',a^{*}

@@ -1,14 +1,10 @@
-type t = { editors : Editor.t Uuid.Map.t; known_actions : Graph_action.Set.t }
+type t = Editor.t Uuid.Map.t
 
 let empty : t =
   let editor1 = Editor.mk () in
   let editor2 = Editor.mk () in
   (* TODO: helper for this *)
-  let editors =
-    Uuid.Map.of_seq
-      (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
-  in
-  { editors; known_actions = Graph_action.Set.empty }
+  Uuid.Map.of_seq (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
@@ -25,14 +21,11 @@ let globally_known_actions (model : t) : Graph_action.Set.t =
   let knowns =
     List.map
       (fun (_, (e : Editor.t)) -> e.known_actions)
-      (Uuid.Map.bindings model.editors)
+      (Uuid.Map.bindings model)
   in
   List.fold_left Graph_action.Set.inter (List.hd knowns) knowns
 
 let remove_known_actions (model : t) : t =
   let known_actions = globally_known_actions model in
   Printf.printf "known_actions: %d\n" (Graph_action.Set.cardinal known_actions);
-  let editors =
-    Uuid.Map.map (filter_editor_actions known_actions) model.editors
-  in
-  { model with editors }
+  Uuid.Map.map (filter_editor_actions known_actions) model

@@ -74,7 +74,8 @@
 \def\V{\mathcal{V}}
 
 \def\e{\varepsilon}
-\def\Eup{\text{E}}
+\def\Abf{\textbf{A}}
+\def\Ebf{\textbf{E}}
 
 \def\Create{\text{Create}}
 \def\Destroy{\text{Destroy}}
@@ -92,6 +93,7 @@
 \DeclareMathOperator{\children}{\text{children}}
 \DeclareMathOperator{\deleted}{\text{deleted}}
 \DeclareMathOperator{\domain}{\text{domain}}
+\DeclareMathOperator{\known}{\text{known}}
 \DeclareMathOperator{\orphans}{\text{orphans}}
 \DeclareMathOperator{\parents}{\text{parents}}
 \DeclareMathOperator{\seen}{\text{seen}}
@@ -139,32 +141,16 @@
 \section{Concepts}
 \label{sec:concepts}
 
-\begin{tabular}{cl@{\hspace{1.5cm}}cl@{\hspace{1.5cm}}cl}
-  $\A$ & Actions    & $\G$ & Graphs          & $\S$ & Edge States \\
-  $\C$ & Cursors    & $\I$ & Indices         & $\U$ & UUIDs       \\
-  $\E$ & Edges      & $\K$ & Constructors    & $\V$ & Vertexes    \\
+\begin{tabular}{cl@{\hspace{1.5cm}}cl@{\hspace{1.5cm}}cl@{\hspace{1.5cm}}cl}
+  $\A$ & Actions & $\G$ & Graphs       & $\S$ & Edge States & $\Abf$ & Graph Actions \\
+  $\C$ & Cursors & $\I$ & Indices      & $\U$ & UUIDs       & $\Ebf$ & Editors       \\
+  $\E$ & Edges   & $\K$ & Constructors & $\V$ & Vertexes \\
 \end{tabular}
-
-% ------------------------------------------------------------------------------
-
-\subsection{The Environment}
-\label{sec:the-environment}
-
-\subsubsection{Uuid}
-\label{sec:uuid}
 
 A \emph{uuid} $u \in \U$ is a unique identifier.
 
-% ------------------------------------------------------------------------------
-
-\subsubsection{Constructor}
-\label{sec:constructor}
-
 A \emph{constructor} $k \in \K$ represents a node in the target language's
 abstract syntax tree.
-
-\subsubsection{Index}
-\label{sec:index}
 
 An \emph{index} $i \in \I$ names a position, relative to some parent
 constructor, of a potential child node in the target language's AST.
@@ -176,8 +162,7 @@ constructor, of a potential child node in the target language's AST.
 
 % ..............................................................................
 
-\subsubsection{Vertex}
-\label{sec:vertex}
+\paragraph{Vertex} ~
 
 $\V = \K \times \U$
 
@@ -186,8 +171,7 @@ uuid $u$.
 
 % ..............................................................................
 
-\subsubsection{Cursor}
-\label{sec:cursor}
+\paragraph{Cursor} ~
 
 $\C = \V \times \I$
 
@@ -196,8 +180,7 @@ with parent vertex $v$ and child index $i$.
 
 % ..............................................................................
 
-\subsubsection{Edge}
-\label{sec:edge}
+\paragraph{Edge} ~
 
 $\E = \C \times \V \times \U$
 
@@ -206,39 +189,43 @@ vertex $v$.
 
 % ..............................................................................
 
-\subsubsection{Edge State}
-\label{sec:edge-state}
+\paragraph{Edge State} ~
 
 $\S = \{\bot,+,-\}$
 
 An \emph{edge state} $s \in \S$ determines whether an edge has been created
 and, if so, whether it has been destroyed.
 
-% ..............................................................................
+\paragraph{Graph Action} ~
 
-\subsubsection{Graph}
-\label{sec:graph}
+$\Abf = \E \times \S \times \U$
 
-$\G = (\E \times \S)^{*}$
+A \emph{graph action} $A = (\e,s,u) \in \Abf$ is an instance of a binding from
+edge $\e$ to edge state $s$. Denote by $[\e :-> s]$ a fresh binding from edge
+$\e$ to edge state $s$.
 
-A \emph{graph} $(\Gamma : \E -> \S) \in \G$ is a function from edges to edge
-states. Denote by $\Gamma(\e) = s$ the state $s$ of edge $\e$ in graph
-$\Gamma$.
+\paragraph{Graph} ~
+
+$\G = \Abf^{*}$
+
+A \emph{graph} $(G : \E -> \S) = A^{*} \in \G$ is a function from edges to
+edge states modeled as a set of graph actions $A^{*}$. Denote by $G(\e) = s$
+the state $s$ of edge $\e$ in graph $G$, and by $G A$ the graph $G$ extended
+with graph action $A$.
 
 % ------------------------------------------------------------------------------
 
 \subsection{The Editor}
 \label{sec:the-editor}
 
-E $= \G \times \C \times \A^{*} \times \U$
+$\Ebf = \G \times \C \times \A^{*} \times \Abf^{*} \times \U$
 
-An \emph{editor} $E = (\Gamma,c,a^{*}) \in$ E is an instance of graph $\Gamma$
-with cursor $c$ and action queue $a^{*}$.
+An \emph{editor} $E = (G,c,a^{*},A^{*},u) \in \Ebf$ is an instance of graph
+$G$ with cursor $c$, action queue $a^{*}$, and known graph actions $A^{*}$.
 
 % ..............................................................................
 
-\subsubsection{Actions}
-\label{sec:actions}
+\paragraph{Actions} ~
 
 $\A = \A^{move} \cup \A^{edit} \cup \A^{comm}$
 
@@ -267,10 +254,17 @@ An \emph{edit action} $a \in \A^{edit}$ adds or removes an edge at the cursor.
 
 \paragraph{Communication Actions} ~
 
-$\A^{comm} = \{ \Send \} \times (\A^{edit})^{*} \times \U$
+$\A^{comm} = \{ \Send \} \times (\A^{edit})^{*}$
 
 A \emph{communication action} $a \in \A^{comm}$ copies edit actions from one
-editor to all of the others.
+editor to the others.
+
+% ------------------------------------------------------------------------------
+
+\subsection{The Environment}
+\label{sec:the-environment}
+
+An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
 
 % ==============================================================================
 
@@ -278,17 +272,17 @@ editor to all of the others.
 \label{sec:operational-semantics}
 
 \begin{alignRL}
-  \children(\Gamma,c) &= \{ \e=(c',v,u) :~ c=c', \Gamma(\e)=+ \} \\
-  \parents(\Gamma,v) &= \{ \e=(c,v',u) :~ v=v', \Gamma(\e)=+ \}
+  \children(G,c) &= \{ \e=(c',v,u) :~ c=c', G(\e)=+ \} \\
+  \parents(G,v) &= \{ \e=(c,v',u) :~ v=v', G(\e)=+ \}
 \end{alignRL}
 
 \paragraph{Deleted Vertexes} ~
 
 \begin{alignRL}
-  \deleted(\Gamma) &= \orphans(\Gamma) \cup \unseen(\Gamma) \\
-  \orphans(\Gamma) &= \{ v :~ \parents(\Gamma,v) = \None \} \\
-  \unseen(\Gamma) &= \vertexes(\Gamma) \setminus \orphans(\Gamma) \setminus \seen(\Gamma) \\
-  \seen(\Gamma) &= \{ v :~ \parents(\Gamma,v) \subseteq \orphans(\Gamma) \cup \seen(\Gamma) \}
+  \deleted(G) &= \orphans(G) \cup \unseen(G) \\
+  \orphans(G) &= \{ v :~ \parents(G,v) = \None \} \\
+  \unseen(G) &= \vertexes(G) \setminus \orphans(G) \setminus \seen(G) \\
+  \seen(G) &= \{ v :~ \parents(G,v) \subseteq \orphans(G) \cup \seen(G) \}
 \end{alignRL}
 
 \vspace*{2ex}
@@ -302,30 +296,30 @@ $\boxed{E -->a E}$
   \Inferrule{
     \leftIndex(i) = i'
   }{
-    \Gamma,(v,i),a^{*} \xrightarrow{\Left} \Gamma,(v,i'),a^{*}
+    G,(v,i),a^{*},A^{*},u \xrightarrow{\Left} G,(v,i'),a^{*},A^{*},u
   }
 
   \Inferrule{
     \rightIndex(i) = i'
   }{
-    \Gamma,(v,i),a^{*} \xrightarrow{\Right} \Gamma,(v,i'),a^{*}
+    G,(v,i),a^{*},A^{*},u \xrightarrow{\Right} G,(v,i'),a^{*},A^{*},u
   }
 
   \Inferrule{
     \parents(v) = \{(c',v',u')\}
   }{
-    \Gamma,(v,i),a^{*} \xrightarrow{\Up} \Gamma,c',a^{*}
+    G,(v,i),a^{*},A^{*},u \xrightarrow{\Up} G,c',a^{*},A^{*},u
   }
 
   \Inferrule{
     \children(c) = \{(c',(k,u_k),u')\} \\
     \downIndex(k) = i
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Down} \Gamma,((k,u_k),i),a^{*}
+    G,c,a^{*},A^{*},u \xrightarrow{\Down} G,((k,u_k),i),a^{*},A^{*},u
   }
 
   \Inferrule{}{
-    \Gamma,c,a^{*} \xrightarrow{\Select~c'} \Gamma,c',a^{*}
+    G,c,a^{*},A^{*},u \xrightarrow{\Select~c'} G,c',a^{*},A^{*},u
   }
 \end{mathpar}
 
@@ -335,9 +329,10 @@ $\boxed{E -->a E}$
 \begin{mathpar}
   \Inferrule{
     \defaultIndex(c) = \None \\
-    u, u_k \in \U \text{ fresh}
+    u, u_k \in \U \text{ fresh} \\
+    A = [(c,(k,u_k),u) :-> +]
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Create~k} \Gamma[(c,(k,u_k),u) :-> +],c,a^{*}
+    G,c,a^{*},A^{*},u \xrightarrow{\Create~k} G A,c,a^{*},A^{*}A,u
   }
 
   \Inferrule{
@@ -345,25 +340,27 @@ $\boxed{E -->a E}$
     c' = ((k,u_k),i') \\
     u, u_k \in \U \text{ fresh} \\
     \\\\
-    \children(\Gamma,c) = \{(c_j,v_j,u_j)\}_{j=1}^n
+    \children(G,c) = \{(c_j,v_j,u_j)\}_{j=1}^n \\
+    A'^{*} =
+    [(c  ,(k,u_k),u  ) :-> +]
+    [(c' ,v_j    ,u_j) :-> +]_{j=1}^n
+    [(c_j,v_j    ,u_j) :-> -]_{j=1}^n
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Create~k}
-    \Gamma
-    [(c   ,(k,u_k),u  ) :-> +]
-    [(c_j',v_j    ,u_j) :-> +]_{j=1}^n
-    [(c_j ,v_j    ,u_j) :-> -]_{j=1}^n,c',a^{*}
+    G,c,a^{*},A^{*},u \xrightarrow{\Create~k} G A'^{*},c',a^{*},A^{*}A'^{*},u
   }
 
   \Inferrule{
-    \children(\Gamma,c) = \{\e_j\}_{j=1}^n
+    \children(G,c) = \{\e_j\}_{j=1}^n \\
+    A'^{*} = [\e_j :-> -]_{j=1}^n
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Destroy} \Gamma[\e_j :-> -]_{j=1}^n,c,a^{*}
+    G,c,a^{*},A^{*},u \xrightarrow{\Destroy} G A'^{*},c,a^{*},A^{*}A'^{*},u
   }
 
   \Inferrule{
-    u \text{ fresh}
+    u \text{ fresh} \\
+    A = [(c,v,u) :-> +]
   }{
-    \Gamma,c,a^{*} \xrightarrow{\Restore~v} \Gamma[(c,v,u) :-> +],c,a^{*}
+    G,c,a^{*},A^{*},u \xrightarrow{\Restore~v} G A',c,a^{*},A^{*}A,u
   }
 \end{mathpar}
 
@@ -373,45 +370,45 @@ $\boxed{E -->a E}$
 \begin{mathpar}
   \Inferrule{
     a \in \A^{edit} \\
-    \Gamma,c,a^{*} -->a \Gamma',c',a^{*}
+    G,c,a^{*},A^{*},u -->a G',c',a^{*},A'^{*},u
   }{
-    \Gamma,c,a^{*} -->a \Gamma',c',a^{*}a
+    G,c,a^{*},A^{*},u -->a G',c',a^{*}a,A'^{*},u
   }
 \end{mathpar}
 
-\subsubsection{Replay}
-\label{sec:replay}
+\paragraph{Globally Known Graph Actions} ~
+
+$\known(E_1 \cdots E_n) = \{ A_j^{*} :~ E_j = (G_j,c_j,a_j^{*},A_j^{*}), j = 1,\ldots,n \}$
+
+\paragraph{Replay} ~
 
 $\boxed{E \xrightarrow{a^{*}} E}$
 %
 \begin{mathpar}
   \Inferrule{
-    E -->a E'' \\
-    E'' \xrightarrow{a^{*}} E' \\
+    E -->a E' \\
+    E' \xrightarrow{a^{*}} E'' \\
   }{
-    E \xrightarrow{aa^{*}} E'
+    E \xrightarrow{aa^{*}} E''
   }
 \end{mathpar}
 
-$\boxed{E,\ldots,E -->a E,\ldots,E}$
+\paragraph{Publish} ~
+
+$\boxed{E^{*} -->a E^{*}}$
 %
 \begin{mathpar}
   \Inferrule{
-    E_j = (\Gamma_j,c_j,a_j^{*},u_j) \\
-    u_j \ne u \\
-    E_j \xrightarrow{a'^{*}} E_j' \\
-    E_j' = (\Gamma_j',c_j',a_j^{*},u_j) \\
+    E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j) \\
+    E_j \xrightarrow{a'^{*}} (G_j',c_j',a_j'^{*}, A_j'^{*},u_j) \\
+    E_j' =
+    ( G_j'
+    , c_j'
+    , a_j'^{*} \setminus a'^{*}
+    , A_j'^{*} \setminus \known(E_1 \cdots E_n),u_j) \\
     j = 1,\ldots,n
   }{
-    E_1,\ldots,E_n \xrightarrow{\Send~a'^{*},u} E_1',\ldots,E_n'
-  }
-
-  \Inferrule{
-    E_j = (\Gamma_j,c_j,a_j^{*},u_j) \\
-    E_j' = (\Gamma_j,c_j,a_j^{*} \setminus a'^{*},u_j) \\
-    j = 1,\ldots,n \\
-  }{
-    E_1,\ldots,E_n \xrightarrow{\Send~a'^{*},u} E_1',\ldots,E_n'
+    E_1 \cdots E_n \xrightarrow{\Send~ a'^{*} } E_1' \cdots E_n'
   }
 \end{mathpar}
 

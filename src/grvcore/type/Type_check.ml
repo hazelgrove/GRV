@@ -30,7 +30,7 @@ type ana = Success | Error of error list
 (**************)
 
 let rec eval_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t =
-  match Edge.Set.elements (Graph.children cursor graph) with
+  match Edge.Set.elements (Graph.children graph cursor) with
   | [] -> Unknown
   | [ edge ] -> eval_typ_vertex graph (Edge.target edge)
   | _edges ->
@@ -55,7 +55,7 @@ and eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t =
 
 let rec ana_pat_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : type_env =
-  let edges = Edge.Set.elements (Graph.children cursor graph) in
+  let edges = Edge.Set.elements (Graph.children graph cursor) in
   (* Note that we add all bindings if there is a conflict.
      Also, we are not checking for shadowing between conflicting bindings. *)
   List.fold_left
@@ -75,7 +75,7 @@ and ana_pat_vertex (_graph : Graph.t) (env : type_env) (vertex : Vertex.t)
 
 let rec syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t =
-  match Edge.Set.elements (Graph.children cursor graph) with
+  match Edge.Set.elements (Graph.children graph cursor) with
   | [] -> Unknown
   | [ edge ] -> syn_exp_vertex graph env (Edge.target edge)
   | _edges ->
@@ -84,7 +84,7 @@ let rec syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
 
 and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : bool =
-  match Edge.Set.elements (Graph.children cursor graph) with
+  match Edge.Set.elements (Graph.children graph cursor) with
   | [] -> false
   | [ edge ] -> ana_exp_vertex graph env (Edge.target edge) typ
   | _edges -> (*TODO*) false

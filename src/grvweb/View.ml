@@ -17,7 +17,7 @@ let rec view_cursor ~inject (editor : Editor.t) (cursor : Cursor.t) :
     let view_vertex' : Vertex.t -> Cursor.t option -> Vdom.Node.t =
       view_vertex ~inject editor
     in
-    match Edge.Set.elements (Cache.children cursor editor.graph.cache) with
+    match Edge.Set.elements (Graph.children editor.graph cursor) with
     | [] ->
         span [ class_ "hole"; clickable ~inject editor cursor ] [ W.chars "_" ]
     | [ edge ] -> view_vertex' (Edge.target edge) (Some cursor)
@@ -127,7 +127,7 @@ let view_editor ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
           @@ W.select ~multi:false ~default:false
                ("deleted" ^ Uuid.Id.show editor.id)
                "Deleted"
-               (Vertex.Set.elements (Editor.deleted editor))
+               (Vertex.Set.elements (Graph.deleted editor.graph))
                (fun (vertex : Vertex.t) ->
                  view_vertex ~inject editor vertex None);
           mk @@ W.button "Restore" (fun () -> Key.restore editor);

@@ -21,7 +21,9 @@ let restore (editor : Editor.t) : Action.t' Option.t =
   let selection : bool list =
     Js.get_selection ("deleted" ^ Uuid.Id.show editor.id)
   in
-  let vertexes : Vertex.t list = Vertex.Set.elements (Editor.deleted editor) in
+  let vertexes : Vertex.t list =
+    Vertex.Set.elements (Graph.deleted editor.graph)
+  in
   let%map.Util.Option result : (bool * Vertex.t) Option.t =
     List.find_opt fst (List.combine selection vertexes)
   in

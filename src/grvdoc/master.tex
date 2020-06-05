@@ -50,7 +50,7 @@
 \mathlig{|-}{\vdash}
 \mathlig{:->}{\mapsto}
 \mathlig{-->a}{\overset{a}{\longrightarrow}}
-\mathlig{:~}{:}
+\mathlig{|}{\,|\,}
 \mathlig{:}{\!:\!}
 
 \def\Cup{\cup\ \:\!}
@@ -92,7 +92,7 @@
 
 \DeclareMathOperator{\children}{\text{children}}
 \DeclareMathOperator{\deleted}{\text{deleted}}
-\DeclareMathOperator{\domain}{\text{domain}}
+\DeclareMathOperator{\dom}{\text{dom}}
 \DeclareMathOperator{\known}{\text{known}}
 \DeclareMathOperator{\orphans}{\text{orphans}}
 \DeclareMathOperator{\parents}{\text{parents}}
@@ -167,7 +167,7 @@ constructor, of a potential child node in the target language's AST.
 $\V = \K \times \U$
 
 A \emph{vertex} $v = (k, u) \in \V$ is an instance of constructor $k$ with
-uuid $u$.
+uuid $u$. Let $v_{root}$ be the root vertex of all graphs.
 
 % ..............................................................................
 
@@ -208,15 +208,17 @@ $\e$ to edge state $s$.
 
 $\G = \Abf^{*}$
 
-A \emph{graph} $(G : \E -> \S) = A^{*} \in \G$ is a function from edges to
-edge states modeled as a set of graph actions $A^{*}$. Denote by $G(\e) = s$
-the state $s$ of edge $\e$ in graph $G$, and by $G A$ the graph $G$ extended
-with graph action $A$.
+A \emph{graph} $G : \E -> \S = A^{*} \in \G$ is a function from edges to edge
+states, modeled as a set of graph actions $A^{*}$. Denote by $G(\e) = s$ the
+state $s$ of edge $\e$ in graph $G$, and by $G A$ the graph $G$ extended with
+graph action $A$.
 
 % ------------------------------------------------------------------------------
 
 \subsection{The Editor}
 \label{sec:the-editor}
+
+\paragraph{Editor} ~
 
 $\Ebf = \G \times \C \times \A^{*} \times \Abf^{*} \times \U$
 
@@ -225,13 +227,13 @@ $G$ with cursor $c$, action queue $a^{*}$, and known graph actions $A^{*}$.
 
 % ..............................................................................
 
-\paragraph{Actions} ~
+\paragraph{Action} ~
 
 $\A = \A^{move} \cup \A^{edit} \cup \A^{comm}$
 
 An \emph{action} $a \in \A$ describes a change to one or more editors.
 
-\paragraph{Move Actions} ~
+\paragraph{Move Action} ~
 
 \begin{alignRL}
   \A^{move}
@@ -241,7 +243,7 @@ An \emph{action} $a \in \A$ describes a change to one or more editors.
 
 A \emph{move action} $a \in \A^{move}$ repositions the cursor.
 
-\paragraph{Edit Actions} ~
+\paragraph{Edit Action} ~
 
 \begin{alignRL}
   \A^{edit}
@@ -252,7 +254,7 @@ A \emph{move action} $a \in \A^{move}$ repositions the cursor.
 
 An \emph{edit action} $a \in \A^{edit}$ adds or removes an edge at the cursor.
 
-\paragraph{Communication Actions} ~
+\paragraph{Communication Action} ~
 
 $\A^{comm} = \{ \Send \} \times (\A^{edit})^{*}$
 
@@ -272,17 +274,18 @@ An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
 \label{sec:operational-semantics}
 
 \begin{alignRL}
-  \children(G,c) &= \{ \e=(c',v,u) :~ c=c', G(\e)=+ \} \\
-  \parents(G,v) &= \{ \e=(c,v',u) :~ v=v', G(\e)=+ \}
+  \children(G,c) &= \{ \e=(c',v,u) | G(\e)=+, c=c' \} \\
+  \parents(G,v) &= \{ \e=(c,v',u) | G(\e)=+, v=v' \}
 \end{alignRL}
 
 \paragraph{Deleted Vertexes} ~
 
 \begin{alignRL}
   \deleted(G) &= \orphans(G) \cup \unseen(G) \\
-  \orphans(G) &= \{ v :~ \parents(G,v) = \None \} \\
+  \orphans(G) &= \{ v | \parents(G,v) = \None \} \\
+  \seen(G) &= \{ v | \parents(G,v) \subseteq \orphans(G) \cup \seen(G) \} \\
   \unseen(G) &= \vertexes(G) \setminus \orphans(G) \setminus \seen(G) \\
-  \seen(G) &= \{ v :~ \parents(G,v) \subseteq \orphans(G) \cup \seen(G) \}
+  \vertexes(G) &= \{ v | \exists (c,v,u) \in \dom(G) \}
 \end{alignRL}
 
 \vspace*{2ex}
@@ -340,11 +343,11 @@ $\boxed{E -->a E}$
     c' = ((k,u_k),i') \\
     u, u_k \in \U \text{ fresh} \\
     \\\\
-    \children(G,c) = \{(c_j,v_j,u_j)\}_{j=1}^n \\
+    \children(G,c) = \{(c_j,v_j,u_j')\}_{j=1}^n \\
     A'^{*} =
     [(c  ,(k,u_k),u  ) :-> +]
-    [(c' ,v_j    ,u_j) :-> +]_{j=1}^n
-    [(c_j,v_j    ,u_j) :-> -]_{j=1}^n
+    [(c' ,v_j    ,u_j') :-> +]_{j=1}^n
+    [(c_j,v_j    ,u_j') :-> -]_{j=1}^n
   }{
     G,c,a^{*},A^{*},u \xrightarrow{\Create~k} G A'^{*},c',a^{*},A^{*}A'^{*},u
   }
@@ -360,13 +363,15 @@ $\boxed{E -->a E}$
     u \text{ fresh} \\
     A = [(c,v,u) :-> +]
   }{
-    G,c,a^{*},A^{*},u \xrightarrow{\Restore~v} G A',c,a^{*},A^{*}A,u
+    G,c,a^{*},A^{*},u \xrightarrow{\Restore~v} G A,c,a^{*},A^{*}A,u
   }
 \end{mathpar}
 
 \subsection{Communication}
 \label{sec:communication}
 
+\paragraph{Record} ~
+%
 \begin{mathpar}
   \Inferrule{
     a \in \A^{edit} \\
@@ -376,22 +381,27 @@ $\boxed{E -->a E}$
   }
 \end{mathpar}
 
-\paragraph{Globally Known Graph Actions} ~
-
-$\known(E_1 \cdots E_n) = \{ A_j^{*} :~ E_j = (G_j,c_j,a_j^{*},A_j^{*}), j = 1,\ldots,n \}$
-
 \paragraph{Replay} ~
 
 $\boxed{E \xrightarrow{a^{*}} E}$
 %
 \begin{mathpar}
   \Inferrule{
-    E -->a E' \\
-    E' \xrightarrow{a^{*}} E'' \\
+    E -->a E'' \\
+    E'' \xrightarrow{a^{*}} E' \\
   }{
-    E \xrightarrow{aa^{*}} E''
+    E \xrightarrow{aa^{*}} E'
   }
 \end{mathpar}
+
+\paragraph{Globally Known Graph Actions} ~
+
+$\known(E_1 \cdots E_n)
+= A_1^{*} \cdots A_n^{*} | E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j),j=1,\ldots,n$
+
+% $ \known(E_1 \cdots E_n)
+% = \known((G_1,c_1,a_1^{*},A_1^{*},u_1) \cdots (G_n,c_n,a_n^{*},A_n^{*},u_n))
+% = A_1^{*} \cdots A_n^{*} $
 
 \paragraph{Publish} ~
 

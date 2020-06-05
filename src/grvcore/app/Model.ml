@@ -27,5 +27,4 @@ let globally_known_actions (model : t) : Graph_action.Set.t =
 
 let remove_known_actions (model : t) : t =
   let known_actions = globally_known_actions model in
-  Printf.printf "known_actions: %d\n" (Graph_action.Set.cardinal known_actions);
   Uuid.Map.map (filter_editor_actions known_actions) model

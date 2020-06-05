@@ -57,35 +57,41 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
   let move_in, graph_actions =
     match edit_action with
     | Create constructor -> (
-        let vertex : Vertex.t = Vertex.mk constructor in
-        let create_parent_edge =
-          [
-            Uuid.Wrap.mk
-              Graph_action.
-                { state = Created; edge = Edge.mk editor.cursor vertex };
-          ]
-        in
-        match Lang.Index.default_index constructor with
-        | None -> (false, create_parent_edge)
-        | Some index ->
-            let create_new_children_edges =
-              List.map
-                (fun (old_edge : Edge.t) ->
-                  ( let source = Cursor.mk vertex index in
-                    let edge = Edge.mk source (Edge.target old_edge) in
-                    Uuid.Wrap.mk Graph_action.{ state = Created; edge }
-                    : Graph_action.t ))
-                (Edge.Set.elements children)
-            in
-            let destroy_old_children_edges =
-              List.map
-                (fun edge ->
-                  Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
-                (Edge.Set.elements children)
-            in
-            ( true,
-              create_parent_edge @ create_new_children_edges
-              @ destroy_old_children_edges ) )
+        if
+          not
+            ( Lang.Index.child_sort editor.cursor.index
+            = Lang.Constructor.sort_of constructor )
+        then (false, [])
+        else
+          let vertex : Vertex.t = Vertex.mk constructor in
+          let create_parent_edge =
+            [
+              Uuid.Wrap.mk
+                Graph_action.
+                  { state = Created; edge = Edge.mk editor.cursor vertex };
+            ]
+          in
+          match Lang.Index.default_index constructor with
+          | None -> (false, create_parent_edge)
+          | Some index ->
+              let create_new_children_edges =
+                List.map
+                  (fun (old_edge : Edge.t) ->
+                    ( let source = Cursor.mk vertex index in
+                      let edge = Edge.mk source (Edge.target old_edge) in
+                      Uuid.Wrap.mk Graph_action.{ state = Created; edge }
+                      : Graph_action.t ))
+                  (Edge.Set.elements children)
+              in
+              let destroy_old_children_edges =
+                List.map
+                  (fun edge ->
+                    Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
+                  (Edge.Set.elements children)
+              in
+              ( true,
+                create_parent_edge @ create_new_children_edges
+                @ destroy_old_children_edges ) )
     | Destroy ->
         ( false,
           List.map

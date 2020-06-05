@@ -25,6 +25,9 @@ echo-lang:
 echo-doc:
 	@echo "$(BUILD_DIR)/_doc/_html/GRV/index.html"
 
+echo-model:
+	@echo "$(BUILD_DIR)/src/grvdoc/master.pdf"
+
 echo-html-dir:
 	@echo "$(HTML_DIR)"
 

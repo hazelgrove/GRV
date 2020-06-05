@@ -7,7 +7,13 @@
 (rule
  (targets overview.svg graph_t.svg cache_t.svg graph_t_cache_t.svg edge_t.svg)
  (deps
-  (:dots
-   (glob_files *.dot)))
+  (glob_files *.dot))
+ (action
+  (run make)))
+
+(rule
+ (target master.pdf)
+ (deps
+  (glob_files *.tex))
  (action
   (run make)))

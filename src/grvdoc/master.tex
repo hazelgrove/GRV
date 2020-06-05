@@ -93,9 +93,12 @@
 \DeclareMathOperator{\children}{\text{children}}
 \DeclareMathOperator{\deleted}{\text{deleted}}
 \DeclareMathOperator{\dom}{\text{dom}}
+\DeclareMathOperator{\edges}{\text{edges}}
 \DeclareMathOperator{\known}{\text{known}}
+\DeclareMathOperator{\liveEdges}{\text{liveEdges}}
 \DeclareMathOperator{\orphans}{\text{orphans}}
 \DeclareMathOperator{\parents}{\text{parents}}
+\DeclareMathOperator{\parentVertexes}{\text{parentVertexes}}
 \DeclareMathOperator{\seen}{\text{seen}}
 \DeclareMathOperator{\unseen}{\text{unseen}}
 \DeclareMathOperator{\vertexes}{\text{vertexes}}
@@ -273,20 +276,30 @@ An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
 \section{Operational Semantics}
 \label{sec:operational-semantics}
 
+\paragraph{Edge Sets} ~
+
 \begin{alignRL}
-  \children(G,c) &= \{ \e=(c',v,u) | G(\e)=+, c=c' \} \\
-  \parents(G,v) &= \{ \e=(c,v',u) | G(\e)=+, v=v' \}
+  \edges(G) &= \dom(G) \\
+  \liveEdges(G) &= \{ \e \in \dom(G) | G(\e)=+ \} \\
+  \children(G,c) &= \{ (c',v,u) \in \liveEdges(G) | c'=c \} \\
+  \parents(G,v) &= \{ (c,v',u) \in \liveEdges(G) | v'=v \} \\
 \end{alignRL}
 
-\paragraph{Deleted Vertexes} ~
+\paragraph{Vertex Sets} ~
 
 \begin{alignRL}
-  \deleted(G) &= \orphans(G) \cup \unseen(G) \\
-  \orphans(G) &= \{ v | \parents(G,v) = \None \} \\
-  \seen(G) &= \{ v | \parents(G,v) \subseteq \orphans(G) \cup \seen(G) \} \\
+  \parentVertexes(G,v) &=  \{ v \in \V | \exists (c,v,u) \in \parents(G,v) \} \\
+  \vertexes(G) &= \{ v \in \V | \exists (c,v,u) \in \edges(G) \} \cup \{ v_{root} \} \\
+  \orphans(G) &= \{ v \in \vertexes(G) | \parentVertexes(G,v) = \None \} \\
+  \seen(G) &= \{ v \in \vertexes(G) | \parentVertexes(G,v) \subseteq \orphans(G) \cup \seen(G) \} \\
   \unseen(G) &= \vertexes(G) \setminus \orphans(G) \setminus \seen(G) \\
-  \vertexes(G) &= \{ v | \exists (c,v,u) \in \dom(G) \}
+  \deleted(G) &= (\orphans(G) \setminus \{ v_{root} \}) \cup \unseen(G)
 \end{alignRL}
+
+\paragraph{Graph Actions} ~
+
+$\known(E_1 \cdots E_n)
+= A_1^{*} \cdots A_n^{*} | E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j),j=1,\ldots,n$
 
 \vspace*{2ex}
 
@@ -393,15 +406,6 @@ $\boxed{E \xrightarrow{a^{*}} E}$
     E \xrightarrow{aa^{*}} E'
   }
 \end{mathpar}
-
-\paragraph{Globally Known Graph Actions} ~
-
-$\known(E_1 \cdots E_n)
-= A_1^{*} \cdots A_n^{*} | E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j),j=1,\ldots,n$
-
-% $ \known(E_1 \cdots E_n)
-% = \known((G_1,c_1,a_1^{*},A_1^{*},u_1) \cdots (G_n,c_n,a_n^{*},A_n^{*},u_n))
-% = A_1^{*} \cdots A_n^{*} $
 
 \paragraph{Publish} ~
 

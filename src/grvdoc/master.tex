@@ -163,16 +163,12 @@ constructor, of a potential child node in the target language's AST.
 \subsection{The Graph}
 \label{sec:the-graph}
 
-% ..............................................................................
-
 \paragraph{Vertex} ~
 
 $\V = \K \times \U$
 
 A \emph{vertex} $v = (k, u) \in \V$ is an instance of constructor $k$ with
 uuid $u$. Let $v_{root}$ be the root vertex of all graphs.
-
-% ..............................................................................
 
 \paragraph{Cursor} ~
 
@@ -181,16 +177,12 @@ $\C = \V \times \I$
 A \emph{cursor} is a reference to the (possibly empty) set of all vertexes
 with parent vertex $v$ and child index $i$.
 
-% ..............................................................................
-
 \paragraph{Edge} ~
 
 $\E = \C \times \V \times \U$
 
 An \emph{edge} $\e = (c, v, u) \in \E$ connects a cursor $c$ to a specific
 vertex $v$.
-
-% ..............................................................................
 
 \paragraph{Edge State} ~
 
@@ -228,8 +220,6 @@ $\Ebf = \G \times \C \times \A^{*} \times \Abf^{*} \times \U$
 An \emph{editor} $E = (G,c,a^{*},A^{*},u) \in \Ebf$ is an instance of graph
 $G$ with cursor $c$, action queue $a^{*}$, and known graph actions $A^{*}$.
 
-% ..............................................................................
-
 \paragraph{Action} ~
 
 $\A = \A^{move} \cup \A^{edit} \cup \A^{comm}$
@@ -264,8 +254,6 @@ $\A^{comm} = \{ \Send \} \times (\A^{edit})^{*}$
 A \emph{communication action} $a \in \A^{comm}$ copies edit actions from one
 editor to the others.
 
-% ------------------------------------------------------------------------------
-
 \subsection{The Environment}
 \label{sec:the-environment}
 
@@ -273,19 +261,19 @@ An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
 
 % ==============================================================================
 
-\section{Operational Semantics}
-\label{sec:operational-semantics}
+\section{Sets and Relations}
+\label{sec:sets-and-relations}
 
-\paragraph{Edge Sets} ~
+\paragraph{Edges} ~
 
 \begin{alignRL}
   \edges(G) &= \dom(G) \\
-  \liveEdges(G) &= \{ \e \in \dom(G) | G(\e)=+ \} \\
+  \liveEdges(G) &= \{ \e \in \edges(G) | G(\e)=+ \} \\
   \children(G,c) &= \{ (c',v,u) \in \liveEdges(G) | c'=c \} \\
   \parents(G,v) &= \{ (c,v',u) \in \liveEdges(G) | v'=v \} \\
 \end{alignRL}
 
-\paragraph{Vertex Sets} ~
+\paragraph{Vertexes} ~
 
 \begin{alignRL}
   \parentVertexes(G,v) &=  \{ v \in \V | \exists (c,v,u) \in \parents(G,v) \} \\
@@ -301,7 +289,10 @@ An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
 $\known(E_1 \cdots E_n)
 = A_1^{*} \cdots A_n^{*} | E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j),j=1,\ldots,n$
 
-\vspace*{2ex}
+% ==============================================================================
+
+\section{Operational Semantics}
+\label{sec:operational-semantics}
 
 \subsection{Movement}
 \label{sec:movement}
@@ -338,6 +329,8 @@ $\boxed{E -->a E}$
     G,c,a^{*},A^{*},u \xrightarrow{\Select~c'} G,c',a^{*},A^{*},u
   }
 \end{mathpar}
+
+% ------------------------------------------------------------------------------
 
 \subsection{Editing}
 \label{sec:editing}
@@ -379,6 +372,8 @@ $\boxed{E -->a E}$
     G,c,a^{*},A^{*},u \xrightarrow{\Restore~v} G A,c,a^{*},A^{*}A,u
   }
 \end{mathpar}
+
+% ------------------------------------------------------------------------------
 
 \subsection{Communication}
 \label{sec:communication}

@@ -121,6 +121,17 @@
 
 \usetikzlibrary{arrows.meta,chains,fit,positioning,shapes.multipart}
 
+\newsavebox\mytikzpicturebox
+\newenvironment{tikzpicture*}[1]{
+  \def\mytikzpicturewidth{#1}
+  \begin{lrbox}{\mytikzpicturebox}
+    \begin{tikzpicture}
+}{
+    \end{tikzpicture}
+  \end{lrbox}
+  \resizebox{\mytikzpicturewidth}{!}{\usebox\mytikzpicturebox}
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -464,70 +475,101 @@ $\boxed{E^{*} -->a E^{*}}$
 \tikzset{>=Triangle,every node/.style={outer sep=0mm,inner sep=0mm,anchor=north}}
 
 \tikzset{header/.style={
-    text width=3cm,
+    text width=#1,
     minimum height=20pt,
     align=center
-  }}
+  },
+  header/.default=3cm}
 
 \tikzset{field/.style={
-    text width=3cm,
+    text width=#1,
     minimum height=20pt,
     inner xsep=2mm,
     align=center
-  }}
+  },
+  field/.default=3cm}
 
 \tikzset{field2/.style={
-    field,
+    field=#1,
     minimum height=40pt
-  }}
+  },
+  field2/.default=3cm}
+
+\tikzset{field5/.style={
+    field=#1,
+    minimum height=100pt
+  },
+  field5/.default=3cm}
 
 \tikzset{rightof/.style={right=3cm+8mm of #1.north,anchor=north}}
 
-\begin{tikzpicture}
+\tikzset{rightof4/.style={right=4cm+4mm of #1.north,anchor=north}}
+
+\begin{tikzpicture*}{\textwidth}
   [start chain=1 going below
   ,start chain=2 going below
   ,start chain=3 going below
+  ,start chain=4 going below
+  ,start chain=5 going below
+  ,start chain=6 going below
   ,node distance=0mm]
-  \node (Editor_t)             [on chain=1,header] {\large Editor.t};
-  \node (Editor_id)            [on chain=1,field]  {id};
-  \node (Editor_graph)         [on chain=1,field]  {graph};
-  \node (Editor_cursor)        [on chain=1,field]  {cursor};
-  \node (Editor_actions)       [on chain=1,field]  {actions};
-  \node (Editor_known_actions) [on chain=1,field]  {known\_actions};
-  \node [draw,fit=(Editor_id) (Editor_known_actions)] {};
 
-  \node (EA) [on chain=2,header,rightof=Editor_t] {};
-  \node (EA_Uuid_Id_t)      [on chain=2,field] {Uuid.Id.t};
-  \node (EA_Graph_t)        [on chain=2,field] {Graph.t};
-  \node (EA_Cursor_t)       [on chain=2,field] {Cursor.t};
-  \node (EA_Graph_action_t) [on chain=2,field2] {Graph\_action.t};
+  \node (Model)   [on chain=1,header] {};
+  \node (Model_t) [on chain=1,field5] {Model.t};
 
-  \draw [->] ([xshift=-2mm] Editor_id.east) -> ([xshift=2mm] EA_Uuid_Id_t.west);
-  \draw [->] ([xshift=-2mm] Editor_graph.east) -> ([xshift=2mm] EA_Graph_t.west);
-  \draw [->] ([xshift=-2mm] Editor_cursor.east) -> ([xshift=2mm] EA_Cursor_t.west);
-  \draw ([xshift=-2mm] Editor_actions.east) -| ([xshift=-2mm] EA_Graph_action_t.west);
+  \node (Editor_t)             [on chain=2,header,rightof=Model] {\large Editor.t};
+  \node (Editor_id)            [on chain=2,field]                {id};
+  \node (Editor_graph)         [on chain=2,field]                {graph};
+  \node (Editor_cursor)        [on chain=2,field]                {cursor};
+  \node (Editor_actions)       [on chain=2,field]                {actions};
+  \node (Editor_known_actions) [on chain=2,field]                {known\_actions};
+  \node (Editor) [draw,fit=(Editor_id) (Editor_known_actions)] {};
+
+  \node (EA)                [on chain=3,header,rightof=Editor_t] {};
+  \node (EA_Uuid_Id_t)      [on chain=3,field]  {Uuid.Id.t};
+  \node (EA_Graph_t)        [on chain=3,field]  {Graph.t};
+  \node (EA_Cursor_t)       [on chain=3,field]  {Cursor.t};
+  \node (EA_Graph_action_t) [on chain=3,field2] {Graph\_action.t};
+
+  \draw [->] ([xshift=-2mm] Model_t.east) -- (Editor.west);
+  \draw [->] ([yshift=-40pt] Model_t.north)
+  |- ([yshift=2mm] Editor_t.north)
+  -| (EA_Uuid_Id_t.north);
+
+  \draw [->] ([xshift=-2mm] Editor_id.east)     -- ([xshift=2mm] EA_Uuid_Id_t.west);
+  \draw [->] ([xshift=-2mm] Editor_graph.east)  -- ([xshift=2mm] EA_Graph_t.west);
+  \draw [->] ([xshift=-2mm] Editor_cursor.east) -- ([xshift=2mm] EA_Cursor_t.west);
+  \draw ([xshift=-2mm] Editor_actions.east)       -| ([xshift=-2mm] EA_Graph_action_t.west);
   \draw ([xshift=-2mm] Editor_known_actions.east) -| ([xshift=-2mm] EA_Graph_action_t.west);
   \draw [->] ([xshift=-2mm] EA_Graph_action_t.west) -- ([xshift=2mm] EA_Graph_action_t.west);
 
-  \node (Action_t) [on chain=3,header,rightof=EA] {\large Action.t};
-  \node (Action_editor_id) [on chain=3,field] {editor\_id};
-  \node (Action_action) [on chain=3,field] {action};
+  \node (Action_t)         [on chain=4,header,rightof=EA] {\large Action.t};
+  \node (Action_editor_id) [on chain=4,field]             {editor\_id};
+  \node (Action_action)    [on chain=4,field]             {action};
   \node [draw,fit=(Action_editor_id) (Action_action)] {};
 
   \draw [->] ([xshift=2mm] Action_editor_id.west) -- ([xshift=-2mm] EA_Uuid_Id_t.east);
-\end{tikzpicture}
 
-%   % \node (Action_edit) [right=4mm of Action_t.two east] {Action.edit};
-%   % \node (Action_move) [above=0mm of Action_edit] {Action.move};
-%   % \node (Action_comm) [below=0mm of Action_edit] {Action.comm};
+  \node (Action_t')   [on chain=5,header,rightof=Action_t] {};
+  \node (Action_edit) [on chain=5,field]                   {Action.edit};
+  \node (Action_comm) [on chain=5,field]                   {Action.comm};
+  \node (Action_move) [on chain=5,field]                   {Action.move};
 
-%   % \draw ([xshift=-2mm]Action_t.two east) -- ([xshift=2mm]Action_t.two east);
-%   % \draw ([xshift=2mm]Action_t.two east) |- (Action_edit);
-%   % \draw ([xshift=2mm]Action_t.two east) |- (Action_move);
-%   % \draw ([xshift=2mm]Action_t.two east) |- (Action_comm);
+  \draw [->] ([xshift=-2mm] Action_action.east) -- ([xshift=2mm] Action_comm.west);
+  \draw [->] ([xshift=2mm] Action_action.east)  |- ([xshift=2mm] Action_edit.west);
+  \draw [->] ([xshift=2mm] Action_action.east)  |- ([xshift=2mm] Action_move.west);
 
-%   % \draw (Action_comm.east) -- ([xshift=2mm]Action_comm.east) |- (Graph_action_t.east);
-% \end{tikzpicture}
+  \draw [->] (Action_move.south) |- ([yshift=-2.5mm] EA_Cursor_t.south) -- (EA_Cursor_t.south);
+  \draw [->] ([xshift=-2mm] Action_comm.east)
+  -| ([xshift=2mm] Action_comm.east|-EA_Graph_action_t.east)
+  -- ([xshift=-2mm] EA_Graph_action_t.east);
+
+  \node (AA_Lang_Constructor_t) [on chain=6,header=4cm,rightof4=Action_t'] {Lang.Constructor.t};
+  \node (AA_Vertex_t)           [on chain=6,field=4cm]                     {Vertex.t};
+
+  \draw [->] ([xshift=-2mm] Action_edit.east) -- ([xshift=2mm] AA_Vertex_t.west);
+  \draw [->] ([xshift=2mm] Action_edit.east) |- ([xshift=2mm] AA_Lang_Constructor_t);
+\end{tikzpicture*}
 
 % ==============================================================================
 
@@ -547,8 +589,3 @@ $\boxed{E^{*} -->a E^{*}}$
 Hello
 
 \end{document}
-
-%%% Local Variables:
-%%% TeX-master: t
-%%% TeX-engine: luatex
-%%% End:

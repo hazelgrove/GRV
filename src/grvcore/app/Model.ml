@@ -17,6 +17,11 @@ let filter_editor_actions (globally_known : Graph_action.Set.t)
   in
   { editor with actions }
 
+(* let globally_known_actions (model : t) : Graph_action.Set.t =
+ *   Uuid.Map.fold
+ *     (fun _ editor -> Graph_action.Set.union editor.actions)
+ *     model Graph_action.Set.empty *)
+
 let globally_known_actions (model : t) : Graph_action.Set.t =
   let knowns =
     List.map

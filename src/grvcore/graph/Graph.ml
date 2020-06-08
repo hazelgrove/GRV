@@ -1,13 +1,51 @@
-(* Note: edges not in the states field have not been created yet and are `\bot` *)
-type t = { states : Edge_state.t Edge.Map.t; cache : Cache.t }
+(* Note: edges not in the map have not been created yet and are `\bot` *)
+type t = Edge_state.t Edge.Map.t
 
-let mk (states : Edge_state.t Edge.Map.t) (cache : Cache.t) : t =
-  { states; cache }
+let empty : t = Edge.Map.empty
 
-let empty : t = mk Edge.Map.empty Cache.empty
+let edges (graph : t) : Edge.Set.t =
+  Edge.Set.of_list (List.map fst (Edge.Map.bindings graph))
 
-let parents (vertex : Vertex.t) (graph : t) : Edge.Set.t =
-  Cache.parents vertex graph.cache
+let live_edges (graph : t) : Edge.Set.t =
+  Edge.Map.fold
+    (fun edge state edges ->
+      if state = Edge_state.Created then Edge.Set.add edge edges else edges)
+    graph Edge.Set.empty
 
-let children (cursor : Cursor.t) (graph : t) : Edge.Set.t =
-  Cache.children cursor graph.cache
+let children (graph : t) (cursor : Cursor.t) : Edge.Set.t =
+  Edge.Set.filter (fun edge -> edge.value.source = cursor) (live_edges graph)
+
+let parents (graph : t) (vertex : Vertex.t) : Edge.Set.t =
+  Edge.Set.filter (fun edge -> edge.value.target = vertex) (live_edges graph)
+
+let vertexes (graph : t) : Vertex.Set.t =
+  Edge.Set.fold
+    (fun edge -> Vertex.Set.add edge.value.target)
+    (edges graph)
+    (Vertex.Set.singleton Vertex.root)
+
+let parent_vertexes (graph : t) (vertex : Vertex.t) : Vertex.Set.t =
+  Edge.Set.fold
+    (fun edge vertexes -> Vertex.Set.add edge.value.source.vertex vertexes)
+    (parents graph vertex) Vertex.Set.empty
+
+let orphans (graph : t) : Vertex.Set.t =
+  Vertex.Set.filter
+    (fun vertex -> Vertex.Set.is_empty (parent_vertexes graph vertex))
+    (vertexes graph)
+
+let seen (graph : t) : Vertex.Set.t =
+  Vertex.Set.fold
+    (fun vertex vertexes ->
+      if Vertex.Set.subset (parent_vertexes graph vertex) vertexes then
+        Vertex.Set.add vertex vertexes
+      else vertexes)
+    (vertexes graph) Vertex.Set.empty
+
+let unseen (graph : t) : Vertex.Set.t =
+  Vertex.Set.(diff (diff (vertexes graph) (orphans graph)) (seen graph))
+
+let deleted (graph : t) : Vertex.Set.t =
+  Vertex.Set.union
+    (Vertex.Set.remove Vertex.root (orphans graph))
+    (unseen graph)

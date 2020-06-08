@@ -11,7 +11,10 @@ let focus (id : string) : unit = eval_to_unit ("refocus('" ^ id ^ "')")
 let focus_editor (id : Uuid.Id.t) : unit = focus ("editor" ^ Uuid.Id.show id)
 
 let get_input (id : string) : string =
-  eval_to_string @@ "getInput('" ^ id ^ "')"
+  Printf.printf "getting input for %s\n" id;
+  let result = eval_to_string @@ "getInput('" ^ id ^ "')" in
+  Printf.printf "get_input: %s\n" result;
+  result
 
 let set_input (id : string) (value : string) : unit =
   eval_to_unit @@ Printf.sprintf "setInput('%s', '%s')" id value

@@ -66,13 +66,13 @@ let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
   let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = W.mk w ~inject editor in
   let seen = ref Vertex.Set.empty in
   let main_code = view_cursor inject editor seen Cursor.root in
-  (* let deleted_code =
-   *   W.select ~multi:false ~default:false
-   *     ("deleted" ^ Uuid.Id.show editor.id)
-   *     "Deleted"
-   *     (Vertex.Set.elements (Graph.deleted editor.graph))
-   *     (fun (vertex : Vertex.t) -> view_vertex inject editor seen vertex None)
-   * in *)
+  let deleted_code =
+    W.select ~multi:false ~default:false
+      ("deleted" ^ Uuid.Id.show editor.id)
+      "Deleted"
+      (Vertex.Set.elements (Graph.deleted editor.graph))
+      (fun (vertex : Vertex.t) -> view_vertex inject editor seen vertex None)
+  in
   Graphviz.draw editor;
   div
     [
@@ -138,14 +138,19 @@ let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
         ];
       div [ class_ "selector" ]
         [
-          mk
-          @@ W.select ~multi:false ~default:false
-               ("deleted" ^ Uuid.Id.show editor.id)
-               "Deleted"
-               (Vertex.Set.elements (Graph.deleted editor.graph))
-               (fun (vertex : Vertex.t) ->
-                 view_vertex inject editor seen vertex None);
-          mk @@ W.button "Restore" (fun () -> Key.restore editor);
+          mk @@ deleted_code;
+          (let btn : Vdom.Node.t W.t =
+             W.button "Restore" (fun () ->
+                 Key.restore editor
+                   (Js.get_input ("restore" ^ Uuid.Id.show editor.id)))
+           in
+           let txt : Vdom.Node.t W.t =
+             W.text_input
+               ("restore" ^ Uuid.Id.show editor.id)
+               (function "" -> None | str -> Key.restore editor str)
+           in
+           Js.set_input ("restore" ^ Uuid.Id.show editor.id) "";
+           div [] [ btn ~inject editor; txt ~inject editor ]);
         ];
       h2 [] [ text "Cursor" ];
       W.chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;

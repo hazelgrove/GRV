@@ -24,6 +24,11 @@ let vertexes (graph : t) : Vertex.Set.t =
     (edges graph)
     (Vertex.Set.singleton Vertex.root)
 
+let vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
+  Vertex.Set.find_first_opt
+    (fun vertex -> vertex.id = vertex_id)
+    (vertexes graph)
+
 let parent_vertexes (graph : t) (vertex : Vertex.t) : Vertex.Set.t =
   Edge.Set.fold
     (fun edge vertexes -> Vertex.Set.add edge.value.source.vertex vertexes)

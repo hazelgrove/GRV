@@ -560,6 +560,8 @@ $\boxed{E^{*} -->a E^{*}}$
 
   \node (AA_Lang_Constructor_t) [on chain=5,header=4cm,rightof4=Action_t'] {Lang.Constructor.t};
   \node (AA_Vertex_t)           [on chain=5,field=4cm]                     {Vertex.t};
+  \node (AA_empty)              [on chain=5,field=4cm]                     {};
+  \node (State_t)               [on chain=5,field2=4cm]                    {\large State.t};
 
   \draw [->] ([xshift=-2mm] Action_edit.east) -- ([xshift=2mm] AA_Vertex_t.west);
   \draw [->] ([xshift=2mm] Action_edit.east) |- ([xshift=2mm] AA_Lang_Constructor_t);

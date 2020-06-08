@@ -2,18 +2,8 @@
  (name grvdoc)
  (public_name GRV.doc))
 
-(documentation)
-
-(rule
- (targets overview.svg graph_t.svg cache_t.svg graph_t_cache_t.svg edge_t.svg)
- (deps
-  (glob_files *.dot))
- (action
-  (run make)))
-
 (rule
  (target master.pdf)
- (deps
-  (glob_files *.tex))
+ (deps master.tex)
  (action
-  (run make)))
+  (run latexmk -pdf master.tex)))

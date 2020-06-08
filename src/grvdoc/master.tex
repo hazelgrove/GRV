@@ -506,30 +506,27 @@ $\boxed{E^{*} -->a E^{*}}$
   ,start chain=3 going below
   ,start chain=4 going below
   ,start chain=5 going below
-  ,start chain=6 going below
   ,node distance=0mm]
 
-  \node (Model)   [on chain=1,header] {};
-  \node (Model_t) [on chain=1,field5] {Model.t};
+  \node (Model_t) [header] {\large Model.t};
 
-  \node (Editor_t)             [on chain=2,header,rightof=Model] {\large Editor.t};
-  \node (Editor_id)            [on chain=2,field]                {id};
-  \node (Editor_graph)         [on chain=2,field]                {graph};
-  \node (Editor_cursor)        [on chain=2,field]                {cursor};
-  \node (Editor_actions)       [on chain=2,field]                {actions};
-  \node (Editor_known_actions) [on chain=2,field]                {known\_actions};
+  \node (Editor_t)             [on chain=1,header,rightof=Model_t] {\large Editor.t};
+  \node (Editor_id)            [on chain=1,field]                  {id};
+  \node (Editor_graph)         [on chain=1,field]                  {graph};
+  \node (Editor_cursor)        [on chain=1,field]                  {cursor};
+  \node (Editor_actions)       [on chain=1,field]                  {actions};
+  \node (Editor_known_actions) [on chain=1,field]                  {known\_actions};
   \node (Editor) [draw,fit=(Editor_id) (Editor_known_actions)] {};
 
-  \node (EA)                [on chain=3,header,rightof=Editor_t] {};
-  \node (EA_Uuid_Id_t)      [on chain=3,field]  {Uuid.Id.t};
-  \node (EA_Graph_t)        [on chain=3,field]  {Graph.t};
-  \node (EA_Cursor_t)       [on chain=3,field]  {Cursor.t};
-  \node (EA_Graph_action_t) [on chain=3,field2] {Graph\_action.t};
+  \draw [->] ([xshift=-2mm] Model_t.east) -- (Editor_t.west);
 
-  \draw [->] ([xshift=-2mm] Model_t.east) -- (Editor.west);
-  \draw [->] ([yshift=-40pt] Model_t.north)
-  |- ([yshift=2mm] Editor_t.north)
-  -| (EA_Uuid_Id_t.north);
+  \node (EA)                [on chain=2,header,rightof=Editor_t] {};
+  \node (EA_Uuid_Id_t)      [on chain=2,field]  {Uuid.Id.t};
+  \node (EA_Graph_t)        [on chain=2,field]  {Graph.t};
+  \node (EA_Cursor_t)       [on chain=2,field]  {Cursor.t};
+  \node (EA_Graph_action_t) [on chain=2,field2] {Graph\_action.t};
+
+  \draw [->] (Model_t.north) |- ([yshift=2mm] Editor_t.north) -| (EA_Uuid_Id_t.north);
 
   \draw [->] ([xshift=-2mm] Editor_id.east)     -- ([xshift=2mm] EA_Uuid_Id_t.west);
   \draw [->] ([xshift=-2mm] Editor_graph.east)  -- ([xshift=2mm] EA_Graph_t.west);
@@ -538,17 +535,17 @@ $\boxed{E^{*} -->a E^{*}}$
   \draw ([xshift=-2mm] Editor_known_actions.east) -| ([xshift=-2mm] EA_Graph_action_t.west);
   \draw [->] ([xshift=-2mm] EA_Graph_action_t.west) -- ([xshift=2mm] EA_Graph_action_t.west);
 
-  \node (Action_t)         [on chain=4,header,rightof=EA] {\large Action.t};
-  \node (Action_editor_id) [on chain=4,field]             {editor\_id};
-  \node (Action_action)    [on chain=4,field]             {action};
+  \node (Action_t)         [on chain=3,header,rightof=EA] {\large Action.t};
+  \node (Action_editor_id) [on chain=3,field]             {editor\_id};
+  \node (Action_action)    [on chain=3,field]             {action};
   \node [draw,fit=(Action_editor_id) (Action_action)] {};
 
   \draw [->] ([xshift=2mm] Action_editor_id.west) -- ([xshift=-2mm] EA_Uuid_Id_t.east);
 
-  \node (Action_t')   [on chain=5,header,rightof=Action_t] {};
-  \node (Action_edit) [on chain=5,field]                   {Action.edit};
-  \node (Action_comm) [on chain=5,field]                   {Action.comm};
-  \node (Action_move) [on chain=5,field]                   {Action.move};
+  \node (Action_t')   [on chain=4,header,rightof=Action_t] {};
+  \node (Action_edit) [on chain=4,field]                   {Action.edit};
+  \node (Action_comm) [on chain=4,field]                   {Action.comm};
+  \node (Action_move) [on chain=4,field]                   {Action.move};
 
   \draw [->] ([xshift=-2mm] Action_action.east) -- ([xshift=2mm] Action_comm.west);
   \draw [->] ([xshift=2mm] Action_action.east)  |- ([xshift=2mm] Action_edit.west);
@@ -559,8 +556,8 @@ $\boxed{E^{*} -->a E^{*}}$
   -| ([xshift=2mm] Action_comm.east|-EA_Graph_action_t.east)
   -- ([xshift=-2mm] EA_Graph_action_t.east);
 
-  \node (AA_Lang_Constructor_t) [on chain=6,header=4cm,rightof4=Action_t'] {Lang.Constructor.t};
-  \node (AA_Vertex_t)           [on chain=6,field=4cm]                     {Vertex.t};
+  \node (AA_Lang_Constructor_t) [on chain=5,header=4cm,rightof4=Action_t'] {Lang.Constructor.t};
+  \node (AA_Vertex_t)           [on chain=5,field=4cm]                     {Vertex.t};
 
   \draw [->] ([xshift=-2mm] Action_edit.east) -- ([xshift=2mm] AA_Vertex_t.west);
   \draw [->] ([xshift=2mm] Action_edit.east) |- ([xshift=2mm] AA_Lang_Constructor_t);

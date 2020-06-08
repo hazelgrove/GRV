@@ -132,6 +132,45 @@
   \resizebox{\mytikzpicturewidth}{!}{\usebox\mytikzpicturebox}
 }
 
+\tikzset{
+  node distance=0mm,
+  >=Triangle,
+  every node/.style={outer sep=0mm,inner sep=0mm,anchor=north}
+}
+
+\tikzset{header/.style={
+    text width=#1,
+    minimum height=20pt,
+    align=center
+  },
+  header/.default=3cm}
+
+\tikzset{field/.style={
+    text width=#1,
+    minimum height=20pt,
+    inner xsep=2mm,
+    align=center
+  },
+  field/.default=3cm}
+
+\tikzset{field2/.style={
+    field=#1,
+    minimum height=40pt
+  },
+  field2/.default=3cm}
+
+\tikzset{field5/.style={
+    field=#1,
+    minimum height=100pt
+  },
+  field5/.default=3cm}
+
+\tikzset{rightof/.style={right=3cm+8mm of #1.north,anchor=north}}
+
+\tikzset{rightof2/.style={right=2cm+8mm of #1.north,anchor=north}}
+
+\tikzset{rightof4/.style={right=4cm+4mm of #1.north,anchor=north}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -462,43 +501,36 @@ $\boxed{E^{*} -->a E^{*}}$
 \section{Web}
 \label{sec:web-architecture}
 
+\begin{tikzpicture}
+  [start chain=1 going below]
+
+  \node (Main) [draw,header=2cm,outer ysep=50pt]               {Main};
+  \node (App)  [draw,header=2cm,outer ysep=50pt,rightof2=Main] {App};
+  \node (View) [draw,header=2cm,outer ysep=50pt,rightof2=App]  {View};
+
+  \draw [->] (Main) -- (App);
+  \draw [->] (App) -- (View);
+
+  \node (Graphviz) [draw,on chain=1,field=2cm,outer ysep=5pt,rightof2=View] {Graphviz};
+  \node (Key)      [draw,on chain=1,field=2cm,outer ysep=5pt]               {Key};
+  \node (Widget)   [draw,on chain=1,field=2cm,outer ysep=5pt]               {Widget};
+  \node (Js)       [draw,on chain=1,field=2cm,outer ysep=5pt]               {Js};
+
+  \draw (View.east) -- ([xshift=-4mm] Js.west|-View);
+  \draw [->] ([xshift=-4mm] Js.west|-View) |- (Graphviz.west);
+  \draw [->] ([xshift=-4mm] Js.west|-View) |- (Js.west);
+  \draw [->] ([xshift=-4mm] Js.west|-View) |- (Key.west);
+  \draw [->] ([xshift=-4mm] Js.west|-View) |- (Widget.west);
+
+  \draw [->] (Graphviz.east) -| ([xshift=4mm] Graphviz.east|-Js.east) -- (Js.east);
+  \draw (Key.east)    -| ([xshift=4mm] Key.east|-Js.east);
+  \draw (Widget.east) -| ([xshift=4mm] Widget.east|-Js.east);
+\end{tikzpicture}
+
 % ==============================================================================
 
 \section{Core}
 \label{sec:core-architecture}
-
-\tikzset{>=Triangle,every node/.style={outer sep=0mm,inner sep=0mm,anchor=north}}
-
-\tikzset{header/.style={
-    text width=#1,
-    minimum height=20pt,
-    align=center
-  },
-  header/.default=3cm}
-
-\tikzset{field/.style={
-    text width=#1,
-    minimum height=20pt,
-    inner xsep=2mm,
-    align=center
-  },
-  field/.default=3cm}
-
-\tikzset{field2/.style={
-    field=#1,
-    minimum height=40pt
-  },
-  field2/.default=3cm}
-
-\tikzset{field5/.style={
-    field=#1,
-    minimum height=100pt
-  },
-  field5/.default=3cm}
-
-\tikzset{rightof/.style={right=3cm+8mm of #1.north,anchor=north}}
-
-\tikzset{rightof4/.style={right=4cm+4mm of #1.north,anchor=north}}
 
 \paragraph{The Environment} ~
 
@@ -507,8 +539,7 @@ $\boxed{E^{*} -->a E^{*}}$
   ,start chain=2 going below
   ,start chain=3 going below
   ,start chain=4 going below
-  ,start chain=5 going below
-  ,node distance=0mm]
+  ,start chain=5 going below]
 
   \node (Model_t) [header] {\large Model.t};
 
@@ -528,7 +559,7 @@ $\boxed{E^{*} -->a E^{*}}$
   \node (EA_Cursor_t)       [on chain=2,field]  {Cursor.t};
   \node (EA_Graph_action_t) [on chain=2,field2] {Graph\_action.t};
 
-  \draw [->] (Model_t.north) |- ([yshift=2mm] Editor_t.north) -| (EA_Uuid_Id_t.north);
+  \draw [->] (Model_t.north) |- ([yshift=3mm] Editor_t.north) -| (EA_Uuid_Id_t.north);
 
   \draw [->] ([xshift=-2mm] Editor_id.east)     -- ([xshift=2mm] EA_Uuid_Id_t.west);
   \draw [->] ([xshift=-2mm] Editor_graph.east)  -- ([xshift=2mm] EA_Graph_t.west);
@@ -553,7 +584,7 @@ $\boxed{E^{*} -->a E^{*}}$
   \draw [->] ([xshift=2mm] Action_action.east)  |- ([xshift=2mm] Action_edit.west);
   \draw [->] ([xshift=2mm] Action_action.east)  |- ([xshift=2mm] Action_move.west);
 
-  \draw [->] (Action_move.south) |- ([yshift=-2.5mm] EA_Cursor_t.south) -- (EA_Cursor_t.south);
+  \draw [->] (Action_move.south) |- ([yshift=-3mm] EA_Cursor_t.south) -- (EA_Cursor_t.south);
   \draw [->] ([xshift=-2mm] Action_comm.east)
   -| ([xshift=2mm] Action_comm.east|-EA_Graph_action_t.east)
   -- ([xshift=-2mm] EA_Graph_action_t.east);

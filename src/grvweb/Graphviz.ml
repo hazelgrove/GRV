@@ -35,14 +35,19 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
       (Uuid.Map.bindings graph.cache.vertexes)
   in
   let edges =
-    let open List in
-    let children = map snd (Cursor.Map.bindings graph.cache.children) in
-    let live_children =
-      let is_live edge = Edge.Map.find_opt edge graph.states = Some Created in
-      filter (Edge.Set.exists is_live) children
+    let children : Edge.Set.t =
+      List.fold_left
+        (fun edges binding -> Edge.Set.union (snd binding) edges)
+        Edge.Set.empty
+        (Cursor.Map.bindings graph.cache.children)
     in
-    let live_edges = concat (map Edge.Set.elements live_children) in
-    map
+    let live_children : Edge.Set.t =
+      Edge.Set.filter
+        (fun edge -> Edge.Map.find_opt edge graph.states = Some Created)
+        children
+    in
+    let live_edges = Edge.Set.elements live_children in
+    List.map
       (fun (edge : Edge.t) ->
         let source : Vertex.t = (Edge.source edge).vertex in
         let target : Vertex.t = Edge.target edge in
@@ -50,11 +55,11 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
         let target_id = Uuid.Id.show target.id in
         let color =
           let siblings =
-            filter
+            List.filter
               (fun (e : Edge.t) -> Edge.source e = Edge.source edge)
               live_edges
           in
-          if length siblings < 2 then "black" else "red"
+          if List.length siblings < 2 then "black" else "red"
         in
         let field = Lang.Index.short_name (Edge.source edge).index in
         Printf.sprintf "n%s:%s -> n%s [color=%s]" source_id field target_id

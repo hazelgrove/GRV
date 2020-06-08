@@ -2,9 +2,7 @@ DOC_DIR = ../../`cd ../.. && make echo-doc`
 
 DOTS := $(wildcard ./*.dot)
 SVGS := $(patsubst ./%.dot,./%.svg,$(DOTS))
-
-TEXS := master.tex
-PDFS := master.pdf
+PDFS := $(patsubst ./%.dot,./%-dot.pdf,$(DOTS)) master.pdf
 
 all: $(SVGS) $(PDFS)
 	@touch done
@@ -12,12 +10,16 @@ all: $(SVGS) $(PDFS)
 ./%.svg: ./%.dot
 	dot -Tsvg $< -o $@
 
+./%-dot.pdf: ./%.dot
+	dot -Tpdf $< -o $@
+
 master.pdf: master.tex
 	latexmk -pdf master.tex
 
 clean:
-	@latexmk -C
 	@rm $(SVGS)
+	@rm $(PDFS)
+	@latexmk -C
 	@rm done
 
 .PHONY : all clean

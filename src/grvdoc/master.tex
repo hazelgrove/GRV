@@ -1,6 +1,6 @@
-\documentclass[letterpaper,12pt]{article}
+\documentclass[letterpaper,12pt]{report}
 
-\title{GRV Formal Syntax and Operational Semantics}
+\title{GRV Technical Reference}
 \author{Eric Griffis \\ egriffis@umich.edu}
 
 % Page Layout
@@ -40,6 +40,10 @@
 \endgroup%
 }
 
+% Fonts
+
+\usepackage[T1]{fontenc}
+
 % Notation
 
 \usepackage{amsmath,amssymb}
@@ -53,6 +57,7 @@
 \mathlig{|}{\,|\,}
 \mathlig{:}{\!:\!}
 
+\def\_{\texttt{\textunderscore}}
 \def\Cup{\cup\ \:\!}
 
 % Inference Rules
@@ -110,34 +115,24 @@
 \DeclareMathOperator{\downIndex}{\text{downIndex}}
 \DeclareMathOperator{\defaultIndex}{\text{defaultIndex}}
 
+% Diagrams
+
+\usepackage{tikz}
+
+\usetikzlibrary{arrows.meta,chains,fit,positioning,shapes.multipart}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
 
 \maketitle
 
-% ==============================================================================
+\tableofcontents
 
-\section{Formal Syntax}
-\label{sec:formal-syntax}
+% ##############################################################################
 
-\begin{minipage}[t]{0.5\textwidth}
-  \vspace{0pt}
-  \begin{Grammar}
-    e
-    & ::= & \lambda p : \tau.e & abstraction \\
-    & \OR & e~e                & application \\
-    & \OR & e+e                & addition    \\
-    & \OR & n                  & number      \\
-    \\
-    p
-    & ::= & x & variable pattern \\
-    \\
-    \tau
-    & ::= & \tau -> \tau & function type \\
-    & \OR & \Num         & number type   \\
-  \end{Grammar}
-\end{minipage}
+\chapter{Design}
+\label{chap:design}
 
 % ==============================================================================
 
@@ -258,6 +253,31 @@ editor to the others.
 \label{sec:the-environment}
 
 An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
+
+% ==============================================================================
+
+\section{The Target Language}
+\label{sec:the-target-language}
+
+\paragraph{Formal Syntax} ~
+
+\begin{minipage}[t]{0.5\textwidth}
+  \vspace{0pt}
+  \begin{Grammar}
+    e
+    & ::= & \lambda p : \tau.e & abstraction \\
+    & \OR & e~e                & application \\
+    & \OR & e+e                & addition    \\
+    & \OR & n                  & number      \\
+    \\
+    p
+    & ::= & x & variable pattern \\
+    \\
+    \tau
+    & ::= & \tau -> \tau & function type \\
+    & \OR & \Num         & number type   \\
+  \end{Grammar}
+\end{minipage}
 
 % ==============================================================================
 
@@ -421,4 +441,114 @@ $\boxed{E^{*} -->a E^{*}}$
   }
 \end{mathpar}
 
+% ##############################################################################
+
+\chapter{Architecture}
+\label{chap:architecture}
+
+% ==============================================================================
+
+\section{The Application}
+\label{sec:the-application-architecture}
+
+% ==============================================================================
+
+\section{The Environment}
+\label{sec:the-environment-architecture}
+
+% ==============================================================================
+
+\section{The Editor}
+\label{sec:the-editor-architecture}
+
+\tikzset{>=Triangle,every node/.style={outer sep=0mm,inner sep=0mm,anchor=north}}
+
+\tikzset{header/.style={
+    text width=3cm,
+    minimum height=20pt,
+    align=center
+  }}
+
+\tikzset{field/.style={
+    text width=3cm,
+    minimum height=20pt,
+    inner xsep=2mm,
+    align=center
+  }}
+
+\tikzset{field2/.style={
+    field,
+    minimum height=40pt
+  }}
+
+\tikzset{rightof/.style={right=3cm+8mm of #1.north,anchor=north}}
+
+\begin{tikzpicture}
+  [start chain=1 going below
+  ,start chain=2 going below
+  ,start chain=3 going below
+  ,node distance=0mm]
+  \node (Editor_t)             [on chain=1,header] {\large Editor.t};
+  \node (Editor_id)            [on chain=1,field]  {id};
+  \node (Editor_graph)         [on chain=1,field]  {graph};
+  \node (Editor_cursor)        [on chain=1,field]  {cursor};
+  \node (Editor_actions)       [on chain=1,field]  {actions};
+  \node (Editor_known_actions) [on chain=1,field]  {known\_actions};
+  \node [draw,fit=(Editor_id) (Editor_known_actions)] {};
+
+  \node (EA) [on chain=2,header,rightof=Editor_t] {};
+  \node (EA_Uuid_Id_t)      [on chain=2,field] {Uuid.Id.t};
+  \node (EA_Graph_t)        [on chain=2,field] {Graph.t};
+  \node (EA_Cursor_t)       [on chain=2,field] {Cursor.t};
+  \node (EA_Graph_action_t) [on chain=2,field2] {Graph\_action.t};
+
+  \draw [->] ([xshift=-2mm] Editor_id.east) -> ([xshift=2mm] EA_Uuid_Id_t.west);
+  \draw [->] ([xshift=-2mm] Editor_graph.east) -> ([xshift=2mm] EA_Graph_t.west);
+  \draw [->] ([xshift=-2mm] Editor_cursor.east) -> ([xshift=2mm] EA_Cursor_t.west);
+  \draw ([xshift=-2mm] Editor_actions.east) -| ([xshift=-2mm] EA_Graph_action_t.west);
+  \draw ([xshift=-2mm] Editor_known_actions.east) -| ([xshift=-2mm] EA_Graph_action_t.west);
+  \draw [->] ([xshift=-2mm] EA_Graph_action_t.west) -- ([xshift=2mm] EA_Graph_action_t.west);
+
+  \node (Action_t) [on chain=3,header,rightof=EA] {\large Action.t};
+  \node (Action_editor_id) [on chain=3,field] {editor\_id};
+  \node (Action_action) [on chain=3,field] {action};
+  \node [draw,fit=(Action_editor_id) (Action_action)] {};
+
+  \draw [->] ([xshift=2mm] Action_editor_id.west) -- ([xshift=-2mm] EA_Uuid_Id_t.east);
+\end{tikzpicture}
+
+%   % \node (Action_edit) [right=4mm of Action_t.two east] {Action.edit};
+%   % \node (Action_move) [above=0mm of Action_edit] {Action.move};
+%   % \node (Action_comm) [below=0mm of Action_edit] {Action.comm};
+
+%   % \draw ([xshift=-2mm]Action_t.two east) -- ([xshift=2mm]Action_t.two east);
+%   % \draw ([xshift=2mm]Action_t.two east) |- (Action_edit);
+%   % \draw ([xshift=2mm]Action_t.two east) |- (Action_move);
+%   % \draw ([xshift=2mm]Action_t.two east) |- (Action_comm);
+
+%   % \draw (Action_comm.east) -- ([xshift=2mm]Action_comm.east) |- (Graph_action_t.east);
+% \end{tikzpicture}
+
+% ==============================================================================
+
+\section{Graph}
+\label{sec:graph-architecturee}
+
+% ##############################################################################
+
+\chapter{Implementation}
+\label{chap:implementation}
+
+% ==============================================================================
+
+\section{Sets and Relations}
+\label{sec:sets-and-relations-implementation}
+
+Hello
+
 \end{document}
+
+%%% Local Variables:
+%%% TeX-master: t
+%%% TeX-engine: luatex
+%%% End:

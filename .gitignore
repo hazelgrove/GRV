@@ -52,3 +52,12 @@ setup.log
 
 # opam package files
 *.opam
+
+# LaTeX files
+/src/grvdoc/*.pdf
+/src/grvdoc/*.svg
+/src/grvdoc/*.log
+/src/grvdoc/*.toc
+/src/grvdoc/done
+/src/grvdoc/*.fls
+/src/grvdoc/*.fdb_latexmk

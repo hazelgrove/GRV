@@ -17,10 +17,10 @@ release:
 	dune build --profile release
 
 cat-lang:
-	@cat "$(BUILD_DIR)/src/grvcore/lang.ml"
+	@cat "$(BUILD_DIR)/src/grvcore/Lang.ml"
 
 echo-lang:
-	@echo "$(BUILD_DIR)/src/grvcore/lang.ml"
+	@echo "$(BUILD_DIR)/src/grvcore/Lang.ml"
 
 echo-doc:
 	@echo "$(BUILD_DIR)/src/grvdoc/master.pdf"

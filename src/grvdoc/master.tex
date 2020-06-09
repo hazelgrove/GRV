@@ -600,6 +600,75 @@ $\boxed{E^{*} -->a E^{*}}$
 
 \paragraph{The Graph} ~
 
+\nopagebreak
+
+\begin{tikzpicture}
+  [start chain=1 going below
+  ]
+  \node (Graph_t) [header] {\large Graph.t};
+
+  \node (Edge_t) [header,right=8mm of Graph_t] {\large Edge.t};
+  \node (Edge_target) [field,below=0mm of Edge_t.south]      {target};
+  \node (Edge_source) [field,below=0mm of Edge_target.south] {source};
+  \node (Edge) [draw,fit=(Edge_target) (Edge_source)] {};
+
+  \node (Edge_state_t) [header,above=42pt of Edge_t] {\large Edge\_state.t};
+
+  \node (Cursor_t) [header,below=10pt of Edge,anchor=north] {\large Cursor.t};
+  \node (Cursor_index) [field,below=0mm of Cursor_t,anchor=north] {index};
+  \node (Cursor_vertex) [field,below=0mm of Cursor_index,anchor=north] {vertex};
+  \node (Cursor) [draw,fit=(Cursor_index) (Cursor_vertex)] {};
+
+  \draw [->] ([xshift=-2mm] Edge_source.east) -- ([xshift=2mm] Edge_source.east)
+  |- ([xshift=-2mm] Cursor_t.east);
+
+  \node (Lang_Index_t) [field,right=4mm of Cursor_index.east] {Lang.Index.t};
+  \draw [->] ([xshift=-2mm] Cursor_index.east) -- ([xshift=2mm] Lang_Index_t.west);
+
+  \node (Vertex_t) [header,below=30pt of Cursor.south,anchor=north] {\large Vertex.t};
+  \draw [->] ([xshift=-2mm] Cursor_vertex.east)
+  -- ([xshift=2mm] Cursor_vertex.east)
+  -- ([xshift=2mm,yshift=-20pt] Cursor_vertex.east)
+  -| (Vertex_t.north);
+  \draw [->] ([xshift=-2mm] Edge_target.east)
+  -- ([xshift=3.6cm] Edge_target.east)
+  |- ([xshift=-2mm] Vertex_t.east);
+
+  \node (Uuid_Wrap_t) [header,below=45pt of Vertex_t.south,anchor=north] {\large Uuid.Wrap.t};
+  \draw [->] (Vertex_t.south) -- (Uuid_Wrap_t.north);
+  \draw [->] (Edge_t.east)
+  -- ([xshift=4.6cm] Edge_t.east)
+  -- ([xshift=4.6cm,yshift=-30pt] Edge_t.east|-Vertex_t.south)
+  -- ([xshift=5mm,yshift=-30pt] Edge_t.east|-Vertex_t.south)
+  -- (Uuid_Wrap_t.north east);
+
+  \node (Uuid_Id_t) [header,below=15pt of Uuid_Wrap_t.south,anchor=north] {\large Uuid.Id.t};
+  \draw [->] (Uuid_Wrap_t.south) -- (Uuid_Id_t.north);
+
+  \node (Lang_Constructor_t) [header=4cm,below right=12.5pt and 4mm of Vertex_t.east] {Lang.Constructor.t};
+  \draw [->] (Vertex_t.south|-Lang_Constructor_t.west) -- (Lang_Constructor_t.west);
+
+  \draw [->] ([xshift=-2mm] Graph_t.east) -- ([xshift=2mm] Edge_t.west);
+  \draw [->] ([xshift=2mm] Graph_t.east) |- (Edge_state_t.west);
+  \draw [->] ([xshift=2mm] Graph_t.east) |- ([xshift=2mm] Cursor_t.west);
+  \draw [->] ([xshift=2mm] Graph_t.east) |- ([xshift=2mm] Vertex_t.west);
+  \draw [->] ([xshift=2mm] Graph_t.east) |- ([xshift=2mm] Uuid_Id_t.west);
+
+  \node (Graph_action_t) [header=4cm,right=1.15cm of Edge_state_t.east] {\large Graph\_action.t};
+  \node (Graph_action_state) [field=3.5cm,below=0mm of Graph_action_t.south] {state};
+  \node (Graph_action_edge) [field=3.5cm,below=0mm of Graph_action_state.south] {edge};
+  \node (Graph_action) [draw,fit=(Graph_action_state) (Graph_action_edge)] {};
+
+  \draw [->] ([xshift=2mm] Graph_action_edge.west) -| (Edge_t.north);
+
+  \draw [->] ([xshift=2mm] Graph_action_state.west)
+  -| (Edge_state_t.south);
+
+  \draw [->] ([xshift=-2mm] Graph_action_t.east)
+  -- ([xshift=2mm] Graph_action_t.east)
+  |- ([xshift=1mm] Uuid_Wrap_t.east);
+\end{tikzpicture}
+
 % ##############################################################################
 
 \chapter{Implementation}

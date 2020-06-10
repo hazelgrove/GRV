@@ -2,13 +2,9 @@ module Vdom = Virtual_dom.Vdom
 open Vdom.Node
 open Vdom.Attr
 
+(* type 'a t = {on_ *)
+
 type 'a t = (Action.t -> Vdom.Event.t) -> Editor.t -> 'a
-
-let chars (str : string) : Vdom.Node.t =
-  Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
-
-let errs (str : string) : Vdom.Node.t =
-  Vdom.Node.span [ Vdom.Attr.class_ "errs" ] [ Vdom.Node.text str ]
 
 let maybe_disabled ?(disable : bool = false)
     (node : Vdom.Attr.t List.t -> Vdom.Node.t List.t -> Vdom.Node.t)

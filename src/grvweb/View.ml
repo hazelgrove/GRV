@@ -3,6 +3,16 @@ module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 module W = Widget
 
+(* Nodes *)
+
+let chars (str : string) : Vdom.Node.t =
+  Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
+
+let errs (str : string) : Vdom.Node.t =
+  Vdom.Node.span [ Vdom.Attr.class_ "errs" ] [ Vdom.Node.text str ]
+
+(* Attrs *)
+
 let clicks_to (cursor : Cursor.t) (inject : Action.t -> Vdom.Event.t)
     (editor : Editor.t) : Vdom.Attr.t =
   Vdom.Attr.on_click (fun event ->
@@ -10,34 +20,31 @@ let clicks_to (cursor : Cursor.t) (inject : Action.t -> Vdom.Event.t)
       Dom_html.stopPropagation event;
       inject { Action.editor_id = editor.id; action = Move (Select cursor) })
 
+(* Components *)
+
 let rec view_cursor (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
     (seen : Vertex.Set.t ref) (cursor : Cursor.t) : Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
-    let view_vertex' : Vertex.t -> Cursor.t option -> Vdom.Node.t =
+    let view_vertex' : Cursor.t option -> Vertex.t -> Vdom.Node.t =
       view_vertex inject editor seen
     in
     match Edge.Set.elements (Graph.children editor.graph cursor) with
-    | [] ->
-        span [ class_ "hole"; clicks_to cursor inject editor ] [ W.chars "_" ]
-    | [ edge ] -> view_vertex' (Edge.target edge) (Some cursor)
+    | [] -> span [ class_ "hole"; clicks_to cursor inject editor ] [ chars "_" ]
+    | [ edge ] -> view_vertex' (Some cursor) (Edge.target edge)
     | edges ->
         let nodes =
-          List.map
-            (fun edge -> view_vertex' (Edge.target edge) (Some cursor))
-            edges
+          List.map (view_vertex' (Some cursor)) (List.map Edge.target edges)
         in
         span
           [ class_ "conflict"; clicks_to cursor inject editor ]
-          ( [ W.errs "{" ]
-          @ Util.List.intersperse (W.errs "|") nodes
-          @ [ W.errs "}" ] )
+          ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ])
   in
   if editor.cursor = cursor then span [ class_ "cursor" ] [ node ] else node
 
 and view_vertex (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
-    (seen : Vertex.Set.t ref) (vertex : Vertex.t) (parent : Cursor.t option) :
+    (seen : Vertex.Set.t ref) (parent : Cursor.t option) (vertex : Vertex.t) :
     Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
@@ -45,32 +52,31 @@ and view_vertex (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
     span [ class_ "vertex" ] [ text @@ "#" ^ Uuid.Id.show vertex.id ]
   else (
     seen := Vertex.Set.add vertex !seen;
-    let node =
-      let view_cursor' (index : Lang.Index.t) : Vdom.Node.t =
-        view_cursor inject editor seen { vertex; index }
-      in
-      let attr =
-        match parent with None -> [] | Some p -> [ clicks_to p inject editor ]
-      in
-      span attr (Lang.show W.chars W.chars view_cursor' vertex.value)
-    in
     span [ class_ "vertex" ]
-      [ Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ]; node ] )
+      [
+        Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ];
+        span
+          ( match parent with
+          | None -> []
+          | Some p -> [ clicks_to p inject editor ] )
+          (Lang.show chars chars
+             (fun index -> view_cursor inject editor seen { vertex; index })
+             vertex.value);
+      ] )
 
-let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
+let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
     (editor : Editor.t) : Vdom.Node.t =
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
   let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = w inject editor in
-  let seen = ref Vertex.Set.empty in
   let main_code = view_cursor inject editor seen Cursor.root in
   let deleted_code =
     W.select ~multi:false ~default:false
       ("deleted" ^ Uuid.Id.show editor.id)
       "Deleted"
       (Vertex.Set.elements (Graph.deleted editor.graph))
-      (fun (vertex : Vertex.t) -> view_vertex inject editor seen vertex None)
+      (view_vertex inject editor seen None)
   in
   Graphviz.draw editor;
   div
@@ -132,7 +138,7 @@ let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
                "Actions"
                (Graph_action.Set.elements editor.actions)
                (fun (item : Graph_action.t) ->
-                 W.chars @@ Format.asprintf "%a" Graph_action.pp item);
+                 chars @@ Format.asprintf "%a" Graph_action.pp item);
           mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send editor);
         ];
       div [ class_ "selector" ]
@@ -152,13 +158,12 @@ let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
            div [] [ btn inject editor; txt inject editor ]);
         ];
       h2 [] [ text "Cursor" ];
-      W.chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;
+      chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;
       h2 [] [ text "Graph" ];
       div [ id ("graph" ^ Uuid.Id.show editor.id) ] [ span [] [] ];
     ]
 
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Vdom.Node.t =
   Vdom.Node.div []
-    (List.map
-       (fun (_, editor) -> view_editor inject model editor)
-       (Uuid.Map.bindings model))
+    (List.map (view_editor model inject)
+       (List.map snd (Uuid.Map.bindings model)))

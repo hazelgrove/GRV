@@ -3,8 +3,8 @@ module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 module W = Widget
 
-let clickable (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
-    (cursor : Cursor.t) : Vdom.Attr.t =
+let clicks_to (cursor : Cursor.t) (inject : Action.t -> Vdom.Event.t)
+    (editor : Editor.t) : Vdom.Attr.t =
   Vdom.Attr.on_click (fun event ->
       Dom.preventDefault event;
       Dom_html.stopPropagation event;
@@ -20,17 +20,16 @@ let rec view_cursor (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
     in
     match Edge.Set.elements (Graph.children editor.graph cursor) with
     | [] ->
-        span [ class_ "hole"; clickable inject editor cursor ] [ W.chars "_" ]
+        span [ class_ "hole"; clicks_to cursor inject editor ] [ W.chars "_" ]
     | [ edge ] -> view_vertex' (Edge.target edge) (Some cursor)
     | edges ->
         let nodes =
           List.map
-            (fun (edge : Edge.t) ->
-              view_vertex' (Edge.target edge) (Some cursor))
+            (fun edge -> view_vertex' (Edge.target edge) (Some cursor))
             edges
         in
         span
-          [ class_ "conflict"; clickable inject editor cursor ]
+          [ class_ "conflict"; clicks_to cursor inject editor ]
           ( [ W.errs "{" ]
           @ Util.List.intersperse (W.errs "|") nodes
           @ [ W.errs "}" ] )
@@ -51,7 +50,7 @@ and view_vertex (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
         view_cursor inject editor seen { vertex; index }
       in
       let attr =
-        match parent with None -> [] | Some p -> [ clickable inject editor p ]
+        match parent with None -> [] | Some p -> [ clicks_to p inject editor ]
       in
       span attr (Lang.show W.chars W.chars view_cursor' vertex.value)
     in

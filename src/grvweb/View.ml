@@ -70,6 +70,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
   let open Vdom.Node in
   let open Vdom.Attr in
   let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = w inject editor in
+  let seen = ref Vertex.Set.empty in
   let main_code = view_cursor inject editor seen Cursor.root in
   let deleted_code =
     W.select ~multi:false ~default:false

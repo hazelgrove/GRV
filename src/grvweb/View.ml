@@ -23,14 +23,15 @@ let clicks_to (cursor : Cursor.t) (inject : Action.t -> Vdom.Event.t)
 (* Components *)
 
 let rec view_cursor (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
-    (seen : Vertex.Set.t ref) (cursor : Cursor.t) : Vdom.Node.t =
+    (roots : Vertex.Set.t) (first_call : bool) (cursor : Cursor.t) : Vdom.Node.t
+    =
   let open Vdom.Node in
   let open Vdom.Attr in
   let node =
     let view_vertex' : Cursor.t option -> Vertex.t -> Vdom.Node.t =
-      view_vertex inject editor seen
+      view_vertex inject editor roots ~first_call
     in
-    match Edge.Set.elements (Graph.children editor.graph cursor) with
+    match Edge.Set.elements (Graph.cursor_children editor.graph cursor) with
     | [] -> span [ class_ "hole"; clicks_to cursor inject editor ] [ chars "_" ]
     | [ edge ] -> view_vertex' (Some cursor) (Edge.target edge)
     | edges ->
@@ -44,14 +45,13 @@ let rec view_cursor (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
   if editor.cursor = cursor then span [ class_ "cursor" ] [ node ] else node
 
 and view_vertex (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
-    (seen : Vertex.Set.t ref) (parent : Cursor.t option) (vertex : Vertex.t) :
-    Vdom.Node.t =
+    (roots : Vertex.Set.t) ?(first_call = true) (parent : Cursor.t option)
+    (vertex : Vertex.t) : Vdom.Node.t =
   let open Vdom.Node in
   let open Vdom.Attr in
-  if Vertex.Set.mem vertex !seen then
+  if (not first_call) && Vertex.Set.mem vertex roots then
     span [ class_ "vertex" ] [ text @@ "#" ^ Uuid.Id.show vertex.id ]
-  else (
-    seen := Vertex.Set.add vertex !seen;
+  else
     span [ class_ "vertex" ]
       [
         Vdom.Node.create "sub" [] [ text @@ Uuid.Id.show vertex.id ];
@@ -60,9 +60,10 @@ and view_vertex (inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
           | None -> []
           | Some p -> [ clicks_to p inject editor ] )
           (Lang.show chars chars
-             (fun index -> view_cursor inject editor seen { vertex; index })
+             (fun index ->
+               view_cursor inject editor roots false { vertex; index })
              vertex.value);
-      ] )
+      ]
 
 let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
     (editor : Editor.t) : Vdom.Node.t =
@@ -70,14 +71,25 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
   let open Vdom.Node in
   let open Vdom.Attr in
   let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = w inject editor in
-  let seen = ref Vertex.Set.empty in
-  let main_code = view_cursor inject editor seen Cursor.root in
+  let roots = Graph.roots editor.graph in
+  let root_vertexes =
+    Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
+  in
+  assert (roots.root = Cursor.root.vertex);
+  let main_code = view_cursor inject editor root_vertexes true Cursor.root in
   let deleted_code =
     W.select ~multi:false ~default:false
       ("deleted" ^ Uuid.Id.show editor.id)
       "Deleted"
-      (Vertex.Set.elements (Graph.deleted editor.graph))
-      (view_vertex inject editor seen None)
+      (Vertex.Set.elements roots.deleted)
+      (view_vertex inject editor root_vertexes None)
+  in
+  let multiparent_code =
+    W.select ~multi:false ~default:false
+      ("multiparent" ^ Uuid.Id.show editor.id)
+      "multiparent"
+      (Vertex.Set.elements roots.multiparent)
+      (view_vertex inject editor root_vertexes None)
   in
   Graphviz.draw editor;
   div
@@ -158,6 +170,8 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
            Js.set_input ("restore" ^ Uuid.Id.show editor.id) "";
            div [] [ btn inject editor; txt inject editor ]);
         ];
+      br [];
+      div [ class_ "selector" ] [ mk multiparent_code ];
       h2 [] [ text "Cursor" ];
       chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;
       h2 [] [ text "Graph" ];

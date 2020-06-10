@@ -29,7 +29,7 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
         | [ edge ] -> Some (Edge.source edge)
         | _ -> None )
     | Down -> (
-        match Edge.Set.elements (Graph.children editor.graph cursor) with
+        match Edge.Set.elements (Graph.cursor_children editor.graph cursor) with
         | [ edge ] ->
             let vertex = Edge.target edge in
             let%map.Util.Option index = Lang.Index.down vertex.value in
@@ -52,7 +52,7 @@ let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
 let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model in
-  let children = Graph.children editor.graph editor.cursor in
+  let children = Graph.cursor_children editor.graph editor.cursor in
   let move_in, graph_actions =
     match edit_action with
     | Create constructor -> (
@@ -95,7 +95,8 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
         ( false,
           List.map
             (fun edge -> Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
-            (Edge.Set.elements (Graph.children editor.graph editor.cursor)) )
+            (Edge.Set.elements
+               (Graph.cursor_children editor.graph editor.cursor)) )
     | Restore vertex ->
         let edge : Edge.t = Edge.mk editor.cursor vertex in
         (false, [ Uuid.Wrap.mk Graph_action.{ state = Created; edge } ])

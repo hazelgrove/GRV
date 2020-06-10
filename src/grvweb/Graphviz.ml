@@ -56,7 +56,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
       live_edges []
   in
   let hole, hole_edge =
-    let children = Graph.children graph cursor in
+    let children = Graph.cursor_children graph cursor in
     match Edge.Set.is_empty children with
     | true ->
         let field = Lang.Index.short_name cursor.index in

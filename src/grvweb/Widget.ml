@@ -2,11 +2,7 @@ module Vdom = Virtual_dom.Vdom
 open Vdom.Node
 open Vdom.Attr
 
-type 'a t = inject:(Action.t -> Vdom.Event.t) -> Editor.t -> 'a
-
-let mk (widget : 'a t) ~(inject : Action.t -> Vdom.Event.t) (editor : Editor.t)
-    : 'a =
-  widget ~inject editor
+type 'a t = (Action.t -> Vdom.Event.t) -> Editor.t -> 'a
 
 let chars (str : string) : Vdom.Node.t =
   Vdom.Node.span [ Vdom.Attr.class_ "chars" ] [ Vdom.Node.text str ]
@@ -21,7 +17,7 @@ let maybe_disabled ?(disable : bool = false)
 
 let text_input ?(disable : bool = false) (id_ : string)
     (change : string -> Action.t' Option.t) : Vdom.Node.t t =
- fun ~inject editor ->
+ fun inject editor ->
   maybe_disabled ~disable Vdom.Node.input
     [
       id id_;
@@ -40,7 +36,7 @@ let text_input ?(disable : bool = false) (id_ : string)
 
 let button ?(disable : bool = false) (label : string)
     (click : unit -> Action.t' Option.t) : Vdom.Node.t t =
- fun ~inject editor ->
+ fun inject editor ->
   maybe_disabled ~disable Vdom.Node.button
     [
       on_click (fun _ ->
@@ -54,7 +50,7 @@ let button ?(disable : bool = false) (label : string)
 
 let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
     (mk : string -> Lang.Constructor.t) : Vdom.Node.t t =
- fun ~inject editor ->
+ fun inject editor ->
   let disable = not (Lang.Index.child_sort editor.cursor.index = sort) in
   let btn : Vdom.Node.t t =
     button ~disable label (fun () ->
@@ -68,7 +64,7 @@ let input_button (label : string) (id_ : string) (sort : Lang.Sort.t)
       | str -> Some (Edit (Create (mk str))))
   in
   Js.set_input id_ "";
-  div [] [ btn ~inject editor; txt ~inject editor ]
+  div [] [ btn inject editor; txt inject editor ]
 
 let app_button ?(disable : bool = false) (label : string) (action : Action.t') :
     Vdom.Node.t t =
@@ -76,9 +72,9 @@ let app_button ?(disable : bool = false) (label : string) (action : Action.t') :
 
 let create_button (label : string) (ctor : Lang.Constructor.t)
     (sort : Lang.Sort.t) : Vdom.Node.t t =
- fun ~inject editor ->
+ fun inject editor ->
   let disable = not (Lang.Index.child_sort editor.cursor.index = sort) in
-  app_button ~disable label (Edit (Create ctor)) ~inject editor
+  app_button ~disable label (Edit (Create ctor)) inject editor
 
 let move_button (label : string) (dir : Action.move) : Vdom.Node.t t =
   app_button label (Move dir)
@@ -86,7 +82,7 @@ let move_button (label : string) (dir : Action.move) : Vdom.Node.t t =
 let select ?(multi : bool = true) ?(default : bool = true) (id_ : string)
     (label : string) (items : 'a List.t) (show : 'a -> Vdom.Node.t) :
     Vdom.Node.t t =
- fun ~inject:(_ : _) _editor ->
+ fun _inject _editor ->
   let select_item (k : int) (item : 'a) : Vdom.Node.t =
     div
       [

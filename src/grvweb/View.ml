@@ -63,7 +63,7 @@ let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = W.mk w ~inject editor in
+  let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = w inject editor in
   let seen = ref Vertex.Set.empty in
   let main_code = view_cursor inject editor seen Cursor.root in
   let deleted_code =
@@ -150,7 +150,7 @@ let view_editor (inject : Action.t -> Vdom.Event.t) (model : Model.t)
                (function "" -> None | str -> Key.restore editor str)
            in
            Js.set_input ("restore" ^ Uuid.Id.show editor.id) "";
-           div [] [ btn ~inject editor; txt ~inject editor ]);
+           div [] [ btn inject editor; txt inject editor ]);
         ];
       h2 [] [ text "Cursor" ];
       W.chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;

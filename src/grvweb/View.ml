@@ -76,7 +76,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
     Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
   in
   assert (roots.root = Cursor.root.vertex);
-  let main_code = view_cursor inject editor root_vertexes true Cursor.root in
+  let main_code = view_cursor inject editor root_vertexes false Cursor.root in
   let deleted_code =
     W.select ~multi:false ~default:false
       ("deleted" ^ Uuid.Id.show editor.id)

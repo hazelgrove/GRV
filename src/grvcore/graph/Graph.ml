@@ -90,7 +90,7 @@ let roots (graph : t) : roots =
     (fun vertex ->
       if Vertex.Set.mem vertex !reachable then ()
       else (
-        reachable := Vertex.Set.add vertex !reachable;
+        deleted := Vertex.Set.add vertex !deleted;
         add vertex ))
     (vertexes graph);
 

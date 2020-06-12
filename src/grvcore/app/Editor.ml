@@ -20,6 +20,3 @@ let mk () : t =
 
   let compare : t -> t -> int = Int.compare
 end *)
-
-(* let deleted (editor : t) : Vertex.Set.t =
- *   Vertex.Set.remove Vertex.root (Roots.roots editor.graph) *)

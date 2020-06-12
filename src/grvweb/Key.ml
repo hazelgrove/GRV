@@ -103,8 +103,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | _ -> None
 
 let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
-    (editor : Editor.t) : Dom_html.keyboardEvent Js.t -> Vdom.Event.t =
- fun event ->
+    (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) : Vdom.Event.t =
   let handle =
     match
       Js.

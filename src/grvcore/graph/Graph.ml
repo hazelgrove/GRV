@@ -37,7 +37,7 @@ let vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
 
 let orphans (graph : t) : Vertex.Set.t =
   Edge.Set.fold
-    (fun edge nonorphans -> Vertex.Set.remove edge.value.target nonorphans)
+    (fun edge orphans -> Vertex.Set.remove edge.value.target orphans)
     (live_edges graph) (vertexes graph)
 
 let multiparents (graph : t) : Vertex.Set.t =
@@ -74,10 +74,11 @@ let roots (graph : t) : roots =
   (* This function add a vertex and everything reachable from it to the reachable set *)
   let rec add (vertex : Vertex.t) : unit =
     if Vertex.Set.mem vertex !reachable then ()
-    else
-      ( reachable := Vertex.Set.add vertex !reachable;
-        Edge.Set.iter (fun edge -> add edge.value.target) )
-        (vertex_children graph vertex)
+    else (
+      reachable := Vertex.Set.add vertex !reachable;
+      Edge.Set.iter
+        (fun edge -> add edge.value.target)
+        (vertex_children graph vertex) )
   in
   (* Mark everything reachable from true_orphans or multiparents as reachable *)
   Vertex.Set.iter add orphan_vertexes;

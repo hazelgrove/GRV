@@ -7,7 +7,7 @@ type error = {
 
 type 'a t = Success of 'a | Error of error list
 
-let fail (origin : string) (vertex : Vertex.t) (index : Lang.Index.t option) :
+let error (origin : string) (vertex : Vertex.t) (index : Lang.Index.t option) :
     ('a, unit, string, 'b t) format4 -> 'a =
   Printf.ksprintf (fun message -> Error [ { origin; vertex; index; message } ])
 

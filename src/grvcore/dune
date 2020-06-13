@@ -4,7 +4,7 @@
  (name grvcore)
  (public_name GRV.core)
  (modules
-  (:standard \ lang_gen))
+  (:standard \ Lang_gen))
  (preprocess
   (pps ppx_deriving.show ppx_deriving.eq ppx_deriving.ord ppx_sexp_conv
     ppx_let))
@@ -12,7 +12,7 @@
 
 (rule
  (target Lang.ml)
- (deps Lang_gen.ml)
+ (deps lang/Lang_gen.ml)
  (action
   (with-stdout-to
    %{target}

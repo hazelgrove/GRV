@@ -124,7 +124,10 @@ h2 {
     background-color: #C4D9FF;
 }
 
+.Deleted > .selectItems > .selected sub {
+    color: white;
+}
+
 .selectItem:not(.selected) {
     background-color: white;
-    color: gray;
 }

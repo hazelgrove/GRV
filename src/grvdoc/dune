@@ -4,6 +4,7 @@
 
 (rule
  (target master.pdf)
- (deps master.tex)
+ (deps
+  (:src master.tex))
  (action
-  (run latexmk -pdf master.tex)))
+  (run latexmk -pdflatex=lualatex -pdf %{src})))

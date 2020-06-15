@@ -190,7 +190,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
       br [];
       div [ class_ "selector" ]
         [
-          Gui.select "Multiparent"
+          Gui.select "Multiparented"
             ("multiparent" ^ Uuid.Id.show editor.id)
             (Vertex.Set.elements roots.multiparent)
             (fun vertex -> view_vertex inject editor root_vertexes None vertex)

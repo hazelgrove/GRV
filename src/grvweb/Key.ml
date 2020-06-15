@@ -1,41 +1,11 @@
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
-(* TODO: where do these functions go? *)
-let send (editor : Editor.t) : Action.t' Option.t =
-  let id : string = "actions" ^ Uuid.Id.show editor.id in
-  match Js.get_selection id with
-  | [] -> None
-  | selection ->
-      let actions =
-        List.(
-          map fst
-            (filter snd
-               (combine (Graph_action.Set.elements editor.actions) selection)))
-      in
-      Js.fill_selection id;
-      Some (Comm (Send actions))
-
-let restore (editor : Editor.t) (vertex_id : string) : Action.t' Option.t =
-  let%map.Util.Option selection : Vertex.t option =
-    if String.equal vertex_id "" then
-      let selection = Js.get_selection ("deleted" ^ Uuid.Id.show editor.id) in
-      let vertexes : Vertex.t list =
-        Vertex.Set.elements (Graph.deleted' editor.graph)
-      in
-      let%map.Util.Option result : (bool * Vertex.t) Option.t =
-        List.find_opt fst (List.combine selection vertexes)
-      in
-      snd result
-    else Graph.vertex editor.graph (Uuid.Id.read vertex_id)
-  in
-  Action.Edit (Restore selection)
-
 let ctrl (_model : Model.t) (editor : Editor.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   match Dom_html.Keyboard_code.of_event event with
   | KeyS -> (
-      match send editor with
+      match Gui.send editor with
       | None ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;

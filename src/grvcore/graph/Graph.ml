@@ -56,8 +56,6 @@ let multiparents (graph : t) : Vertex.Set.t =
     (fun vertex _ -> Vertex.Set.add vertex)
     two_counts Vertex.Set.empty
 
-let deleted' (_graph : t) : Vertex.Set.t = Vertex.Set.empty
-
 type roots = {
   root : Vertex.t;
   multiparent : Vertex.Set.t;
@@ -95,3 +93,5 @@ let roots (graph : t) : roots =
     (vertexes graph);
 
   { root = Vertex.root; multiparent; deleted = !deleted }
+
+let deleted' (graph : t) : Vertex.Set.t = (roots graph).deleted

@@ -1,7 +1,6 @@
 module Dom = Js_of_ocaml.Dom
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
-module W = Widget
 
 (* Nodes *)
 
@@ -70,27 +69,11 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
   let open Action in
   let open Vdom.Node in
   let open Vdom.Attr in
-  let mk (w : Vdom.Node.t W.t) : Vdom.Node.t = w inject editor in
   let roots = Graph.roots editor.graph in
   let root_vertexes =
     Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
   in
   assert (roots.root = Cursor.root.vertex);
-  let main_code = view_cursor inject editor root_vertexes false Cursor.root in
-  let deleted_code =
-    W.select ~multi:false ~default:false
-      ("deleted" ^ Uuid.Id.show editor.id)
-      "Deleted"
-      (Vertex.Set.elements roots.deleted)
-      (view_vertex inject editor root_vertexes None)
-  in
-  let multiparent_code =
-    W.select ~multi:false ~default:false
-      ("multiparent" ^ Uuid.Id.show editor.id)
-      "multiparent"
-      (Vertex.Set.elements roots.multiparent)
-      (view_vertex inject editor root_vertexes None)
-  in
   Graphviz.draw editor;
   div
     [
@@ -100,78 +83,119 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
       on_keydown @@ Key.dispatch ~inject model editor;
     ]
     [
-      main_code;
+      (* main code *)
+      view_cursor inject editor root_vertexes false Cursor.root;
       br [];
       br [];
       div []
         [
           text "Patterns: ";
-          mk
-          @@ W.input_button "Pat (p)" "pat_id" Lang.Sort.Pat (fun str ->
-                 Pat_var str);
+          div []
+            [
+              Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor
+                ~on_click:(fun () ->
+                  match Js.get_input "pat_id" with
+                  | "" -> None
+                  | str -> Some (Edit (Create (Pat_var str))));
+              Gui.sorted_text_input "pat_id" Lang.Sort.Pat inject editor
+                ~on_change:(fun str -> Some (Edit (Create (Pat_var str))));
+            ];
         ];
       div []
         [
           text "Expressions: ";
-          mk
-          @@ W.input_button "Var (v)" "var_id" Lang.Sort.Exp (fun str ->
-                 Exp_var str);
-          mk
-          @@ W.input_button "Num (n)" "num_id" Lang.Sort.Exp (fun str ->
-                 Exp_num (int_of_string str));
-          mk @@ W.create_button "Lam (\\)" Exp_lam Lang.Sort.Exp;
-          mk @@ W.create_button "App (space)" Exp_app Lang.Sort.Exp;
-          mk @@ W.create_button "Plus (+)" Exp_plus Lang.Sort.Exp;
+          div []
+            [
+              Gui.sorted_button "Var (v)" Lang.Sort.Exp inject editor
+                ~on_click:(fun () ->
+                  match Js.get_input "var_id" with
+                  | "" -> None
+                  | str -> Some (Edit (Create (Exp_var str))));
+              Gui.sorted_text_input "var_id" Lang.Sort.Exp inject editor
+                ~on_change:(fun str -> Some (Edit (Create (Exp_var str))));
+            ];
+          div []
+            [
+              Gui.sorted_button "Num (n)" Lang.Sort.Exp inject editor
+                ~on_click:(fun () ->
+                  match Js.get_input "num_id" with
+                  | "" -> None
+                  | str -> Some (Edit (Create (Exp_num (int_of_string str)))));
+              Gui.sorted_text_input "num_id" Lang.Sort.Exp inject editor
+                ~on_change:(fun str ->
+                  Some (Edit (Create (Exp_num (int_of_string str)))));
+            ];
+          Gui.sorted_button "Lam (\\)" Lang.Sort.Exp inject editor
+            ~on_click:(fun () -> Some (Edit (Create Exp_lam)));
+          Gui.sorted_button "App (space)" Lang.Sort.Exp inject editor
+            ~on_click:(fun () -> Some (Edit (Create Exp_app)));
+          Gui.sorted_button "Plus (+)" Lang.Sort.Exp inject editor
+            ~on_click:(fun () -> Some (Edit (Create Exp_plus)));
         ];
       div []
         [
           text "Types: ";
-          mk @@ W.create_button "Num (N)" Typ_num Lang.Sort.Typ;
-          mk @@ W.create_button "Arrow (>)" Typ_arrow Lang.Sort.Typ;
+          Gui.sorted_button "Num (N)" Lang.Sort.Typ inject editor
+            ~on_click:(fun () -> Some (Edit (Create Typ_num)));
+          Gui.sorted_button "Arrow (>)" Lang.Sort.Typ inject editor
+            ~on_click:(fun () -> Some (Edit (Create Typ_arrow)));
         ];
       div []
         [
-          mk
-          @@ W.button "Delete (delete)" (fun () ->
-                 Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
-                 Some (Edit Destroy));
+          Gui.button "Delete (delete)" inject editor ~on_click:(fun () ->
+              Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
+              Some (Edit Destroy));
         ];
       div []
         [
-          mk @@ W.move_button "Up (↑)" Up;
-          mk @@ W.move_button "Down (↓)" Down;
-          mk @@ W.move_button "Left (←)" Left;
-          mk @@ W.move_button "Right (→)" Right;
+          Gui.button "Up (↑)" inject editor ~on_click:(fun () ->
+              Some (Move Up));
+          Gui.button "Down (↓)" inject editor ~on_click:(fun () ->
+              Some (Move Down));
+          Gui.button "Left (←)" inject editor ~on_click:(fun () ->
+              Some (Move Left));
+          Gui.button "Right (→)" inject editor ~on_click:(fun () ->
+              Some (Move Right));
         ];
       div [ class_ "selector" ]
         [
-          mk
-          @@ W.select
-               ("actions" ^ Uuid.Id.show editor.id)
-               "Actions"
-               (Graph_action.Set.elements editor.actions)
-               (fun (item : Graph_action.t) ->
-                 chars @@ Format.asprintf "%a" Graph_action.pp item);
-          mk @@ W.button "Send (ctrl-s)" (fun () -> Key.send editor);
+          Gui.select "Actions"
+            ("actions" ^ Uuid.Id.show editor.id)
+            (Graph_action.Set.elements editor.actions)
+            (fun graph_action ->
+              chars (Format.asprintf "%a" Graph_action.pp graph_action))
+            ~multi:true;
+          Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
+              Gui.send editor);
         ];
       div [ class_ "selector" ]
         [
-          mk @@ deleted_code;
-          (let btn : Vdom.Node.t W.t =
-             W.button "Restore" (fun () ->
-                 Key.restore editor
-                   (Js.get_input ("restore" ^ Uuid.Id.show editor.id)))
-           in
-           let txt : Vdom.Node.t W.t =
-             W.text_input
-               ("restore" ^ Uuid.Id.show editor.id)
-               (function "" -> None | str -> Key.restore editor str)
-           in
-           Js.set_input ("restore" ^ Uuid.Id.show editor.id) "";
-           div [] [ btn inject editor; txt inject editor ]);
+          Gui.select "Deleted"
+            ("deleted" ^ Uuid.Id.show editor.id)
+            (Vertex.Set.elements roots.deleted)
+            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            ~multi:false;
+          ( Js.set_input ("restore" ^ Uuid.Id.show editor.id) "";
+            div []
+              [
+                Gui.button "Restore" inject editor ~on_click:(fun () ->
+                    Gui.restore editor
+                      (Js.get_input ("restore" ^ Uuid.Id.show editor.id)));
+                Gui.text_input
+                  ("restore" ^ Uuid.Id.show editor.id)
+                  inject editor
+                  ~on_change:(fun str -> Gui.restore editor str);
+              ] );
         ];
       br [];
-      div [ class_ "selector" ] [ mk multiparent_code ];
+      div [ class_ "selector" ]
+        [
+          Gui.select "Multiparent"
+            ("multiparent" ^ Uuid.Id.show editor.id)
+            (Vertex.Set.elements roots.multiparent)
+            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            ~multi:false;
+        ];
       h2 [] [ text "Cursor" ];
       chars @@ Format.asprintf "%a@." Cursor.pp editor.cursor;
       h2 [] [ text "Graph" ];

@@ -11,10 +11,7 @@ let focus (id : string) : unit = eval_to_unit ("refocus('" ^ id ^ "')")
 let focus_editor (id : Uuid.Id.t) : unit = focus ("editor" ^ Uuid.Id.show id)
 
 let get_input (id : string) : string =
-  Printf.printf "getting input for %s\n" id;
-  let result = eval_to_string @@ "getInput('" ^ id ^ "')" in
-  Printf.printf "get_input: %s\n" result;
-  result
+  eval_to_string @@ "getInput('" ^ id ^ "')"
 
 let set_input (id : string) (value : string) : unit =
   eval_to_unit @@ Printf.sprintf "setInput('%s', '%s')" id value
@@ -35,3 +32,9 @@ let clear_selection (id : string) : unit =
 
 let fill_selection (id : string) : unit =
   eval_to_unit ("fillSelection('" ^ id ^ "')")
+
+let toggle_item (id : string) (i : int) : unit =
+  eval_to_unit ("toggleItem('" ^ id ^ "', " ^ Int.to_string i ^ ")")
+
+let select_item (id : string) (i : int) : unit =
+  eval_to_unit ("selectItem('" ^ id ^ "', " ^ Int.to_string i ^ ")")

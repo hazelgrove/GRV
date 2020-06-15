@@ -41,7 +41,7 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
   let%map.Util.Option cursor = cursor in
   let editor = { editor with cursor } in
   let editors = Uuid.Map.add editor_id editor model.editors in
-  Model.{ editors }
+  { model with editors }
 
 let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
     Editor.t =
@@ -104,7 +104,8 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in
   let editors = Uuid.Map.add editor_id editor model.editors in
-  let model = Model.{ editors } in
+  let actions = Option.map (fun xs -> xs @ graph_actions) model.actions in
+  let model = Model.{ editors; actions } in
   if move_in then apply_move model editor_id Down else Some model
 
 let apply_comm (model : Model.t) (_editor_id : Uuid.Id.t) (comm_action : comm) :
@@ -116,7 +117,9 @@ let apply_comm (model : Model.t) (_editor_id : Uuid.Id.t) (comm_action : comm) :
           (List.fold_right apply_graph_action edit_actions)
           model.editors
       in
-      Some (Model.remove_known_actions { editors })
+      let actions = Option.map (fun xs -> xs @ edit_actions) model.actions in
+      let model = Model.{ editors; actions } in
+      Some (Model.remove_known_actions model)
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =

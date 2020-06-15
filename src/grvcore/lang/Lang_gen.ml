@@ -234,7 +234,7 @@ module Constructor = struct
   open Sexplib0.Sexp_conv
 
   type t =%s
-  [@@deriving show, eq, ord, sexp_of]
+  [@@deriving show, eq, ord, sexp]
 
   (* Returns the sort of a particular constructor *)
   let sort_of (c : t) : Sort.t =
@@ -372,7 +372,7 @@ let () =
     {|
 module Index = struct
   type t =%s
-  [@@deriving show, eq, ord, sexp_of]
+  [@@deriving show, eq, ord, sexp]
 
   let short_name (i : t) : string =
     match i with%s

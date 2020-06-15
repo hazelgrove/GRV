@@ -1,5 +1,8 @@
 (* TODO: add a field for global action history *)
-type t = { editors : Editor.t Uuid.Map.t }
+type t = {
+  editors : Editor.t Uuid.Map.t;
+  actions : Graph_action.sequence option;
+}
 
 let empty : t =
   let editor1 = Editor.mk () in
@@ -9,7 +12,7 @@ let empty : t =
     Uuid.Map.of_seq
       (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
   in
-  { editors }
+  { editors; actions = None }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
@@ -40,4 +43,4 @@ let remove_known_actions (model : t) : t =
   let editors =
     Uuid.Map.map (filter_editor_actions known_actions) model.editors
   in
-  { (* model with  *) editors }
+  { model with editors }

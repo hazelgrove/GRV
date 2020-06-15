@@ -1,6 +1,10 @@
-type t' = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp_of, show]
+type t' = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp, show]
 
-type t = t' Uuid.Wrap.t [@@deriving sexp_of]
+type t = t' Uuid.Wrap.t [@@deriving sexp]
+
+open Sexplib0.Sexp_conv
+
+type sequence = t list [@@deriving sexp]
 
 let pp (fmt : Format.formatter) (edge_action : t) : unit =
   let edge = Uuid.Wrap.unmk edge_action.value.edge in

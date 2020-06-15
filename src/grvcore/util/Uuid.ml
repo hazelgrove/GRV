@@ -1,5 +1,5 @@
 module Id : sig
-  type t [@@deriving sexp_of]
+  type t [@@deriving sexp]
 
   val compare : t -> t -> int
 
@@ -16,7 +16,7 @@ module Id : sig
 end = struct
   open Sexplib0.Sexp_conv
 
-  type t = int [@@deriving sexp_of]
+  type t = int [@@deriving sexp]
 
   let pp (fmt : Format.formatter) (id : t) : unit = Format.fprintf fmt "%d" id
 
@@ -42,7 +42,7 @@ module Set = Set.Make (Id)
 
 (* TODO: use `private` types for Wrap.t *)
 module Wrap = struct
-  type 'a t = { id : Id.t; value : 'a } [@@deriving sexp_of]
+  type 'a t = { id : Id.t; value : 'a } [@@deriving sexp]
 
   let compare (u1 : 'a t) (u2 : 'a t) : int = Id.compare u1.id u2.id
 

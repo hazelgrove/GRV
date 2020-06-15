@@ -22,7 +22,7 @@ let restore (editor : Editor.t) (vertex_id : string) : Action.t' Option.t =
     if String.equal vertex_id "" then
       let selection = Js.get_selection ("deleted" ^ Uuid.Id.show editor.id) in
       let vertexes : Vertex.t list =
-        Vertex.Set.elements (Graph.deleted' editor.graph)
+        Vertex.Set.elements (Graph.roots editor.graph).deleted
       in
       let%map.Util.Option result : (bool * Vertex.t) Option.t =
         List.find_opt fst (List.combine selection vertexes)

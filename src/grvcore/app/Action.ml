@@ -14,7 +14,7 @@ type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
 
 let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
     Model.t Option.t =
-  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model in
+  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let cursor : Cursor.t = editor.cursor in
   let cursor : Cursor.t Option.t =
     match move_action with
@@ -40,7 +40,8 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
   in
   let%map.Util.Option cursor = cursor in
   let editor = { editor with cursor } in
-  Uuid.Map.add editor_id editor model
+  let editors = Uuid.Map.add editor_id editor model.editors in
+  Model.{ editors }
 
 let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
     Editor.t =
@@ -51,7 +52,7 @@ let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
 
 let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
-  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model in
+  let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let children = Graph.cursor_children editor.graph editor.cursor in
   let move_in, graph_actions =
     match edit_action with
@@ -102,17 +103,20 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
         (false, [ Uuid.Wrap.mk Graph_action.{ state = Created; edge } ])
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in
-  let model = Uuid.Map.add editor_id editor model in
+  let editors = Uuid.Map.add editor_id editor model.editors in
+  let model = Model.{ editors } in
   if move_in then apply_move model editor_id Down else Some model
 
 let apply_comm (model : Model.t) (_editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
   match comm_action with
   | Send edit_actions ->
-      let model : Model.t =
-        Uuid.Map.map (List.fold_right apply_graph_action edit_actions) model
+      let editors : Editor.t Uuid.Map.t =
+        Uuid.Map.map
+          (List.fold_right apply_graph_action edit_actions)
+          model.editors
       in
-      Some (Model.remove_known_actions model)
+      Some (Model.remove_known_actions { editors })
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =

@@ -110,8 +110,16 @@ let select ?(classes : string list = []) ?(multi : bool = true)
   Node.div
     [ Attr.classes (classes @ [ "select"; label ]) ]
     [
-      Node.h2 [] [ Node.text label ];
+      Node.h1 [] [ Node.text label ];
       Node.div
         [ Attr.id id; Attr.class_ "selectItems" ]
         (List.mapi select_item items);
     ]
+
+let break : Node.t = Node.div [ Attr.class_ "break" ] []
+
+let panel ?(classes : string list = []) (label : string) (nodes : Node.t list) :
+    Node.t =
+  Node.div
+    (base_attrs ~classes:(classes @ [ "panel" ]) ())
+    (Node.h1 [] [ Node.text label ] :: break :: nodes)

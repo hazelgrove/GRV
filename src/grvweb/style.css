@@ -30,10 +30,6 @@ body > div {
     background-color: #dfd;
 }
 
-/* .hole { */
-/*     border-bottom: 1px solid black; */
-/* } */
-
 .chars,
 .errs {
     display: inline-block;
@@ -54,12 +50,6 @@ body > div {
 .vertex {
     display: inline;
 }
-
-/* .label { */
-/*     position: absolute; */
-/*     top: 0; */
-/*     left: 50%; */
-/* } */
 
 @keyframes blink-left {
     50% {

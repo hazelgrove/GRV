@@ -145,15 +145,22 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.break;
           Gui.button "Record" inject editor
             ~disabled:(Option.is_some model.actions) ~on_click:(fun () ->
-              Some (Debug Record));
+              Some (Env Record));
           Gui.button "Report" inject editor
             ~disabled:(Option.is_none model.actions) ~on_click:(fun () ->
-              Some (Debug Report));
+              Some (Env Report));
           Gui.button "Stop" inject editor
             ~disabled:(Option.is_none model.actions) ~on_click:(fun () ->
-              Some (Debug Stop));
+              Some (Env Stop));
           Gui.button "Replay" inject editor ~on_click:(fun () ->
-              Some (Debug (Replay (Js.prompt "Replay Recording"))));
+              Some (Env (Replay (Js.prompt "Replay Recording"))));
+        ];
+      Gui.panel "Editors"
+        [
+          Gui.button "Clone" inject editor ~on_click:(fun () ->
+              Some (Env (Clone editor.id)));
+          Gui.button "Drop" inject editor ~on_click:(fun () ->
+              Some (Env (Drop editor.id)));
         ];
       Node.div
         [ Attr.class_ "selectors" ]

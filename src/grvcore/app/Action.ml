@@ -8,9 +8,16 @@ open Sexplib0.Sexp_conv
 (* TODO: Make `Send` be to a specific editor *)
 type comm = Send of Graph_action.t list [@@deriving sexp_of]
 
-type debug = Record | Report | Stop | Replay of string [@@deriving sexp_of]
+type env =
+  | Record
+  | Report
+  | Stop
+  | Replay of string
+  | Clone of Uuid.Id.t
+  | Drop of Uuid.Id.t
+[@@deriving sexp_of]
 
-type t' = Move of move | Edit of edit | Comm of comm | Debug of debug
+type t' = Move of move | Edit of edit | Comm of comm | Env of env
 [@@deriving sexp_of]
 
 type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
@@ -142,12 +149,12 @@ let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
       let model = Model.{ editors; actions } in
       Some (Model.remove_known_actions model)
 
-let apply_debug (model : Model.t) (debug_action : debug) : Model.t Option.t =
+let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
   let report actions =
     print_endline
       (Sexplib0.Sexp.to_string (Model.sexp_of_graph_action_sequence actions))
   in
-  match debug_action with
+  match env_action with
   | Record -> (
       match model.actions with
       | None ->
@@ -174,6 +181,15 @@ let apply_debug (model : Model.t) (debug_action : debug) : Model.t Option.t =
   | Replay str ->
       replay_actions model
         (Model.graph_action_sequence_of_sexp (Sexplib.Sexp.of_string str))
+  | Clone editor_id ->
+      let%map.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
+      let id = Uuid.Id.next () in
+      let editor : Editor.t = { editor with id } in
+      let editors = Uuid.Map.add id editor model.editors in
+      { model with editors }
+  | Drop editor_id ->
+      let editors = Uuid.Map.remove editor_id model.editors in
+      Some { model with editors }
 
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
@@ -182,5 +198,5 @@ let apply (model : Model.t) (action : t) (_state : State.t)
     | Move move_action -> apply_move model action.editor_id move_action
     | Edit edit_action -> apply_edit model action.editor_id edit_action
     | Comm comm_action -> apply_comm model action.editor_id comm_action
-    | Debug debug_action -> apply_debug model debug_action )
+    | Env env_action -> apply_env model env_action )
     ~default:model

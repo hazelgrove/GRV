@@ -1,7 +1,11 @@
+open Sexplib0.Sexp_conv
+
+type graph_action_sequence = (Uuid.Id.t * Graph_action.t) list [@@deriving sexp]
+
 (* TODO: add a field for global action history *)
 type t = {
   editors : Editor.t Uuid.Map.t;
-  actions : Graph_action.sequence option;
+  actions : graph_action_sequence option;
 }
 
 let empty : t =
@@ -12,7 +16,7 @@ let empty : t =
     Uuid.Map.of_seq
       (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
   in
-  { editors; actions = None }
+  { editors; actions = Some [] }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 

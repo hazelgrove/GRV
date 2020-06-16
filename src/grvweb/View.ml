@@ -157,6 +157,21 @@ let view_editor (model : Model.t) (inject : Action.t -> Vdom.Event.t)
           Gui.button "Right (→)" inject editor ~on_click:(fun () ->
               Some (Move Right));
         ];
+      div []
+        [
+          text "Debug: ";
+          Gui.button "Record" inject editor
+            ~disabled:(Option.is_some model.actions) ~on_click:(fun () ->
+              Some (Debug Record));
+          Gui.button "Report" inject editor
+            ~disabled:(Option.is_none model.actions) ~on_click:(fun () ->
+              Some (Debug Report));
+          Gui.button "Stop" inject editor
+            ~disabled:(Option.is_none model.actions) ~on_click:(fun () ->
+              Some (Debug Stop));
+          Gui.button "Replay" inject editor ~on_click:(fun () ->
+              Some (Debug (Replay (Js.prompt "Replay Recording"))));
+        ];
       div [ class_ "selector" ]
         [
           Gui.select "Actions"

@@ -93,8 +93,8 @@ let sorted_button ?(classes : string list = [])
   button label inject editor ~classes ~disabled ~on_click
 
 let select ?(classes : string list = []) ?(multi : bool = true)
-    ?(default : bool = multi) (label : string) (id : string) (items : 'a list)
-    (view_item : 'a -> Node.t) : Node.t =
+    ?(default : bool = multi) ?(label : string option) (id : string)
+    (items : 'a list) (view_item : 'a -> Node.t) : Node.t =
   let select_item (i : int) (item : 'a) : Node.t =
     Node.div
       ( base_attrs
@@ -107,19 +107,42 @@ let select ?(classes : string list = []) ?(multi : bool = true)
         ] )
       [ view_item item ]
   in
+  let classes, heading =
+    match label with
+    | None -> (classes, [])
+    | Some label -> (classes @ [ label ], [ Node.h1 [] [ Node.text label ] ])
+  in
   Node.div
-    [ Attr.classes (classes @ [ "select"; label ]) ]
-    [
-      Node.h1 [] [ Node.text label ];
-      Node.div
-        [ Attr.id id; Attr.class_ "selectItems" ]
-        (List.mapi select_item items);
-    ]
+    [ Attr.classes (classes @ [ "select" ]) ]
+    ( heading
+    @ [
+        Node.div
+          [ Attr.id id; Attr.class_ "selectItems" ]
+          (List.mapi select_item items);
+      ] )
 
 let break : Node.t = Node.div [ Attr.class_ "break" ] []
 
-let panel ?(classes : string list = []) (label : string) (nodes : Node.t list) :
-    Node.t =
+let panel ?(classes : string list = []) ?(label : string option)
+    (nodes : Node.t list) : Node.t =
+  let heading =
+    match label with
+    | Some label -> [ Node.h1 [] [ Node.text label ] ]
+    | None -> []
+  in
   Node.div
     (base_attrs ~classes:(classes @ [ "panel" ]) ())
-    (Node.h1 [] [ Node.text label ] :: break :: nodes)
+    (heading @ [ break ] @ nodes)
+
+let select_panel ?(classes : string list = []) ?(multi : bool = true)
+    ?(default : bool = multi) ?(label : string option) (id : string)
+    (items : 'a list) (view_item : 'a -> Node.t) (nodes : Node.t list) : Node.t
+    =
+  let selector =
+    match label with
+    | None -> select ~multi ~default id items view_item
+    | Some label -> select ~multi ~default ~label id items view_item
+  in
+  Node.div
+    [ Attr.classes (classes @ [ "selector" ]) ]
+    ([ selector ] @ [ break ] @ nodes)

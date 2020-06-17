@@ -99,7 +99,7 @@ input {
 
 .selectors {
     display: flex;
-    flex: 100%;
+    width: 100%;
     flex-wrap: wrap;
 }
 

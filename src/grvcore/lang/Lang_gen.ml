@@ -103,6 +103,52 @@ and exp =
           show = [ Index "left"; String "+"; Index "right" ];
         };
         (* TODO: sums and pairs *)
+        {
+          name = "nil";
+          args = [];
+          indexes = [];
+          default = None;
+          down = None;
+          show = [ String "Int" ];
+        };
+        {
+          name = "cons";
+          args = [];
+          indexes = [ ("head", exp); ("tail", exp) ];
+          default = Some "head";
+          down = Some "head";
+          show = [ Index "head"; String "::"; Index "tail" ];
+        };
+        {
+          name = "case";
+          args = [];
+          indexes =
+            [
+              ("scrut", exp);
+              ("nil_body", exp);
+              ("head_pat", pat);
+              ("tail_pat", pat);
+              ("cons_body", exp);
+            ];
+          default = Some "scrut";
+          down = Some "scrut";
+          show =
+            [
+              String "case";
+              Index "scrut";
+              String "of";
+              String "nil";
+              String "->";
+              Index "nil_body";
+              String "|";
+              Index "head_pat";
+              String "::";
+              Index "tail_pat";
+              String "->";
+              Index "cons_body";
+              String "end";
+            ];
+        };
       ] )
 
 and pat =
@@ -138,6 +184,14 @@ and typ =
           default = Some "arg";
           down = Some "arg";
           show = [ Index "arg"; String "→"; Index "result" ];
+        };
+        {
+          name = "list";
+          args = [];
+          indexes = [ ("content", typ) ];
+          default = Some "content";
+          down = Some "content";
+          show = [ String "list"; String "["; Index "content"; String "]" ];
         };
       ] )
 

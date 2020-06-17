@@ -1,15 +1,10 @@
-type error = {
-  origin : string;
-  vertex : Vertex.t;
-  index : Lang.Index.t option;
-  message : string;
-}
+type error = { origin : string; vertex : Vertex.t; message : string }
 
 type 'a t = Success of 'a | Error of error list
 
-let error (origin : string) (vertex : Vertex.t) (index : Lang.Index.t option) :
+let error (origin : string) (vertex : Vertex.t) :
     ('a, unit, string, 'b t) format4 -> 'a =
-  Printf.ksprintf (fun message -> Error [ { origin; vertex; index; message } ])
+  Printf.ksprintf (fun message -> Error [ { origin; vertex; message } ])
 
 (* TODO: let with_message ('a, unit, string, 'b t -> 'b t) format4 -> 'a =
    Printf.ksprintf (fun message x -> match x with Success x -> Success x | Error es -> List.map (fun e -> {e with message = })) *)

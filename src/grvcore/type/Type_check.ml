@@ -10,9 +10,8 @@ type type_env = Type.t Env.t
 (* TODO: get types for everywhere via a Map *)
 (* TODO: show types at cursor, see Hazel's "Cursor Info" *)
 
-let consistent (origin : string) (vertex : Vertex.t)
-    (index : Lang.Index.t option) (expected : Type.t) (actual : Type.t) :
-    unit Error.t =
+let consistent (origin : string) (vertex : Vertex.t) (expected : Type.t)
+    (actual : Type.t) : unit Error.t =
   let rec go expected actual =
     match (expected, actual) with
     | Unknown, _ -> return ()
@@ -22,8 +21,8 @@ let consistent (origin : string) (vertex : Vertex.t)
         let%bind () = go expected1 actual1 and () = go expected2 actual2 in
         return ()
     | _, _ ->
-        error origin vertex index "expected type %s; actual type %s"
-          (show expected) (show actual)
+        error origin vertex "expected type %s; actual type %s" (show expected)
+          (show actual)
   in
   go actual expected
 
@@ -101,7 +100,7 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
   match vertex.value with
   | Exp_var string -> (
       match Env.find_opt string env with
-      | None -> error __LOC__ vertex None "unbound variable: %s" string
+      | None -> error __LOC__ vertex "unbound variable: %s" string
       | Some t -> return t )
   | Exp_lam ->
       let%bind typ =
@@ -121,7 +120,7 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
         | Arrow (param_type, result_type) -> return (param_type, result_type)
         | Unknown -> return (Unknown, Unknown)
         | Num ->
-            error __LOC__ vertex None "expected a function type; actual type %s"
+            error __LOC__ vertex "expected a function type; actual type %s"
               (Type.show func)
       in
       let%bind () =
@@ -141,7 +140,7 @@ and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
   (* TODO: When would we not just call syn? *)
   (* TODO: Need unannotated lambda or left or right injection (base case) or lists (base case) or tuples (no base case) *)
   let%bind typ' = syn_exp_vertex graph env vertex in
-  consistent __LOC__ vertex None typ typ'
+  consistent __LOC__ vertex typ typ'
 
 and syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =

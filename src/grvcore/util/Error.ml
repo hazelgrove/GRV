@@ -32,3 +32,10 @@ module Let_syntax = struct
 end
 
 include Let_syntax
+
+let rec sequence (xs : 'a t list) : 'a list t =
+  match xs with
+  | [] -> return []
+  | x :: xs ->
+      let%bind x' = x and xs' = sequence xs in
+      return (x' :: xs')

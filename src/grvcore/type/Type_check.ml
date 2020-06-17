@@ -7,7 +7,10 @@ let return = Error.return
 
 type type_env = Type.t Env.t
 
-let compatible (origin : string) (vertex : Vertex.t)
+(* TODO: get types for everywhere via a Map *)
+(* TODO: show types at cursor, see Hazel's "Cursor Info" *)
+
+let consistent (origin : string) (vertex : Vertex.t)
     (index : Lang.Index.t option) (expected : Type.t) (actual : Type.t) :
     unit Error.t =
   let rec go expected actual =
@@ -24,11 +27,11 @@ let compatible (origin : string) (vertex : Vertex.t)
   in
   go actual expected
 
+let maybe_unknown (ts : t list) : t = match ts with [ t ] -> t | _ -> Unknown
+
 (* TODO: analyze against vertex instead of type? *)
 
 (* let rec consistent_cursor (graph : Grapht.t) (cursor1 : Cursor.t) (cursor2 : Cursor.t) *)
-
-(* Free var, type inconsistency, sort errors(?), conflicts *)
 
 let match_fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
   if Lang.Constructor.sort_of vertex.value = sort then
@@ -43,6 +46,7 @@ let match_fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
 (**** Type ****)
 (**************)
 
+(* TODO: change 'eval' to 'expand' (or other better name?) *)
 let rec eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t Error.t =
   match vertex.value with
   | Typ_num -> return Num
@@ -55,17 +59,16 @@ let rec eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t Error.t =
   | _ -> match_fail __LOC__ Lang.Sort.Typ vertex
 
 and eval_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t Error.t =
-  match Edge.Set.elements (Graph.cursor_children graph cursor) with
-  | [] -> return Unknown
-  | [ edge ] -> eval_typ_vertex graph (Edge.target edge)
-  | _edges ->
-      (* Recur anyway? (* Recur anyway? no *)  Could check if all synth to same type? *)
-      (* Technically indeterminate / a type conflict *)
-      return Unknown
+  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let go edge = eval_typ_vertex graph (Edge.target edge) in
+  let%bind ts = Error.sequence (List.map go edges) in
+  return (maybe_unknown ts)
 
 (*************)
 (**** Pat ****)
 (*************)
+
+(* TODO: syn_pat_vertex *)
 
 (* Note that we add all bindings if there is a conflict. Also, we are not
    checking for shadowing between conflicting bindings. *)
@@ -90,6 +93,8 @@ and ana_pat_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
 (*************)
 
 (* TODO: vertexes to stop at *)
+(* TODO: type map *)
+(* TODO: error map *)
 
 let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
     Type.t Error.t =
@@ -134,17 +139,16 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
 and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
     (typ : Type.t) : unit Error.t =
   (* TODO: When would we not just call syn? *)
+  (* TODO: Need unannotated lambda or left or right injection (base case) or lists (base case) or tuples (no base case) *)
   let%bind typ' = syn_exp_vertex graph env vertex in
-  compatible __LOC__ vertex None typ typ'
+  consistent __LOC__ vertex None typ typ'
 
 and syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =
-  match Edge.Set.elements (Graph.cursor_children graph cursor) with
-  | [] -> return Unknown
-  | [ edge ] -> syn_exp_vertex graph env (Edge.target edge)
-  | _edges ->
-      (* TODO: join type? *)
-      return Unknown
+  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let go edge = syn_exp_vertex graph env (Edge.target edge) in
+  let%bind ts = Error.sequence (List.map go edges) in
+  return (maybe_unknown ts)
 
 and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : unit Error.t =
@@ -159,19 +163,17 @@ and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
   in
   return ()
 
-let syn_root_vertex (graph : Graph.t)
-    (* TODO:? (env : type_env) *) (vertex : Vertex.t) : Type.t Error.t =
+let syn_root_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
+    Type.t Error.t =
   match vertex.value with
-  | Root_root ->
-      syn_exp_cursor graph Env.empty (Cursor.mk vertex Root_root_root)
+  | Root_root -> syn_exp_cursor graph env (Cursor.mk vertex Root_root_root)
   | _ -> match_fail __LOC__ Lang.Sort.Root vertex
 
-let syn_root_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t Error.t =
-  match Edge.Set.elements (Graph.cursor_children graph cursor) with
-  | [] -> return Unknown
-  | [ edge ] -> syn_root_vertex graph (Edge.target edge)
-  | _edges ->
-      (* TODO: join type? *)
-      return Unknown
+let syn_root_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
+    Type.t Error.t =
+  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let go edge = syn_root_vertex graph env (Edge.target edge) in
+  let%bind ts = Error.sequence (List.map go edges) in
+  return (maybe_unknown ts)
 
-(* TODO: ana_root ? *)
+(* TODO: Implement ana_root *)

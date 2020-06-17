@@ -93,5 +93,3 @@ let roots (graph : t) : roots =
     (vertexes graph);
 
   { root = Vertex.root; multiparent; deleted = !deleted }
-
-let deleted' (graph : t) : Vertex.Set.t = (roots graph).deleted

@@ -1,4 +1,4 @@
-type t = { vertex : Vertex.t; index : Lang.Index.t } [@@deriving ord, sexp_of]
+type t = { vertex : Vertex.t; index : Lang.Index.t } [@@deriving ord, sexp]
 
 let mk (vertex : Vertex.t) (index : Lang.Index.t) : t = { vertex; index }
 

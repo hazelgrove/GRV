@@ -22,7 +22,7 @@ let restore (editor : Editor.t) (vertex_id : string) : Action.t' Option.t =
     if String.equal vertex_id "" then
       let selection = Js.get_selection ("deleted" ^ Uuid.Id.show editor.id) in
       let vertexes : Vertex.t list =
-        Vertex.Set.elements (Graph.deleted' editor.graph)
+        Vertex.Set.elements (Graph.roots editor.graph).deleted
       in
       let%map.Util.Option result : (bool * Vertex.t) Option.t =
         List.find_opt fst (List.combine selection vertexes)
@@ -110,8 +110,16 @@ let select ?(classes : string list = []) ?(multi : bool = true)
   Node.div
     [ Attr.classes (classes @ [ "select"; label ]) ]
     [
-      Node.h2 [] [ Node.text label ];
+      Node.h1 [] [ Node.text label ];
       Node.div
         [ Attr.id id; Attr.class_ "selectItems" ]
         (List.mapi select_item items);
     ]
+
+let break : Node.t = Node.div [ Attr.class_ "break" ] []
+
+let panel ?(classes : string list = []) (label : string) (nodes : Node.t list) :
+    Node.t =
+  Node.div
+    (base_attrs ~classes:(classes @ [ "panel" ]) ())
+    (Node.h1 [] [ Node.text label ] :: break :: nodes)

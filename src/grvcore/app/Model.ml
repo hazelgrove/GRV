@@ -1,10 +1,22 @@
-type t = Editor.t Uuid.Map.t
+open Sexplib0.Sexp_conv
+
+type graph_action_sequence = (Uuid.Id.t * Graph_action.t) list [@@deriving sexp]
+
+(* TODO: add a field for global action history *)
+type t = {
+  editors : Editor.t Uuid.Map.t;
+  actions : graph_action_sequence option;
+}
 
 let empty : t =
   let editor1 = Editor.mk () in
   let editor2 = Editor.mk () in
   (* TODO: helper for this *)
-  Uuid.Map.of_seq (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
+  let editors =
+    Uuid.Map.of_seq
+      (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
+  in
+  { editors; actions = Some [] }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
@@ -26,10 +38,13 @@ let globally_known_actions (model : t) : Graph_action.Set.t =
   let knowns =
     List.map
       (fun (_, (e : Editor.t)) -> e.known_actions)
-      (Uuid.Map.bindings model)
+      (Uuid.Map.bindings model.editors)
   in
   List.fold_left Graph_action.Set.inter (List.hd knowns) knowns
 
 let remove_known_actions (model : t) : t =
   let known_actions = globally_known_actions model in
-  Uuid.Map.map (filter_editor_actions known_actions) model
+  let editors =
+    Uuid.Map.map (filter_editor_actions known_actions) model.editors
+  in
+  { model with editors }

@@ -143,6 +143,10 @@ input {
     color: white;
 }
 
+.Editors > .selectItems > .selected {
+    background-color: #FFD885;
+}
+
 .selectItem:not(.selected) {
     background-color: white;
 }

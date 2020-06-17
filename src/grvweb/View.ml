@@ -155,7 +155,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.button "Replay" inject editor ~on_click:(fun () ->
               Some (Env (Replay (Js.prompt "Replay Recording"))));
         ];
-      Gui.panel "Editors"
+      Gui.panel "Editor"
         [
           Gui.button "Clone" inject editor ~on_click:(fun () ->
               Some (Env (Clone editor.id)));
@@ -207,6 +207,21 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   view_vertex inject editor root_vertexes None vertex)
                 ~multi:false;
             ];
+          Node.div [ Attr.class_ "selector" ]
+            (let id = "editors" ^ Uuid.Id.show editor.id in
+             [
+               Gui.select "Editors" id
+                 (List.rev_map fst (Uuid.Map.bindings model.editors))
+                 (fun editor_id -> Node.text (Uuid.Id.show editor_id))
+                 ~multi:true;
+               Gui.break;
+               Gui.button "All" inject editor ~on_click:(fun () ->
+                   Js.fill_selection id;
+                   None);
+               Gui.button "None" inject editor ~on_click:(fun () ->
+                   Js.clear_selection id;
+                   None);
+             ]);
         ];
       Node.h1 [] [ Node.text "Cursor" ];
       chars (Format.asprintf "%a@." Cursor.pp editor.cursor);

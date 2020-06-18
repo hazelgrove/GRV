@@ -159,8 +159,9 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
         [
           Gui.button "Clone" inject editor ~on_click:(fun () ->
               Some (Env (Clone editor.id)));
-          Gui.button "Drop" inject editor ~on_click:(fun () ->
-              Some (Env (Drop editor.id)));
+          Gui.button "Drop" inject editor
+            ~on_click:(fun () -> Some (Env (Drop editor.id)))
+            ~disabled:(Uuid.Map.cardinal model.editors < 3);
         ];
       Node.div
         [ Attr.class_ "selectors" ]

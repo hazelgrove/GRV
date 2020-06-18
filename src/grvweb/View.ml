@@ -128,7 +128,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.sorted_button "Arrow (>)" Lang.Sort.Typ inject editor
             ~on_click:(fun () -> Some (Edit (Create Typ_arrow)));
         ];
-      Gui.panel ~label:"Other"
+      Gui.panel ~label:"Cursor"
         [
           Gui.button "Delete (delete)" inject editor ~on_click:(fun () ->
               Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
@@ -142,7 +142,9 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               Some (Move Left));
           Gui.button "Right (→)" inject editor ~on_click:(fun () ->
               Some (Move Right));
-          Gui.break;
+        ];
+      Gui.panel ~label:"Environment"
+        [
           Gui.button "Record" inject editor
             ~on_click:(fun () -> Some (Env Record))
             ~disabled:(Option.is_some model.actions);
@@ -154,6 +156,9 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             ~disabled:(Option.is_none model.actions);
           Gui.button "Replay" inject editor ~on_click:(fun () ->
               Some (Env (Replay (Js.prompt "Replay Recording"))));
+          Gui.button "Dump" inject editor ~on_click:(fun () -> Some (Env Dump));
+          Gui.button "Load" inject editor ~on_click:(fun () ->
+              Some (Env (Load (Js.prompt "Load a Dump"))));
         ];
       Gui.panel ~label:"Editor"
         [

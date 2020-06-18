@@ -6,7 +6,7 @@ type edit = Create of Lang.Constructor.t | Destroy | Restore of Vertex.t
 open Sexplib0.Sexp_conv
 
 (* TODO: Make `Send` be to a specific editor *)
-type comm = Send of Graph_action.t list [@@deriving sexp_of]
+type comm = Send of Graph_action.t list * Uuid.Id.t list [@@deriving sexp_of]
 
 type env =
   | Record
@@ -139,15 +139,38 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
 let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
   match comm_action with
-  | Send edit_actions ->
-      let editors : Editor.t Uuid.Map.t =
-        Uuid.Map.map
-          (List.fold_right apply_graph_action edit_actions)
-          model.editors
+  | Send (edit_actions, editor_ids) ->
+      let%map.Util.Option editor_list : Editor.t list option =
+        List.fold_left
+          (fun (editor_list : Editor.t list option) (editor_id : Uuid.Id.t) ->
+            match editor_list with
+            | None -> None
+            | Some editor_list -> (
+                match Uuid.Map.find_opt editor_id model.editors with
+                | Some editor -> Some (editor :: editor_list)
+                | None -> None ))
+          (Some []) editor_ids
       in
-      let actions = record_actions model editor_id edit_actions in
-      let model = Model.{ editors; actions } in
-      Some (Model.remove_known_actions model)
+      let model : Model.t =
+        List.fold_left
+          (fun (model : Model.t) (editor : Editor.t) ->
+            let editors : Editor.t Uuid.Map.t =
+              Uuid.Map.remove editor.id model.editors
+            in
+            let editor : Editor.t =
+              List.fold_right apply_graph_action edit_actions editor
+            in
+            let editors : Editor.t Uuid.Map.t =
+              Uuid.Map.add editor.id editor editors
+            in
+            let model : Model.t = { model with editors } in
+            let actions : Model.graph_action_sequence option =
+              record_actions model editor_id edit_actions
+            in
+            ({ model with actions } : Model.t))
+          model editor_list
+      in
+      Model.remove_known_actions model
 
 let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
   let report actions =

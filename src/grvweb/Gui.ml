@@ -3,19 +3,26 @@ module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
 module Event = Virtual_dom.Vdom.Event
 
-let send (editor : Editor.t) : Action.t' Option.t =
-  let id : string = "actions" ^ Uuid.Id.show editor.id in
-  match Js.get_selection id with
+let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
+  match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
   | [] -> None
   | selection ->
       let actions =
         List.(
-          map fst
-            (filter snd
-               (combine (Graph_action.Set.elements editor.actions) selection)))
+          map snd
+            (filter fst
+               (combine selection (Graph_action.Set.elements editor.actions))))
       in
-      Js.fill_selection id;
-      Some (Comm (Send actions))
+      let editor_ids : Uuid.Id.t list =
+        let selection = Js.get_selection ("editors" ^ Uuid.Id.show editor.id) in
+        let editors = List.rev_map snd (Uuid.Map.bindings model.editors) in
+        List.(
+          map
+            (fun (editor : Editor.t) -> editor.id)
+            (map snd (filter fst (combine selection editors))))
+      in
+      Js.fill_selection ("actions" ^ Uuid.Id.show editor.id);
+      Some (Comm (Send (actions, editor_ids)))
 
 let restore (editor : Editor.t) (vertex_id : string) : Action.t' Option.t =
   let%map.Util.Option selection : Vertex.t option =

@@ -173,7 +173,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               chars (Format.asprintf "%a" Graph_action.pp graph_action))
             [
               Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
-                  Gui.send editor);
+                  Gui.send model editor);
             ];
           Gui.select_panel ~label:"Deleted" ~multi:false
             ("deleted" ^ Uuid.Id.show editor.id)
@@ -203,10 +203,10 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             (fun editor_id -> Node.text (Uuid.Id.show editor_id))
             [
               Gui.button "All" inject editor ~on_click:(fun () ->
-                  Js.fill_selection (Uuid.Id.show editor.id);
+                  Js.fill_selection ("editors" ^ Uuid.Id.show editor.id);
                   None);
               Gui.button "None" inject editor ~on_click:(fun () ->
-                  Js.clear_selection (Uuid.Id.show editor.id);
+                  Js.clear_selection ("editors" ^ Uuid.Id.show editor.id);
                   None);
             ];
         ];

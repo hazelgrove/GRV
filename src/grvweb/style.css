@@ -99,7 +99,7 @@ input {
 
 .selectors {
     display: flex;
-    flex: 100%;
+    width: 100%;
     flex-wrap: wrap;
 }
 
@@ -141,6 +141,10 @@ input {
 
 .Deleted > .selectItems > .selected sub {
     color: white;
+}
+
+.Editors > .selectItems > .selected {
+    background-color: #FFD885;
 }
 
 .selectItem:not(.selected) {

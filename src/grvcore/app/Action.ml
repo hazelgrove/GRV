@@ -6,13 +6,15 @@ type edit = Create of Lang.Constructor.t | Destroy | Restore of Vertex.t
 open Sexplib0.Sexp_conv
 
 (* TODO: Make `Send` be to a specific editor *)
-type comm = Send of Graph_action.t list [@@deriving sexp_of]
+type comm = Send of Graph_action.t list * Uuid.Id.t list [@@deriving sexp_of]
 
 type env =
   | Record
   | Report
   | Stop
   | Replay of string
+  | Dump
+  | Load of string
   | Clone of Uuid.Id.t
   | Drop of Uuid.Id.t
 [@@deriving sexp_of]
@@ -34,6 +36,12 @@ let record_actions (model : Model.t) (editor_id : Uuid.Id.t)
   let%map.Util.Option actions = model.actions in
   let new_actions = List.map (fun x -> (editor_id, x)) graph_actions in
   new_actions @ actions
+
+let report_sexp (sexp : Sexplib0.Sexp.t) : unit =
+  print_endline (Sexplib0.Sexp.to_string sexp)
+
+let report_actions (actions : Model.graph_action_sequence) : unit =
+  report_sexp (Model.sexp_of_graph_action_sequence actions)
 
 let replay_actions (model : Model.t) (actions : Model.graph_action_sequence) :
     Model.t option =
@@ -139,21 +147,40 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
 let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
   match comm_action with
-  | Send edit_actions ->
-      let editors : Editor.t Uuid.Map.t =
-        Uuid.Map.map
-          (List.fold_right apply_graph_action edit_actions)
-          model.editors
+  | Send (edit_actions, editor_ids) ->
+      let%map.Util.Option editor_list : Editor.t list option =
+        List.fold_left
+          (fun (editor_list : Editor.t list option) (editor_id : Uuid.Id.t) ->
+            match editor_list with
+            | None -> None
+            | Some editor_list -> (
+                match Uuid.Map.find_opt editor_id model.editors with
+                | Some editor -> Some (editor :: editor_list)
+                | None -> None ))
+          (Some []) editor_ids
       in
-      let actions = record_actions model editor_id edit_actions in
-      let model = Model.{ editors; actions } in
-      Some (Model.remove_known_actions model)
+      let model : Model.t =
+        List.fold_left
+          (fun (model : Model.t) (editor : Editor.t) ->
+            let editors : Editor.t Uuid.Map.t =
+              Uuid.Map.remove editor.id model.editors
+            in
+            let editor : Editor.t =
+              List.fold_right apply_graph_action edit_actions editor
+            in
+            let editors : Editor.t Uuid.Map.t =
+              Uuid.Map.add editor.id editor editors
+            in
+            let model : Model.t = { model with editors } in
+            let actions : Model.graph_action_sequence option =
+              record_actions model editor_id edit_actions
+            in
+            ({ model with actions } : Model.t))
+          model editor_list
+      in
+      Model.remove_known_actions model
 
 let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
-  let report actions =
-    print_endline
-      (Sexplib0.Sexp.to_string (Model.sexp_of_graph_action_sequence actions))
-  in
   match env_action with
   | Record -> (
       match model.actions with
@@ -167,7 +194,7 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
       match model.actions with
       | None -> None
       | Some actions ->
-          report actions;
+          report_actions actions;
           None )
   | Stop -> (
       match model.actions with
@@ -175,12 +202,16 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
           Printf.printf "(already stopped)\n";
           None
       | Some actions ->
-          report actions;
+          report_actions actions;
           Printf.printf "Stopped!\n";
           Some { model with actions = None } )
   | Replay str ->
       replay_actions model
         (Model.graph_action_sequence_of_sexp (Sexplib.Sexp.of_string str))
+  | Dump ->
+      report_sexp (Model.sexp_of_t model);
+      None
+  | Load str -> Some (Model.t_of_sexp (Sexplib.Sexp.of_string str))
   | Clone editor_id ->
       let%map.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
       let id = Uuid.Id.next () in

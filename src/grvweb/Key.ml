@@ -1,11 +1,11 @@
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
-let ctrl (_model : Model.t) (editor : Editor.t)
+let ctrl (model : Model.t) (editor : Editor.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   match Dom_html.Keyboard_code.of_event event with
   | KeyS -> (
-      match Gui.send editor with
+      match Gui.send model editor with
       | None ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;

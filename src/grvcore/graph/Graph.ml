@@ -1,6 +1,19 @@
 (* Note: edges not in the map have not been created yet and are `\bot` *)
 type t = Edge_state.t Edge.Map.t
 
+let sexp_of_t (graph : t) : Sexplib.Sexp.t =
+  Sexp.of_map (Edge.Map.bindings graph) Edge.sexp_of_t Edge_state.sexp_of_t
+
+let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
+  Edge.Map.of_seq
+    (List.to_seq
+       (Sexplib.Std.list_of_sexp
+          (function
+            | List [ key_sexp; value_sexp ] ->
+                (Edge.t_of_sexp key_sexp, Edge_state.t_of_sexp value_sexp)
+            | _ -> failwith __LOC__)
+          sexp))
+
 let empty : t = Edge.Map.empty
 
 let edges (graph : t) : Edge.Set.t =

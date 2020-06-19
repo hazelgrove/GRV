@@ -30,10 +30,6 @@ body > div {
     background-color: #dfd;
 }
 
-/* .hole { */
-/*     border-bottom: 1px solid black; */
-/* } */
-
 .chars,
 .errs {
     display: inline-block;
@@ -54,12 +50,6 @@ body > div {
 .vertex {
     display: inline;
 }
-
-/* .label { */
-/*     position: absolute; */
-/*     top: 0; */
-/*     left: 50%; */
-/* } */
 
 @keyframes blink-left {
     50% {
@@ -109,7 +99,7 @@ input {
 
 .selectors {
     display: flex;
-    flex: 100%;
+    width: 100%;
     flex-wrap: wrap;
 }
 
@@ -151,6 +141,10 @@ input {
 
 .Deleted > .selectItems > .selected sub {
     color: white;
+}
+
+.Editors > .selectItems > .selected {
+    background-color: #FFD885;
 }
 
 .selectItem:not(.selected) {

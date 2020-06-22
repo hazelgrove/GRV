@@ -102,16 +102,15 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             (Graph_action.Set.elements editor.actions)
             (fun graph_action ->
               chars (Format.asprintf "%a" Graph_action.pp graph_action))
-            [
-              Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
-                  Gui.send model editor);
-            ];
+            [];
           Gui.select_panel ~label:"Send to Editors" ~multi:true
             ~classes:[ "Editors" ]
             ("editors" ^ Uuid.Id.show editor.id)
             (List.rev_map fst (Uuid.Map.bindings model.editors))
             (fun editor_id -> Node.text (Uuid.Id.show editor_id))
             [
+              Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
+                  Gui.send model editor);
               Gui.button "All" inject editor ~on_click:(fun () ->
                   Js.fill_selection ("editors" ^ Uuid.Id.show editor.id);
                   None);

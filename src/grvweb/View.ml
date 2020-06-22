@@ -106,6 +106,23 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
                   Gui.send model editor);
             ];
+          Gui.select_panel ~label:"Editors" ~multi:true
+            ("editors" ^ Uuid.Id.show editor.id)
+            (List.rev_map fst (Uuid.Map.bindings model.editors))
+            (fun editor_id -> Node.text (Uuid.Id.show editor_id))
+            [
+              Gui.button "All" inject editor ~on_click:(fun () ->
+                  Js.fill_selection ("editors" ^ Uuid.Id.show editor.id);
+                  None);
+              Gui.button "None" inject editor ~on_click:(fun () ->
+                  Js.clear_selection ("editors" ^ Uuid.Id.show editor.id);
+                  None);
+            ];
+          Gui.select_panel ~label:"Multiparented" ~multi:false
+            ("multiparent" ^ Uuid.Id.show editor.id)
+            (Vertex.Set.elements roots.multiparent)
+            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            [];
           Gui.select_panel ~label:"Deleted" ~multi:false
             ("deleted" ^ Uuid.Id.show editor.id)
             (Vertex.Set.elements roots.deleted)
@@ -122,23 +139,6 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                       inject editor
                       ~on_change:(fun str -> Gui.restore editor str);
                   ] );
-            ];
-          Gui.select_panel ~label:"Multiparented" ~multi:false
-            ("multiparent" ^ Uuid.Id.show editor.id)
-            (Vertex.Set.elements roots.multiparent)
-            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
-            [];
-          Gui.select_panel ~label:"Editors" ~multi:true
-            ("editors" ^ Uuid.Id.show editor.id)
-            (List.rev_map fst (Uuid.Map.bindings model.editors))
-            (fun editor_id -> Node.text (Uuid.Id.show editor_id))
-            [
-              Gui.button "All" inject editor ~on_click:(fun () ->
-                  Js.fill_selection ("editors" ^ Uuid.Id.show editor.id);
-                  None);
-              Gui.button "None" inject editor ~on_click:(fun () ->
-                  Js.clear_selection ("editors" ^ Uuid.Id.show editor.id);
-                  None);
             ];
         ];
       Gui.panel ~label:"Patterns"

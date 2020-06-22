@@ -73,6 +73,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
   in
   assert (roots.root = Cursor.root.vertex);
+  let id = Uuid.Id.show editor.id in
   Graphviz.draw editor;
   Node.div
     [
@@ -97,28 +98,28 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
         [
           Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor
             ~on_click:(fun () ->
-              match Js.get_input "pat_id" with
+              match Js.get_input ("pat_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Pat_var str))));
-          Gui.sorted_text_input "pat_id" Lang.Sort.Pat inject editor
+          Gui.sorted_text_input ("pat_id" ^ id) Lang.Sort.Pat inject editor
             ~on_change:(fun str -> Some (Edit (Create (Pat_var str))));
         ];
       Gui.panel ~label:"Expressions"
         [
           Gui.sorted_button "Var (v)" Lang.Sort.Exp inject editor
             ~on_click:(fun () ->
-              match Js.get_input "var_id" with
+              match Js.get_input ("var_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Exp_var str))));
-          Gui.sorted_text_input "var_id" Lang.Sort.Exp inject editor
+          Gui.sorted_text_input ("var_id" ^ id) Lang.Sort.Exp inject editor
             ~on_change:(fun str -> Some (Edit (Create (Exp_var str))));
           Gui.break;
           Gui.sorted_button "Num (n)" Lang.Sort.Exp inject editor
             ~on_click:(fun () ->
-              match Js.get_input "num_id" with
+              match Js.get_input ("num_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Exp_num (int_of_string str)))));
-          Gui.sorted_text_input "num_id" Lang.Sort.Exp inject editor
+          Gui.sorted_text_input ("num_id" ^ id) Lang.Sort.Exp inject editor
             ~on_change:(fun str ->
               Some (Edit (Create (Exp_num (int_of_string str)))));
           Gui.break;

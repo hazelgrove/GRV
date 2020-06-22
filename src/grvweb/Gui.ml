@@ -117,6 +117,8 @@ let select ?(classes : string list = []) ?(multi : bool = true)
   let classes, heading =
     match label with
     | None -> (classes, [])
+    | Some label when String.contains label ' ' ->
+        (classes, [ Node.h1 [] [ Node.text label ] ])
     | Some label -> (classes @ [ label ], [ Node.h1 [] [ Node.text label ] ])
   in
   Node.div
@@ -148,6 +150,8 @@ let select_panel ?(classes : string list = []) ?(multi : bool = true)
   let selector =
     match label with
     | None -> select ~multi ~default id items view_item
+    | Some label when String.contains label ' ' ->
+        select ~multi ~default ~label ~classes id items view_item
     | Some label -> select ~multi ~default ~label id items view_item
   in
   Node.div

@@ -85,6 +85,14 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
       (* main code *)
       view_cursor inject editor root_vertexes false Cursor.root;
       Gui.break;
+      Gui.panel ~label:"Cursor"
+        [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
+      Gui.panel ~label:"Graph"
+        [
+          Node.div
+            [ Attr.id ("graph" ^ Uuid.Id.show editor.id) ]
+            [ Node.span [] [] ];
+        ];
       Gui.panel ~label:"Patterns"
         [
           Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor
@@ -214,14 +222,6 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   Js.clear_selection ("editors" ^ Uuid.Id.show editor.id);
                   None);
             ];
-        ];
-      Gui.panel ~label:"Cursor"
-        [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
-      Gui.panel ~label:"Graph"
-        [
-          Node.div
-            [ Attr.id ("graph" ^ Uuid.Id.show editor.id) ]
-            [ Node.span [] [] ];
         ];
     ]
 

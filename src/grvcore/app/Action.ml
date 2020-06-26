@@ -38,7 +38,7 @@ let record_actions (model : Model.t) (editor_id : Uuid.Id.t)
   new_actions @ actions
 
 let report_sexp (sexp : Sexplib0.Sexp.t) : unit =
-  print_endline (Sexplib0.Sexp.to_string sexp)
+  print_endline (Sexplib0.Sexp.to_string_hum sexp)
 
 let report_actions (actions : Model.graph_action_sequence) : unit =
   report_sexp (Model.sexp_of_graph_action_sequence actions)

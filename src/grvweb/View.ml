@@ -73,44 +73,90 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
   in
   assert (roots.root = Cursor.root.vertex);
+  let id = Uuid.Id.show editor.id in
   Graphviz.draw editor;
   Node.div
     [
-      Attr.id ("editor" ^ Uuid.Id.show editor.id);
+      Attr.id ("editor" ^ id);
       Attr.class_ "editor";
-      Attr.create "tabindex" (Uuid.Id.show editor.id);
+      Attr.create "tabindex" id;
       Attr.on_keydown (Key.dispatch ~inject model editor);
     ]
     [
       (* main code *)
       view_cursor inject editor root_vertexes false Cursor.root;
       Gui.break;
+      Gui.panel ~label:"Cursor"
+        [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
+      Gui.panel ~label:"Graph"
+        [ Node.div [ Attr.id ("graph" ^ id) ] [ Node.span [] [] ] ];
+      Node.div
+        [ Attr.class_ "selectors" ]
+        [
+          Gui.select_panel ~label:"Actions" ~multi:true ("actions" ^ id)
+            (Graph_action.Set.elements editor.actions)
+            (fun graph_action ->
+              chars (Format.asprintf "%a" Graph_action.pp graph_action))
+            [];
+          Gui.select_panel ~label:"Send to Editors" ~multi:true
+            ~classes:[ "Editors" ] ("editors" ^ id)
+            (List.rev_map fst (Uuid.Map.bindings model.editors))
+            (fun editor_id -> Node.text (Uuid.Id.show editor_id))
+            [
+              Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
+                  Gui.send model editor);
+              Gui.button "All" inject editor ~on_click:(fun () ->
+                  Js.fill_selection ("editors" ^ id);
+                  None);
+              Gui.button "None" inject editor ~on_click:(fun () ->
+                  Js.clear_selection ("editors" ^ id);
+                  None);
+            ];
+          Gui.select_panel ~label:"Multiparented" ~multi:false
+            ("multiparent" ^ id)
+            (Vertex.Set.elements roots.multiparent)
+            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            [];
+          Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
+            (Vertex.Set.elements roots.deleted)
+            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            [
+              ( Js.set_input ("restore" ^ id) "";
+                Gui.panel
+                  [
+                    Gui.button "Restore" inject editor ~on_click:(fun () ->
+                        Gui.restore editor (Js.get_input ("restore" ^ id)));
+                    Gui.text_input ("restore" ^ id) inject editor
+                      ~on_change:(fun str -> Gui.restore editor str);
+                  ] );
+            ];
+        ];
       Gui.panel ~label:"Patterns"
         [
           Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor
             ~on_click:(fun () ->
-              match Js.get_input "pat_id" with
+              match Js.get_input ("pat_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Pat_var str))));
-          Gui.sorted_text_input "pat_id" Lang.Sort.Pat inject editor
+          Gui.sorted_text_input ("pat_id" ^ id) Lang.Sort.Pat inject editor
             ~on_change:(fun str -> Some (Edit (Create (Pat_var str))));
         ];
       Gui.panel ~label:"Expressions"
         [
           Gui.sorted_button "Var (v)" Lang.Sort.Exp inject editor
             ~on_click:(fun () ->
-              match Js.get_input "var_id" with
+              match Js.get_input ("var_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Exp_var str))));
-          Gui.sorted_text_input "var_id" Lang.Sort.Exp inject editor
+          Gui.sorted_text_input ("var_id" ^ id) Lang.Sort.Exp inject editor
             ~on_change:(fun str -> Some (Edit (Create (Exp_var str))));
           Gui.break;
           Gui.sorted_button "Num (n)" Lang.Sort.Exp inject editor
             ~on_click:(fun () ->
-              match Js.get_input "num_id" with
+              match Js.get_input ("num_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Exp_num (int_of_string str)))));
-          Gui.sorted_text_input "num_id" Lang.Sort.Exp inject editor
+          Gui.sorted_text_input ("num_id" ^ id) Lang.Sort.Exp inject editor
             ~on_change:(fun str ->
               Some (Edit (Create (Exp_num (int_of_string str)))));
           Gui.break;
@@ -131,7 +177,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
       Gui.panel ~label:"Cursor"
         [
           Gui.button "Delete (delete)" inject editor ~on_click:(fun () ->
-              Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
+              Js.clear_selection ("deleted" ^ id);
               Some (Edit Destroy));
           Gui.break;
           Gui.button "Up (↑)" inject editor ~on_click:(fun () ->
@@ -166,62 +212,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               Some (Env (Clone editor.id)));
           Gui.button "Drop" inject editor
             ~on_click:(fun () -> Some (Env (Drop editor.id)))
-            ~disabled:(Uuid.Map.cardinal model.editors < 3);
-        ];
-      Node.div
-        [ Attr.class_ "selectors" ]
-        [
-          Gui.select_panel ~label:"Actions" ~multi:true
-            ("actions" ^ Uuid.Id.show editor.id)
-            (Graph_action.Set.elements editor.actions)
-            (fun graph_action ->
-              chars (Format.asprintf "%a" Graph_action.pp graph_action))
-            [
-              Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
-                  Gui.send model editor);
-            ];
-          Gui.select_panel ~label:"Deleted" ~multi:false
-            ("deleted" ^ Uuid.Id.show editor.id)
-            (Vertex.Set.elements roots.deleted)
-            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
-            [
-              ( Js.set_input ("restore" ^ Uuid.Id.show editor.id) "";
-                Gui.panel
-                  [
-                    Gui.button "Restore" inject editor ~on_click:(fun () ->
-                        Gui.restore editor
-                          (Js.get_input ("restore" ^ Uuid.Id.show editor.id)));
-                    Gui.text_input
-                      ("restore" ^ Uuid.Id.show editor.id)
-                      inject editor
-                      ~on_change:(fun str -> Gui.restore editor str);
-                  ] );
-            ];
-          Gui.select_panel ~label:"Multiparented" ~multi:false
-            ("multiparent" ^ Uuid.Id.show editor.id)
-            (Vertex.Set.elements roots.multiparent)
-            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
-            [];
-          Gui.select_panel ~label:"Editors" ~multi:true
-            ("editors" ^ Uuid.Id.show editor.id)
-            (List.rev_map fst (Uuid.Map.bindings model.editors))
-            (fun editor_id -> Node.text (Uuid.Id.show editor_id))
-            [
-              Gui.button "All" inject editor ~on_click:(fun () ->
-                  Js.fill_selection ("editors" ^ Uuid.Id.show editor.id);
-                  None);
-              Gui.button "None" inject editor ~on_click:(fun () ->
-                  Js.clear_selection ("editors" ^ Uuid.Id.show editor.id);
-                  None);
-            ];
-        ];
-      Gui.panel ~label:"Cursor"
-        [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
-      Gui.panel ~label:"Graph"
-        [
-          Node.div
-            [ Attr.id ("graph" ^ Uuid.Id.show editor.id) ]
-            [ Node.span [] [] ];
+            ~disabled:(Uuid.Map.cardinal model.editors < 2);
         ];
     ]
 

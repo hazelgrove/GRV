@@ -95,7 +95,8 @@
 \def\Send{\text{Send}}
 \def\Up{\text{Up}}
 
-\DeclareMathOperator{\children}{\text{children}}
+\DeclareMathOperator{\cursorChildren}{\text{cursorChildren}}
+\DeclareMathOperator{\vertexChildren}{\text{vertexChildren}}
 \DeclareMathOperator{\deleted}{\text{deleted}}
 \DeclareMathOperator{\dom}{\text{dom}}
 \DeclareMathOperator{\edges}{\text{edges}}
@@ -107,6 +108,7 @@
 \DeclareMathOperator{\seen}{\text{seen}}
 \DeclareMathOperator{\unseen}{\text{unseen}}
 \DeclareMathOperator{\vertexes}{\text{vertexes}}
+\DeclareMathOperator{\vertex}{\text{vertex}}
 
 \def\None{\varnothing}
 \DeclareMathOperator{\publish}{\text{publish}}
@@ -195,39 +197,60 @@
   $\E$ & Edges   & $\K$ & Constructors & $\V$ & Vertexes \\
 \end{tabular}
 
-A \emph{uuid} $u \in \U$ is a unique identifier.
+A \emph{UUID} $u \in \U$ is a unique identifier.
+
+% ------------------------------------------------------------------------------
+
+\subsection{The Target Language}
+\label{sec:concepts:the-target-language}
+
+\paragraph{Constructor} ~
 
 A \emph{constructor} $k \in \K$ represents a node in the target language's
 abstract syntax tree.
 
-An \emph{index} $i \in \I$ names a position, relative to some parent
+Let $k_{root}$ be the root node of an AST.
+
+\paragraph{Index} ~
+
+An \emph{index} $i \in \I$ identifies a position, relative to some parent
 constructor, of a potential child node in the target language's AST.
+
+Let $i_{root}$ be the hyper-position of all rooted constructors.
 
 % ------------------------------------------------------------------------------
 
 \subsection{The Graph}
-\label{sec:the-graph}
+\label{sec:concepts:the-graph}
 
 \paragraph{Vertex} ~
 
 $\V = \K \times \U$
 
-A \emph{vertex} $v = (k, u) \in \V$ is an instance of constructor $k$ with
-uuid $u$. Let $v_{root}$ be the root vertex of all graphs.
+A \emph{vertex} $v = (k, u) \in \V$ is an instance of constructor $k$ that can
+be identified by UUID $u$.
+
+Let $v_{root} = (k_{root}, u_{root})$ be the root vertex of a graph.
+
+The \emph{rooted vertexes} of a graph are the immediate children of its root
+vertex.
 
 \paragraph{Cursor} ~
 
 $\C = \V \times \I$
 
-A \emph{cursor} is a reference to the (possibly empty) set of all vertexes
-with parent vertex $v$ and child index $i$.
+A \emph{cursor} $c = (v,i) \in \C$ is a reference to the (possibly empty) set
+of all vertexes with parent vertex $v$ and child index $i$.
+
+Let $c_{root} = (v_{root}, i_{root})$ be the \emph{root cursor}, a reference
+to all of the rooted vertexes, of a graph.
 
 \paragraph{Edge} ~
 
 $\E = \C \times \V \times \U$
 
-An \emph{edge} $\e = (c, v, u) \in \E$ connects a cursor $c$ to a specific
-vertex $v$.
+An \emph{edge} $\e = (c, v, u) \in \E$ adds vertex $v$ to the set of vertexes
+referenced by cursor $c$.
 
 \paragraph{Edge State} ~
 
@@ -238,38 +261,28 @@ and, if so, whether it has been destroyed.
 
 \paragraph{Graph Action} ~
 
-$\Abf = \E \times \S \times \U$
+$\A = \E \times \S \times \U$
 
-A \emph{graph action} $A = (\e,s,u) \in \Abf$ is an instance of a binding from
-edge $\e$ to edge state $s$. Denote by $[\e :-> s]$ a fresh binding from edge
-$\e$ to edge state $s$.
+A \emph{graph action} $A = (\e,s,u) \in \A$ is an instance of a binding from
+edge $\e$ to edge state $s$ that can be identified by UUID $u$.
+
+Denote by $[\e :-> s]_{u}$ a binding from edge $\e$ to edge state $s$
+(identified by UUID $u$).
 
 \paragraph{Graph} ~
 
-$\G = \Abf^{*}$
+$\G = \A^{*}$
 
-A \emph{graph} $G : \E -> \S = A^{*} \in \G$ is a function from edges to edge
-states, modeled as a set of graph actions $A^{*}$. Denote by $G(\e) = s$ the
-state $s$ of edge $\e$ in graph $G$, and by $G A$ the graph $G$ extended with
-graph action $A$.
+A \emph{graph} $G = [\e :-> s]_{u}^{*} \in \G$ is a function from edges to
+edge states.
+
+Denote by $G(\e) = s$ the state $s$ of edge $\e$ in graph $G$, and by $G A$
+the extension of graph $G$ by graph action $A$.
 
 % ------------------------------------------------------------------------------
 
 \subsection{The Editor}
-\label{sec:the-editor}
-
-\paragraph{Editor} ~
-
-$\Ebf = \G \times \C \times \A^{*} \times \Abf^{*} \times \U$
-
-An \emph{editor} $E = (G,c,a^{*},A^{*},u) \in \Ebf$ is an instance of graph
-$G$ with cursor $c$, action queue $a^{*}$, and known graph actions $A^{*}$.
-
-\paragraph{Action} ~
-
-$\A = \A^{move} \cup \A^{edit} \cup \A^{comm}$
-
-An \emph{action} $a \in \A$ describes a change to one or more editors.
+\label{sec:concepts:the-editor}
 
 \paragraph{Move Action} ~
 
@@ -294,15 +307,34 @@ An \emph{edit action} $a \in \A^{edit}$ adds or removes an edge at the cursor.
 
 \paragraph{Communication Action} ~
 
-$\A^{comm} = \{ \Send \} \times (\A^{edit})^{*}$
+$\A^{comm} = \{ \Send \} \times \Abf^{*} \times \U^{*}$
 
-A \emph{communication action} $a \in \A^{comm}$ copies edit actions from one
-editor to the others.
+A \emph{communication action} $a = (\Send, A^{*}, u^{*}) \in \A^{comm}$
+applies the graph action sequence $A^{*}$ to the editors identified by UUIDs
+$u^{*}$.
+
+\paragraph{Action} ~
+
+$\A = \A^{move} \cup \A^{edit} \cup \A^{comm}$
+
+An \emph{action} $a \in \A$ describes a change to one or more editors.
+
+\paragraph{Editor} ~
+
+$\Ebf = \G \times \C \times \Abf^{*} \times \Abf^{*} \times \U$
+
+An \emph{editor} $E = (G,c,A_{Q}^{*},A_{H}^{*},u) \in \Ebf$ is an instance of
+graph $G$ with cursor $c$, queued graph actions $A_{Q}^{*}$, and known graph
+action history $A_{H}^{*}$, that can be identified by UUID $u$.
+
+% ------------------------------------------------------------------------------
 
 \subsection{The Environment}
-\label{sec:the-environment}
+\label{sec:concepts:the-environment}
 
-An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
+An \emph{environment} $(E^{*}, A^{*}) \in \Ebf^{*} \times \Abf^{*}$ is a set
+of communicating editors $E^{*}$ that share a global graph action history
+$A^{*}$.
 
 % ==============================================================================
 
@@ -319,6 +351,7 @@ An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
     & \OR & e~e                & application \\
     & \OR & e+e                & addition    \\
     & \OR & n                  & number      \\
+    & \OR & \_                 & empty hole  \\
     \\
     p
     & ::= & x & variable pattern \\
@@ -339,20 +372,23 @@ An \emph{environment} $E^{*} \in \Ebf^{*}$ is a set of communicating editors.
 \begin{alignRL}
   \edges(G) &= \dom(G) \\
   \liveEdges(G) &= \{ \e \in \edges(G) | G(\e)=+ \} \\
-  \children(G,c) &= \{ (c',v,u) \in \liveEdges(G) | c'=c \} \\
+  \vertexChildren(G,v) &= \{ ((v',i),v'',u) \in \liveEdges(G) | v'=v \} \\
+  \cursorChildren(G,c) &= \{ (c',v,u) \in \liveEdges(G) | c'=c \} \\
   \parents(G,v) &= \{ (c,v',u) \in \liveEdges(G) | v'=v \} \\
 \end{alignRL}
 
 \paragraph{Vertexes} ~
 
 \begin{alignRL}
-  \parentVertexes(G,v) &=  \{ v \in \V | \exists (c,v,u) \in \parents(G,v) \} \\
-  \vertexes(G) &= \{ v \in \V | \exists (c,v,u) \in \edges(G) \} \cup \{ v_{root} \} \\
+  % \parentVertexes(G,v) &=  \{ v \in \V | \exists (c,v,u) \in \parents(G,v) \} \\
+  \vertexes(G) &= \{ v \in \V | \exists (c,v,u) \in \edges(G) \} \\
   \orphans(G) &= \{ v \in \vertexes(G) | \parentVertexes(G,v) = \None \} \\
   \seen(G) &= \{ v \in \vertexes(G) | \parentVertexes(G,v) \subseteq \orphans(G) \cup \seen(G) \} \\
   \unseen(G) &= \vertexes(G) \setminus \orphans(G) \setminus \seen(G) \\
   \deleted(G) &= (\orphans(G) \setminus \{ v_{root} \}) \cup \unseen(G)
 \end{alignRL}
+
+$\vertex(G,u) = v \in \vertexes(G) | v = (k,u)$
 
 \paragraph{Graph Actions} ~
 
@@ -363,6 +399,8 @@ $\known(E_1 \cdots E_n)
 
 \section{Operational Semantics}
 \label{sec:operational-semantics}
+
+% ------------------------------------------------------------------------------
 
 \subsection{Movement}
 \label{sec:movement}
@@ -389,7 +427,7 @@ $\boxed{E -->a E}$
   }
 
   \Inferrule{
-    \children(c) = \{(c',(k,u_k),u')\} \\
+    \cursorChildren(c) = \{(c',(k,u_k),u')\} \\
     \downIndex(k) = i
   }{
     G,c,a^{*},A^{*},u \xrightarrow{\Down} G,((k,u_k),i),a^{*},A^{*},u
@@ -419,7 +457,7 @@ $\boxed{E -->a E}$
     c' = ((k,u_k),i') \\
     u, u_k \in \U \text{ fresh} \\
     \\\\
-    \children(G,c) = \{(c_j,v_j,u_j')\}_{j=1}^n \\
+    \cursorChildren(G,c) = \{(c_j,v_j,u_j')\}_{j=1}^n \\
     A'^{*} =
     [(c  ,(k,u_k),u  ) :-> +]
     [(c' ,v_j    ,u_j') :-> +]_{j=1}^n
@@ -429,7 +467,7 @@ $\boxed{E -->a E}$
   }
 
   \Inferrule{
-    \children(G,c) = \{\e_j\}_{j=1}^n \\
+    \cursorChildren(G,c) = \{\e_j\}_{j=1}^n \\
     A'^{*} = [\e_j :-> -]_{j=1}^n
   }{
     G,c,a^{*},A^{*},u \xrightarrow{\Destroy} G A'^{*},c,a^{*},A^{*}A'^{*},u

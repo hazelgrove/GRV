@@ -40,22 +40,23 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
 
 let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
     Action.t' Option.t =
+  let id = Uuid.Id.show editor.id in
   match Dom_html.Keyboard_code.of_event event with
   | KeyN -> (
       Js_of_ocaml.Dom.preventDefault event;
       Js_of_ocaml.Dom_html.stopPropagation event;
-      match Js.focus_input "num_id" with
+      match Js.focus_input ("num_id" ^ id) with
       | "" -> None
       | str -> Some (Action.Edit (Create (Exp_num (int_of_string str)))) )
   | KeyP -> (
-      match Js.focus_input "pat_id" with
+      match Js.focus_input ("pat_id" ^ id) with
       | "" ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;
           None
       | str -> Some (Edit (Create (Pat_var str))) )
   | KeyV -> (
-      match Js.focus_input "var_id" with
+      match Js.focus_input ("var_id" ^ id) with
       | "" ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;
@@ -64,7 +65,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | Space -> Some (Edit (Create Exp_app))
   | Backslash -> Some (Edit (Create Exp_lam))
   | Delete ->
-      Js.clear_selection ("deleted" ^ Uuid.Id.show editor.id);
+      Js.clear_selection ("deleted" ^ id);
       Some (Edit Destroy)
   | ArrowUp -> Some (Move Up)
   | ArrowDown -> Some (Move Down)

@@ -54,7 +54,9 @@
 \mathlig{|-}{\vdash}
 \mathlig{:->}{\mapsto}
 \mathlig{-->a}{\overset{a}{\longrightarrow}}
-\mathlig{|}{\,|\,}
+\mathlig{||}{|}
+\mathlig{|}{:}
+\mathlig{~:~}{:}
 \mathlig{:}{\!:\!}
 
 \def\_{\texttt{\textunderscore}}
@@ -95,6 +97,7 @@
 \def\Send{\text{Send}}
 \def\Up{\text{Up}}
 
+\DeclareMathOperator{\childVertexes}{\text{childVertexes}}
 \DeclareMathOperator{\cursorChildren}{\text{cursorChildren}}
 \DeclareMathOperator{\vertexChildren}{\text{vertexChildren}}
 \DeclareMathOperator{\deleted}{\text{deleted}}
@@ -102,9 +105,12 @@
 \DeclareMathOperator{\edges}{\text{edges}}
 \DeclareMathOperator{\known}{\text{known}}
 \DeclareMathOperator{\liveEdges}{\text{liveEdges}}
+\DeclareMathOperator{\liveVertexes}{\text{liveVertexes}}
+\DeclareMathOperator{\multiparents}{\text{multiparents}}
 \DeclareMathOperator{\orphans}{\text{orphans}}
 \DeclareMathOperator{\parents}{\text{parents}}
 \DeclareMathOperator{\parentVertexes}{\text{parentVertexes}}
+\DeclareMathOperator{\reachable}{\text{reachable}}
 \DeclareMathOperator{\seen}{\text{seen}}
 \DeclareMathOperator{\unseen}{\text{unseen}}
 \DeclareMathOperator{\vertexes}{\text{vertexes}}
@@ -370,30 +376,31 @@ $A^{*}$.
 \paragraph{Edges} ~
 
 \begin{alignRL}
-  \edges(G) &= \dom(G) \\
-  \liveEdges(G) &= \{ \e \in \edges(G) | G(\e)=+ \} \\
+             \edges(G) &= \dom(G) \\
+         \liveEdges(G) &= \{ \e \in \edges(G) | G(\e)=+ \}              \\
   \vertexChildren(G,v) &= \{ ((v',i),v'',u) \in \liveEdges(G) | v'=v \} \\
-  \cursorChildren(G,c) &= \{ (c',v,u) \in \liveEdges(G) | c'=c \} \\
-  \parents(G,v) &= \{ (c,v',u) \in \liveEdges(G) | v'=v \} \\
+  \cursorChildren(G,c) &= \{ (c',v,u) \in \liveEdges(G) | c'=c \}       \\
+         \parents(G,v) &= \{ (c,v',u) \in \liveEdges(G) | v'=v \}
 \end{alignRL}
 
 \paragraph{Vertexes} ~
 
 \begin{alignRL}
-  % \parentVertexes(G,v) &=  \{ v \in \V | \exists (c,v,u) \in \parents(G,v) \} \\
-  \vertexes(G) &= \{ v \in \V | \exists (c,v,u) \in \edges(G) \} \\
-  \orphans(G) &= \{ v \in \vertexes(G) | \parentVertexes(G,v) = \None \} \\
-  \seen(G) &= \{ v \in \vertexes(G) | \parentVertexes(G,v) \subseteq \orphans(G) \cup \seen(G) \} \\
-  \unseen(G) &= \vertexes(G) \setminus \orphans(G) \setminus \seen(G) \\
-  \deleted(G) &= (\orphans(G) \setminus \{ v_{root} \}) \cup \unseen(G)
+        \vertexes(G) &= \{ v \in \V | \exists (c,v,u) \in \edges(G) \}               \\
+    \liveVertexes(G) &= \{ v \in \V | \exists (c,v,u) \in \liveEdges(G) \}           \\
+ \childVertexes(G,v) &= \{ v' \in \V | \exists (c,v',u) \in \vertexChildren(G,v) \}  \\
+         \orphans(G) &= \{ v \in \liveVertexes(G) | || \parents(G,v) || = 0 \}       \\
+    \multiparents(G) &= \{ v \in \liveVertexes(G) | || \parents(G,v) || > 1 \}       \\
+       \reachable(G) &= \orphans(G) \cup \multiparents(G) \cup \childVertexes(G,v \in \reachable(G)) \\
+    \deleted(G) &= (\orphans(G) \setminus \{ v_{root} \})
+                   \cup (\vertexes(G) \setminus  \\
+        \vertex(G,u) &= v \in \vertexes(G) \iff (\exists k \in \K)(v = (k,u))
 \end{alignRL}
-
-$\vertex(G,u) = v \in \vertexes(G) | v = (k,u)$
 
 \paragraph{Graph Actions} ~
 
-$\known(E_1 \cdots E_n)
-= A_1^{*} \cdots A_n^{*} | E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j),j=1,\ldots,n$
+$\known(E_1 \cdots E_n) = A_{H1}^{*} \cdots A_{Hn}^{*}
+\iff (\forall j=1,\ldots,n)(E_j = (G_j,c_j,A_{Qj}^{*},A_{Hj}^{*},u_j))$
 
 % ==============================================================================
 

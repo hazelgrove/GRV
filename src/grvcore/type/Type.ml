@@ -8,4 +8,4 @@
 (* Could factor working parts of types in a hole *)
 (* Could treat use of Hole as union types *)
 
-type t = Unknown | Num | Arrow of t * t [@@deriving show]
+type t = Unknown | Num | Arrow of t * t | List of t [@@deriving show]

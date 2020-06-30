@@ -117,9 +117,9 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
       let%bind func = syn_exp_cursor graph env (Cursor.mk vertex Exp_app_fun) in
       let%bind param_type, result_type =
         match func with
-        | Arrow (param_type, result_type) -> return (param_type, result_type)
         | Unknown -> return (Unknown, Unknown)
-        | Num ->
+        | Arrow (param_type, result_type) -> return (param_type, result_type)
+        | _ ->
             error __LOC__ vertex "expected a function type; actual type %s"
               (Type.show func)
       in
@@ -137,10 +137,25 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
 
 and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
     (typ : Type.t) : unit Error.t =
-  (* TODO: When would we not just call syn? *)
-  (* TODO: Need unannotated lambda or left or right injection (base case) or lists (base case) or tuples (no base case) *)
-  let%bind typ' = syn_exp_vertex graph env vertex in
-  consistent __LOC__ vertex typ typ'
+  match vertex.value with
+  | Exp_cons ->
+      let%bind content =
+        match typ with
+        | Unknown -> return Unknown
+        | List t -> return t
+        | _ ->
+            error __LOC__ vertex "expected a list type; actual type %s"
+              (Type.show typ)
+      in
+      let%bind () =
+        ana_exp_cursor graph env (Cursor.mk vertex Exp_cons_head) content
+      in
+      return ()
+  | _ ->
+      (* TODO: When would we not just call syn? *)
+      (* TODO: Need unannotated lambda or left or right injection (base case) or lists (base case) or tuples (no base case) *)
+      let%bind typ' = syn_exp_vertex graph env vertex in
+      consistent __LOC__ vertex typ typ'
 
 and syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =

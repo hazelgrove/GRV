@@ -129,6 +129,7 @@ and exp =
               ("head_pat", pat);
               ("tail_pat", pat);
               ("cons_body", exp);
+              ("type", typ);
             ];
           default = Some "scrut";
           down = Some "scrut";
@@ -147,6 +148,8 @@ and exp =
               String "->";
               Index "cons_body";
               String "end";
+              String ":";
+              Index "type";
             ];
         };
       ] )

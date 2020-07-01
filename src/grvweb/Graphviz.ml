@@ -71,6 +71,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   {|digraph G {
    node [shape=Mrecord];
    edge [arrowhead=vee];
+   rankdir = LR;
    {rank=min; n0 [shape=point]};
    |}
   ^ String.concat ";\n" (nodes @ hole @ edges @ hole_edge)

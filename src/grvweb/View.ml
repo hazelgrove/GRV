@@ -89,7 +89,17 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
       Gui.panel ~label:"Cursor"
         [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
       Gui.panel ~label:"Graph"
-        [ Node.div [ Attr.id ("graph" ^ id) ] [ Node.span [] [] ] ];
+        [
+          Node.div [ Attr.id ("graph" ^ id) ] [ Node.span [] [] ];
+          Gui.break;
+          Node.div []
+            [
+              Gui.button "Show Source" inject editor ~on_click:(fun () ->
+                  Printf.printf "%s\n"
+                    (Graphviz.draw_graph editor.graph editor.cursor);
+                  None);
+            ];
+        ];
       Node.div
         [ Attr.class_ "selectors" ]
         [

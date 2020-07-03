@@ -290,8 +290,7 @@ let () =
                       f "\" ^ %s arg%d ^ \"" graphviz_string_of i)
                     c.args))
       in
-      f "\n    | %s_%s%s -> \"%s_%s%s\"" s c.name (bindings c.args) s c.name
-        args
+      f "\n    | %s_%s%s -> \"%s%s\"" s c.name (bindings c.args) c.name args
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)

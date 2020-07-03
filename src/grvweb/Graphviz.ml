@@ -41,6 +41,10 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
         let target : Vertex.t = Edge.target edge in
         let source_id = Uuid.Id.show source.id in
         let target_id = Uuid.Id.show target.id in
+        let edge_id = Uuid.Id.show edge.id in
+        let index =
+          Format.asprintf "%a" Lang.Index.pp edge.value.source.index
+        in
         let color =
           let siblings =
             Edge.Set.filter
@@ -50,8 +54,10 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
           if Edge.Set.cardinal siblings < 2 then "black" else "red"
         in
         let field = Lang.Index.short_name (Edge.source edge).index in
-        Printf.sprintf "n%s:%s -> n%s [color=%s]" source_id field target_id
-          color
+        Printf.sprintf
+          {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s"]|}
+          source_id field target_id color edge_id edge_id source_id index
+          target_id edge_id source_id index target_id
         :: strs)
       live_edges []
   in
@@ -69,8 +75,8 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
     | false -> ([], [])
   in
   {|digraph G {
-   node [shape=Mrecord];
-   edge [arrowhead=vee];
+   node [shape=Mrecord,fontsize=11,ranksep=0];
+   edge [arrowhead=vee,fontsize=11,weight=2];
    rankdir = LR;
    {rank=min; n0 [shape=point]};
    |}

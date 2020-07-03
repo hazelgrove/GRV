@@ -47,6 +47,10 @@ body > div {
     color: #ccc;
 }
 
+.vertex > sub::after {
+    content: ":";
+}
+
 .vertex {
     display: inline;
 }

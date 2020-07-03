@@ -109,7 +109,7 @@ let sorted_button ?(classes : string list = [])
 
 let select ?(classes : string list = []) ?(multi : bool = true)
     ?(default : bool = multi) ?(label : string option) (id : string)
-    (items : 'a list) (view_item : 'a -> Node.t) : Node.t =
+    (items : 'a list) (view_item : 'a -> Node.t list) : Node.t =
   let select_item (i : int) (item : 'a) : Node.t =
     Node.div
       ( base_attrs
@@ -120,7 +120,7 @@ let select ?(classes : string list = []) ?(multi : bool = true)
               if multi then Js.toggle_item id i else Js.select_item id i;
               Event.Ignore);
         ] )
-      [ view_item item ]
+      (view_item item)
   in
   let classes, heading =
     match label with
@@ -153,8 +153,8 @@ let panel ?(classes : string list = []) ?(label : string option)
 
 let select_panel ?(classes : string list = []) ?(multi : bool = true)
     ?(default : bool = multi) ?(label : string option) (id : string)
-    (items : 'a list) (view_item : 'a -> Node.t) (nodes : Node.t list) : Node.t
-    =
+    (items : 'a list) (view_item : 'a -> Node.t list) (nodes : Node.t list) :
+    Node.t =
   let selector =
     match label with
     | None -> select ~multi ~default id items view_item

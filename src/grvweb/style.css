@@ -158,3 +158,20 @@ input {
 .selectItem:not(.selected) {
     background-color: white;
 }
+
+.Multiparented > .selectItems > .selectItem > .vertex {
+    display: block;
+    width: 100%;
+}
+
+.Multiparented > .selectItems > .selectItem > .vertex:first-child {
+    background-color: #FF78BB;
+}
+
+.Multiparented > .selectItems > .selectItem > .vertex:not(:first-child)::before {
+    color: gray;
+}
+
+.Multiparented > .selectItems > .selectItem > .vertex:not(:first-child)::before {
+    content: "parent: ";
+}

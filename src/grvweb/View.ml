@@ -108,12 +108,12 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.select_panel ~label:"Actions" ~multi:true ("actions" ^ id)
             (Graph_action.Set.elements editor.actions)
             (fun graph_action ->
-              chars (Format.asprintf "%a" Graph_action.pp graph_action))
+              [ chars (Format.asprintf "%a" Graph_action.pp graph_action) ])
             [];
           Gui.select_panel ~label:"Send to Editors" ~multi:true
             ~classes:[ "Editors" ] ("editors" ^ id)
             (List.rev_map fst (Uuid.Map.bindings model.editors))
-            (fun editor_id -> Node.text (Uuid.Id.show editor_id))
+            (fun editor_id -> [ Node.text (Uuid.Id.show editor_id) ])
             [
               Gui.button "Send (ctrl-s)" inject editor tabindexes
                 ~on_click:(fun () -> Gui.send model editor);
@@ -127,11 +127,18 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.select_panel ~label:"Multiparented" ~multi:false
             ("multiparent" ^ id)
             (Vertex.Set.elements roots.multiparent)
-            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            (fun vertex ->
+              view_vertex inject editor root_vertexes None vertex
+              :: List.map
+                   (fun (edge : Edge.t) ->
+                     view_vertex inject editor root_vertexes None
+                       edge.value.source.vertex)
+                   (Edge.Set.elements (Graph.parents editor.graph vertex)))
             [];
           Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
             (Vertex.Set.elements roots.deleted)
-            (fun vertex -> view_vertex inject editor root_vertexes None vertex)
+            (fun vertex ->
+              [ view_vertex inject editor root_vertexes None vertex ])
             [
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel

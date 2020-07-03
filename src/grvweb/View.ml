@@ -67,7 +67,7 @@ and view_vertex (inject : Action.t -> Event.t) (editor : Editor.t)
       ]
 
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
-    (editor : Editor.t) : Node.t =
+    (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
   let roots = Graph.roots editor.graph in
   let root_vertexes =
     Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
@@ -79,8 +79,9 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     [
       Attr.id ("editor" ^ id);
       Attr.class_ "editor";
-      Attr.create "tabindex" id;
-      Attr.on_keydown (Key.dispatch ~inject model editor);
+      Attr.create "tabindex"
+        (Int.to_string (Uuid.Map.find editor.id tabindexes));
+      Attr.on_keydown (Key.dispatch ~inject model editor tabindexes);
     ]
     [
       (* main code *)
@@ -94,7 +95,8 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.break;
           Node.div []
             [
-              Gui.button "Show Source" inject editor ~on_click:(fun () ->
+              Gui.button "Show Source" inject editor tabindexes
+                ~on_click:(fun () ->
                   Printf.printf "%s\n"
                     (Graphviz.draw_graph editor.graph editor.cursor);
                   None);
@@ -113,12 +115,12 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             (List.rev_map fst (Uuid.Map.bindings model.editors))
             (fun editor_id -> Node.text (Uuid.Id.show editor_id))
             [
-              Gui.button "Send (ctrl-s)" inject editor ~on_click:(fun () ->
-                  Gui.send model editor);
-              Gui.button "All" inject editor ~on_click:(fun () ->
+              Gui.button "Send (ctrl-s)" inject editor tabindexes
+                ~on_click:(fun () -> Gui.send model editor);
+              Gui.button "All" inject editor tabindexes ~on_click:(fun () ->
                   Js.fill_selection ("editors" ^ id);
                   None);
-              Gui.button "None" inject editor ~on_click:(fun () ->
+              Gui.button "None" inject editor tabindexes ~on_click:(fun () ->
                   Js.clear_selection ("editors" ^ id);
                   None);
             ];
@@ -134,99 +136,108 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel
                   [
-                    Gui.button "Restore" inject editor ~on_click:(fun () ->
+                    Gui.button "Restore" inject editor tabindexes
+                      ~on_click:(fun () ->
                         Gui.restore editor (Js.get_input ("restore" ^ id)));
-                    Gui.text_input ("restore" ^ id) inject editor
+                    Gui.text_input ("restore" ^ id) inject editor tabindexes
                       ~on_change:(fun str -> Gui.restore editor str);
                   ] );
             ];
         ];
       Gui.panel ~label:"Patterns"
         [
-          Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor
+          Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor tabindexes
             ~on_click:(fun () ->
               match Js.get_input ("pat_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Pat_var str))));
           Gui.sorted_text_input ("pat_id" ^ id) Lang.Sort.Pat inject editor
-            ~on_change:(fun str -> Some (Edit (Create (Pat_var str))));
+            tabindexes ~on_change:(fun str ->
+              Some (Edit (Create (Pat_var str))));
         ];
       Gui.panel ~label:"Expressions"
         [
-          Gui.sorted_button "Var (v)" Lang.Sort.Exp inject editor
+          Gui.sorted_button "Var (v)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () ->
               match Js.get_input ("var_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Exp_var str))));
           Gui.sorted_text_input ("var_id" ^ id) Lang.Sort.Exp inject editor
-            ~on_change:(fun str -> Some (Edit (Create (Exp_var str))));
+            tabindexes ~on_change:(fun str ->
+              Some (Edit (Create (Exp_var str))));
           Gui.break;
-          Gui.sorted_button "Num (n)" Lang.Sort.Exp inject editor
+          Gui.sorted_button "Num (n)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () ->
               match Js.get_input ("num_id" ^ id) with
               | "" -> None
               | str -> Some (Edit (Create (Exp_num (int_of_string str)))));
           Gui.sorted_text_input ("num_id" ^ id) Lang.Sort.Exp inject editor
-            ~on_change:(fun str ->
+            tabindexes ~on_change:(fun str ->
               Some (Edit (Create (Exp_num (int_of_string str)))));
           Gui.break;
-          Gui.sorted_button "Lam (\\)" Lang.Sort.Exp inject editor
+          Gui.sorted_button "Lam (\\)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () -> Some (Edit (Create Exp_lam)));
-          Gui.sorted_button "App (space)" Lang.Sort.Exp inject editor
+          Gui.sorted_button "App (space)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () -> Some (Edit (Create Exp_app)));
-          Gui.sorted_button "Plus (+)" Lang.Sort.Exp inject editor
+          Gui.sorted_button "Plus (+)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () -> Some (Edit (Create Exp_plus)));
         ];
       Gui.panel ~label:"Types"
         [
-          Gui.sorted_button "Num (N)" Lang.Sort.Typ inject editor
+          Gui.sorted_button "Num (N)" Lang.Sort.Typ inject editor tabindexes
             ~on_click:(fun () -> Some (Edit (Create Typ_num)));
-          Gui.sorted_button "Arrow (>)" Lang.Sort.Typ inject editor
+          Gui.sorted_button "Arrow (>)" Lang.Sort.Typ inject editor tabindexes
             ~on_click:(fun () -> Some (Edit (Create Typ_arrow)));
         ];
       Gui.panel ~label:"Cursor"
         [
-          Gui.button "Delete (delete)" inject editor ~on_click:(fun () ->
+          Gui.button "Delete (delete)" inject editor tabindexes
+            ~on_click:(fun () ->
               Js.clear_selection ("deleted" ^ id);
               Some (Edit Destroy));
           Gui.break;
-          Gui.button "Up (↑)" inject editor ~on_click:(fun () ->
+          Gui.button "Up (↑)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Up));
-          Gui.button "Down (↓)" inject editor ~on_click:(fun () ->
+          Gui.button "Down (↓)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Down));
-          Gui.button "Left (←)" inject editor ~on_click:(fun () ->
+          Gui.button "Left (←)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Left));
-          Gui.button "Right (→)" inject editor ~on_click:(fun () ->
+          Gui.button "Right (→)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Right));
         ];
       Gui.panel ~label:"Environment"
         [
-          Gui.button "Record" inject editor
+          Gui.button "Record" inject editor tabindexes
             ~on_click:(fun () -> Some (Env Record))
             ~disabled:(Option.is_some model.actions);
-          Gui.button "Report" inject editor
+          Gui.button "Report" inject editor tabindexes
             ~on_click:(fun () -> Some (Env Report))
             ~disabled:(Option.is_none model.actions);
-          Gui.button "Stop" inject editor
+          Gui.button "Stop" inject editor tabindexes
             ~on_click:(fun () -> Some (Env Stop))
             ~disabled:(Option.is_none model.actions);
-          Gui.button "Replay" inject editor ~on_click:(fun () ->
+          Gui.button "Replay" inject editor tabindexes ~on_click:(fun () ->
               Some (Env (Replay (Js.prompt "Replay Recording"))));
-          Gui.button "Dump" inject editor ~on_click:(fun () -> Some (Env Dump));
-          Gui.button "Load" inject editor ~on_click:(fun () ->
+          Gui.button "Dump" inject editor tabindexes ~on_click:(fun () ->
+              Some (Env Dump));
+          Gui.button "Load" inject editor tabindexes ~on_click:(fun () ->
               Some (Env (Load (Js.prompt "Load a Dump"))));
         ];
       Gui.panel ~label:"Editor"
         [
-          Gui.button "Clone" inject editor ~on_click:(fun () ->
+          Gui.button "Clone" inject editor tabindexes ~on_click:(fun () ->
               Some (Env (Clone editor.id)));
-          Gui.button "Drop" inject editor
+          Gui.button "Drop" inject editor tabindexes
             ~on_click:(fun () -> Some (Env (Drop editor.id)))
             ~disabled:(Uuid.Map.cardinal model.editors < 2);
         ];
     ]
 
 let view ~(inject : Action.t -> Event.t) (model : Model.t) : Node.t =
-  Node.div []
-    (List.map (view_editor model inject)
-       (List.map snd (Uuid.Map.bindings model.editors)))
+  let editors = List.map snd (Uuid.Map.bindings model.editors) in
+  let editor_ids = List.map (fun (editor : Editor.t) -> editor.id) editors in
+  let indexes = List.init (List.length editors) (fun i -> i + 1) in
+  let tabindexes = Uuid.Map.of_seq List.(to_seq (combine editor_ids indexes)) in
+  Node.div
+    [ Attr.create "tabindex" "-1" ]
+    (List.map (view_editor model inject tabindexes) editors)

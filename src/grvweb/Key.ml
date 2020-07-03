@@ -1,7 +1,7 @@
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
-let ctrl (model : Model.t) (editor : Editor.t)
+let ctrl (model : Model.t) (editor : Editor.t) (tabindexes : int Uuid.Map.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   match Dom_html.Keyboard_code.of_event event with
   | KeyS -> (
@@ -12,20 +12,31 @@ let ctrl (model : Model.t) (editor : Editor.t)
           None
       | result -> result )
   | key -> (
-      (* let%map.Util.Option action : Action.t' Option.t = *)
-      (* let refocus (next_id : Uuid.Id.t) (default_id : Uuid.Id.t) : unit =
-           Js.focus_editor
-             ( match Uuid.Map.find_opt next_id model with
-             | Some _ -> next_id
-             | None -> default_id )
-         in *)
       match key with
-      (* TODO: Map.find_least | ArrowLeft ->
-             refocus (editor.id - 1) (snd @@ Model.max_binding model).id;
-             None
-         | ArrowRight ->
-             refocus (editor.id + 1) (snd @@ Model.min_binding model).id;
-             None *)
+      | ArrowRight ->
+          Js_of_ocaml.Dom.preventDefault event;
+          Js_of_ocaml.Dom_html.stopPropagation event;
+          Js.focus
+            ( "editor"
+            ^ Int.to_string
+                ( match Uuid.Map.find_opt editor.id tabindexes with
+                | Some tabindex ->
+                    if tabindex = snd (Uuid.Map.max_binding tabindexes) then 1
+                    else tabindex + 1
+                | None -> 1 ) );
+          None
+      | ArrowLeft ->
+          Js_of_ocaml.Dom.preventDefault event;
+          Js_of_ocaml.Dom_html.stopPropagation event;
+          Js.focus
+            ( "editor"
+            ^ Int.to_string
+                ( match Uuid.Map.find_opt editor.id tabindexes with
+                | Some tabindex ->
+                    if tabindex = 1 then snd (Uuid.Map.max_binding tabindexes)
+                    else tabindex - 1
+                | None -> 1 ) );
+          None
       | _ -> None )
 
 let shift (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
@@ -74,7 +85,8 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | _ -> None
 
 let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
-    (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) : Vdom.Event.t =
+    (editor : Editor.t) (tabindexes : int Uuid.Map.t)
+    (event : Dom_html.keyboardEvent Js.t) : Vdom.Event.t =
   let handle =
     match
       Js.
@@ -84,7 +96,7 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     with
     | false, false, false -> base editor
     | true, false, false -> shift
-    | false, true, false -> ctrl model editor
+    | false, true, false -> ctrl model editor tabindexes
     | _, _, _ -> fun _ -> (None : Action.t' Option.t)
   in
   match handle event with

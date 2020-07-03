@@ -201,6 +201,32 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               Some (Move Left));
           Gui.button "Right (→)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Right));
+          Gui.button "Teleport" inject editor tabindexes ~on_click:(fun () ->
+              match Js.prompt "edge_id or vertex_id" with
+              | "" -> None
+              | str -> (
+                  let teleport_id = Uuid.Id.read str in
+                  Js.focus ("editor" ^ id);
+                  match
+                    Edge.Set.find_first_opt
+                      (fun edge -> edge.id = teleport_id)
+                      (Graph.edges editor.graph)
+                  with
+                  | Some edge -> Some (Move (Select edge.value.source))
+                  | None -> (
+                      match
+                        Vertex.Set.find_first_opt
+                          (fun vertex -> vertex.id = teleport_id)
+                          (Graph.vertexes editor.graph)
+                      with
+                      | None -> None
+                      | Some vertex -> (
+                          match
+                            Edge.Set.choose_opt
+                              (Graph.parents editor.graph vertex)
+                          with
+                          | Some edge -> Some (Move (Select edge.value.source))
+                          | None -> None ) ) ));
         ];
       Gui.panel ~label:"Environment"
         [

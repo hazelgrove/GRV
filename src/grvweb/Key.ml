@@ -54,25 +54,32 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   let id = Uuid.Id.show editor.id in
   match Dom_html.Keyboard_code.of_event event with
   | KeyN -> (
-      Js_of_ocaml.Dom.preventDefault event;
-      Js_of_ocaml.Dom_html.stopPropagation event;
-      match Js.focus_input ("num_id" ^ id) with
-      | "" -> None
-      | str -> Some (Action.Edit (Create (Exp_num (int_of_string str)))) )
+      match Js.prompt "num_id" with
+      | "" ->
+          Js_of_ocaml.Dom.preventDefault event;
+          Js_of_ocaml.Dom_html.stopPropagation event;
+          None
+      | str ->
+          Js.focus ("editor" ^ id);
+          Some (Action.Edit (Create (Exp_num (int_of_string str)))) )
   | KeyP -> (
-      match Js.focus_input ("pat_id" ^ id) with
+      match Js.prompt "pat_id" with
       | "" ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;
           None
-      | str -> Some (Edit (Create (Pat_var str))) )
+      | str ->
+          Js.focus ("editor" ^ id);
+          Some (Edit (Create (Pat_var str))) )
   | KeyV -> (
-      match Js.focus_input ("var_id" ^ id) with
+      match Js.prompt "var_id" with
       | "" ->
           Js_of_ocaml.Dom.preventDefault event;
           Js_of_ocaml.Dom_html.stopPropagation event;
           None
-      | str -> Some (Edit (Create (Exp_var str))) )
+      | str ->
+          Js.focus ("editor" ^ id);
+          Some (Edit (Create (Exp_var str))) )
   | Space -> Some (Edit (Create Exp_app))
   | Backslash -> Some (Edit (Create Exp_lam))
   | Delete ->
@@ -103,5 +110,6 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
   | Some action ->
       Js_of_ocaml.Dom.preventDefault event;
       Js_of_ocaml.Dom_html.stopPropagation event;
+      Js.focus ("editor" ^ Uuid.Id.show editor.id);
       inject { editor_id = editor.id; action }
   | None -> Vdom.Event.Ignore

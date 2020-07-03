@@ -144,43 +144,41 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   ] );
             ];
         ];
-      Gui.panel ~label:"Patterns"
+      Gui.panel ~label:"Patterns and Expressions"
         [
           Gui.sorted_button "Pat (p)" Lang.Sort.Pat inject editor tabindexes
             ~on_click:(fun () ->
-              match Js.get_input ("pat_id" ^ id) with
+              match Js.prompt "pat_id" with
               | "" -> None
-              | str -> Some (Edit (Create (Pat_var str))));
-          Gui.sorted_text_input ("pat_id" ^ id) Lang.Sort.Pat inject editor
-            tabindexes ~on_change:(fun str ->
-              Some (Edit (Create (Pat_var str))));
-        ];
-      Gui.panel ~label:"Expressions"
-        [
+              | str ->
+                  Js.focus ("editor" ^ id);
+                  Some (Edit (Create (Pat_var str))));
           Gui.sorted_button "Var (v)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () ->
-              match Js.get_input ("var_id" ^ id) with
+              match Js.prompt "var_id" with
               | "" -> None
-              | str -> Some (Edit (Create (Exp_var str))));
-          Gui.sorted_text_input ("var_id" ^ id) Lang.Sort.Exp inject editor
-            tabindexes ~on_change:(fun str ->
-              Some (Edit (Create (Exp_var str))));
-          Gui.break;
+              | str ->
+                  Js.focus ("editor" ^ id);
+                  Some (Edit (Create (Exp_var str))));
           Gui.sorted_button "Num (n)" Lang.Sort.Exp inject editor tabindexes
             ~on_click:(fun () ->
-              match Js.get_input ("num_id" ^ id) with
+              match Js.prompt "num_id" with
               | "" -> None
-              | str -> Some (Edit (Create (Exp_num (int_of_string str)))));
-          Gui.sorted_text_input ("num_id" ^ id) Lang.Sort.Exp inject editor
-            tabindexes ~on_change:(fun str ->
-              Some (Edit (Create (Exp_num (int_of_string str)))));
-          Gui.break;
+              | str ->
+                  Js.focus ("editor" ^ id);
+                  Some (Edit (Create (Exp_num (int_of_string str)))));
           Gui.sorted_button "Lam (\\)" Lang.Sort.Exp inject editor tabindexes
-            ~on_click:(fun () -> Some (Edit (Create Exp_lam)));
+            ~on_click:(fun () ->
+              Js.focus ("editor" ^ id);
+              Some (Edit (Create Exp_lam)));
           Gui.sorted_button "App (space)" Lang.Sort.Exp inject editor tabindexes
-            ~on_click:(fun () -> Some (Edit (Create Exp_app)));
+            ~on_click:(fun () ->
+              Js.focus ("editor" ^ id);
+              Some (Edit (Create Exp_app)));
           Gui.sorted_button "Plus (+)" Lang.Sort.Exp inject editor tabindexes
-            ~on_click:(fun () -> Some (Edit (Create Exp_plus)));
+            ~on_click:(fun () ->
+              Js.focus ("editor" ^ id);
+              Some (Edit (Create Exp_plus)));
         ];
       Gui.panel ~label:"Types"
         [
@@ -195,7 +193,6 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             ~on_click:(fun () ->
               Js.clear_selection ("deleted" ^ id);
               Some (Edit Destroy));
-          Gui.break;
           Gui.button "Up (↑)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Up));
           Gui.button "Down (↓)" inject editor tabindexes ~on_click:(fun () ->

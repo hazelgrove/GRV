@@ -29,7 +29,7 @@
   \end{tabular*}
 }
 
-\newcommand\OR{\ensuremath{~|~}}
+\newcommand\OR{\ensuremath{\vert}}
 
 \newenvironment{alignRL}{%
 \begingroup
@@ -56,7 +56,6 @@
 \mathlig{-->a}{\overset{a}{\longrightarrow}}
 \mathlig{||}{|}
 \mathlig{|}{:}
-\mathlig{~:~}{:}
 \mathlig{:}{\!:\!}
 
 \def\_{\texttt{\textunderscore}}
@@ -391,10 +390,10 @@ $A^{*}$.
  \childVertexes(G,v) &= \{ v' \in \V | \exists (c,v',u) \in \vertexChildren(G,v) \}  \\
          \orphans(G) &= \{ v \in \liveVertexes(G) | || \parents(G,v) || = 0 \}       \\
     \multiparents(G) &= \{ v \in \liveVertexes(G) | || \parents(G,v) || > 1 \}       \\
-       \reachable(G) &= \orphans(G) \cup \multiparents(G) \cup \childVertexes(G,v \in \reachable(G)) \\
-    \deleted(G) &= (\orphans(G) \setminus \{ v_{root} \})
-                   \cup (\vertexes(G) \setminus  \\
         \vertex(G,u) &= v \in \vertexes(G) \iff (\exists k \in \K)(v = (k,u))
+    %    \reachable(G) &= \orphans(G) \cup \multiparents(G) \cup \childVertexes(G,v \in \reachable(G)) \\
+    % \deleted(G) &= (\orphans(G) \setminus \{ v_{root} \})
+    %                \cup (\vertexes(G) \setminus  \\
 \end{alignRL}
 
 \paragraph{Graph Actions} ~
@@ -412,36 +411,36 @@ $\known(E_1 \cdots E_n) = A_{H1}^{*} \cdots A_{Hn}^{*}
 \subsection{Movement}
 \label{sec:movement}
 
-$\boxed{E -->a E}$
+$\boxed{E,A -->a E,A}$
 %
 \begin{mathpar}
   \Inferrule{
     \leftIndex(i) = i'
   }{
-    G,(v,i),a^{*},A^{*},u \xrightarrow{\Left} G,(v,i'),a^{*},A^{*},u
+    (G,(v,i),A_Q^{*},A_H^{*},u),A \xrightarrow{\Left} (G,(v,i'),A_Q^{*},A_H^{*},u),A
   }
 
   \Inferrule{
     \rightIndex(i) = i'
   }{
-    G,(v,i),a^{*},A^{*},u \xrightarrow{\Right} G,(v,i'),a^{*},A^{*},u
+    (G,(v,i),A_Q^{*},A_H^{*},u),A \xrightarrow{\Right} (G,(v,i'),A_Q^{*},A_H^{*},u),A
   }
 
   \Inferrule{
     \parents(v) = \{(c',v',u')\}
   }{
-    G,(v,i),a^{*},A^{*},u \xrightarrow{\Up} G,c',a^{*},A^{*},u
+    (G,(v,i),A_Q^{*},A_H^{*},u),A \xrightarrow{\Up} (G,c',A_Q^{*},A_H^{*},u),A
   }
 
   \Inferrule{
     \cursorChildren(c) = \{(c',(k,u_k),u')\} \\
     \downIndex(k) = i
   }{
-    G,c,a^{*},A^{*},u \xrightarrow{\Down} G,((k,u_k),i),a^{*},A^{*},u
+    (G,c,A_Q^{*},A_H^{*},u),A \xrightarrow{\Down} (G,((k,u_k),i),A_Q^{*},A_H^{*},u),A
   }
 
   \Inferrule{}{
-    G,c,a^{*},A^{*},u \xrightarrow{\Select~c'} G,c',a^{*},A^{*},u
+    (G,c,A_Q^{*},A_H^{*},u),A \xrightarrow{\Select~c'} (G,c',A_Q^{*},A_H^{*},u),A
   }
 \end{mathpar}
 
@@ -454,9 +453,9 @@ $\boxed{E -->a E}$
   \Inferrule{
     \defaultIndex(c) = \None \\
     u, u_k \in \U \text{ fresh} \\
-    A = [(c,(k,u_k),u) :-> +]
+    A_H' = [(c,(k,u_k),u) :-> +]
   }{
-    G,c,a^{*},A^{*},u \xrightarrow{\Create~k} G A,c,a^{*},A^{*}A,u
+    (G,c,A_Q^{*},A_H^{*},u),A \xrightarrow{\Create~k} (G A_H',c,A_Q^{*},A_H^{*}A_H',u),A
   }
 
   \Inferrule{
@@ -465,26 +464,28 @@ $\boxed{E -->a E}$
     u, u_k \in \U \text{ fresh} \\
     \\\\
     \cursorChildren(G,c) = \{(c_j,v_j,u_j')\}_{j=1}^n \\
-    A'^{*} =
+    A_H'^{*} =
     [(c  ,(k,u_k),u  ) :-> +]
     [(c' ,v_j    ,u_j') :-> +]_{j=1}^n
     [(c_j,v_j    ,u_j') :-> -]_{j=1}^n
   }{
-    G,c,a^{*},A^{*},u \xrightarrow{\Create~k} G A'^{*},c',a^{*},A^{*}A'^{*},u
+    (G,c,A_Q^{*},A_H^{*},u),A \xrightarrow{\Create~k}
+    (G A_H'^{*},c',A_Q^{*},A_H^{*}A_H'^{*},u),A
   }
 
   \Inferrule{
     \cursorChildren(G,c) = \{\e_j\}_{j=1}^n \\
-    A'^{*} = [\e_j :-> -]_{j=1}^n
+    A_H'^{*} = [\e_j :-> -]_{j=1}^n
   }{
-    G,c,a^{*},A^{*},u \xrightarrow{\Destroy} G A'^{*},c,a^{*},A^{*}A'^{*},u
+    (G,c,A_Q^{*},A_H^{*},u),A \xrightarrow{\Destroy}
+    (G A_H'^{*},c,A_Q^{*},A_H^{*}A_H'^{*},u),A
   }
 
   \Inferrule{
-    u \text{ fresh} \\
-    A = [(c,v,u) :-> +]
+    A_H = [(c,v,u') :-> +] \\
+    u' \text{ fresh}
   }{
-    G,c,a^{*},A^{*},u \xrightarrow{\Restore~v} G A,c,a^{*},A^{*}A,u
+    (G,c,A_Q^{*},A_H^{*},u),A \xrightarrow{\Restore~v} (G A_H,c,A_Q^{*},A_H^{*}A_H,u),A %
   }
 \end{mathpar}
 
@@ -498,43 +499,45 @@ $\boxed{E -->a E}$
 \begin{mathpar}
   \Inferrule{
     a \in \A^{edit} \\
-    G,c,a^{*},A^{*},u -->a G',c',a^{*},A'^{*},u
+    (G,c,A_Q^{*},A_H^{*},u),A -->a (G',c',A_Q^{*},A_H'^{*},u),A
   }{
-    G,c,a^{*},A^{*},u -->a G',c',a^{*}a,A'^{*},u
+    (G,c,A_Q^{*},A_H^{*},u),A -->a (G',c',A_Q^{*}a,A_H'^{*},u),A
   }
 \end{mathpar}
 
 \paragraph{Replay} ~
 
-$\boxed{E \xrightarrow{a^{*}} E}$
+$\boxed{E,A \xrightarrow{a^{*}} E,A}$
 %
 \begin{mathpar}
   \Inferrule{
-    E -->a E'' \\
-    E'' \xrightarrow{a^{*}} E' \\
+    E,A -->a E'',A'' \\
+    E'',A'' \xrightarrow{a^{*}} E',A' \\
   }{
-    E \xrightarrow{aa^{*}} E'
+    E,A \xrightarrow{aa^{*}} E',A'
   }
 \end{mathpar}
 
 \paragraph{Publish} ~
 
-$\boxed{E^{*} -->a E^{*}}$
+$\boxed{(E,A)^{*} -->a (E,A)^{*}}$
 %
 \begin{mathpar}
   \Inferrule{
-    E_j = (G_j,c_j,a_j^{*},A_j^{*},u_j) \\
-    E_j \xrightarrow{a'^{*}} (G_j',c_j',a_j'^{*}, A_j'^{*},u_j) \\
+    E_j = (G_j,c_j,A_{Qj}^{*},A_{Hj}^{*},u_j) \\
+    E_j,A_j \xrightarrow{a'^{*}} (G_j',c_j',A_{Qj}'^{*}, A_{Hj}'^{*},u_j),A_j' \\
     E_j' =
     ( G_j'
     , c_j'
-    , a_j'^{*} \setminus a'^{*}
-    , A_j'^{*} \setminus \known(E_1 \cdots E_n),u_j) \\
+    , A_{Qj}'^{*} \setminus a'^{*}
+    , A_{Hj}'^{*} \setminus \known(E_1 \cdots E_n),u_j) \\
     j = 1,\ldots,n
   }{
-    E_1 \cdots E_n \xrightarrow{\Send~ a'^{*} } E_1' \cdots E_n'
+    (E_1,A_1) \cdots (E_n,A_n) \xrightarrow{\Send~ a'^{*} } (E_1',A_1') \cdots (E_n',A_n')
   }
 \end{mathpar}
+
+Missing Action.env members: Record / Report / Stop / Replay, Dump / Load, Clone / Drop
 
 % ##############################################################################
 

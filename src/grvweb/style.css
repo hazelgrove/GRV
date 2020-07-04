@@ -39,7 +39,7 @@ body > div {
 }
 
 .errs {
-    color: red;
+    color: #FF5C56;
     font-weight: bold;
 }
 
@@ -139,11 +139,11 @@ input {
 }
 
 .Actions > .selectItems > .selected {
-    background-color: #91FF91;
+    background-color: #A4FF77;
 }
 
 .Deleted > .selectItems > .selected {
-    background-color: #C4D9FF;
+    background-color: #87E2FF;
 }
 
 .Deleted > .selectItems > .selected sub {
@@ -151,7 +151,7 @@ input {
 }
 
 .Editors > .selectItems > .selected {
-    background-color: #FFD885;
+    background-color: #87E2FF;
 }
 
 .selectItem:not(.selected) {
@@ -164,7 +164,7 @@ input {
 }
 
 .Multiparented > .selectItems > .selectItem > .vertex:first-child {
-    background-color: #FF78BB;
+    background-color: #FFB643;
 }
 
 .Multiparented > .selectItems > .selectItem > .vertex:not(:first-child)::before {

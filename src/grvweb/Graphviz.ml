@@ -1,4 +1,12 @@
-let cursor_color = {|"#ddffdd"|}
+let red_color = {|"#FF5C56"|}
+
+let orange_color = {|"#FFB643"|}
+
+let green_color = {|"#A4FF77"|}
+
+let blue_color = {|"#87E2FF"|}
+
+let purple_color = {|"#D7BBD9"|}
 
 let vertex_color (vertex : Vertex.t) (graph : Graph.t) (cursor : Cursor.t) :
     string =
@@ -10,7 +18,7 @@ let vertex_color (vertex : Vertex.t) (graph : Graph.t) (cursor : Cursor.t) :
       Edge.Set.exists
         (fun edge -> Edge.source edge = cursor && Edge.target edge = vertex)
         parents
-    then cursor_color
+    then purple_color
     else "white"
 
 let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
@@ -31,7 +39,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
         let fillcolor = vertex_color vertex graph cursor in
         let color =
           let num_parents = Edge.Set.cardinal (Graph.parents graph vertex) in
-          if num_parents < 2 then "black" else "orange"
+          if num_parents < 2 then "black" else orange_color
         in
         Printf.sprintf
           {|n%s [label="{%s: %s|{%s}}",style=filled,fillcolor=%s,color=%s]|} id
@@ -60,8 +68,8 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
             Edge.Set.cardinal (Graph.parents graph edge.value.target)
           in
           if num_conflicts = 0 && num_parents = 1 then "black"
-          else if num_conflicts > 0 then "red"
-          else "orange"
+          else if num_conflicts > 0 then red_color
+          else orange_color
         in
         let field = Lang.Index.short_name edge.value.source.index in
         Printf.sprintf
@@ -79,7 +87,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
         let open Printf in
         ( [
             sprintf {|hole [label="",shape=circle,style=filled,fillcolor=%s]|}
-              cursor_color;
+              purple_color;
           ],
           [ sprintf "n%s:%s -> hole" (Uuid.Id.show cursor.vertex.id) field ] )
     | false -> ([], [])

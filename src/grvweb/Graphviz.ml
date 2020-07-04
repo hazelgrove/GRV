@@ -28,32 +28,42 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
                  Printf.sprintf "<%s> %s" name name)
                (Lang.Index.child_indexes constructor))
         in
-        let color = vertex_color vertex graph cursor in
-        Printf.sprintf {|n%s [label="{%s: %s|{%s}}",style=filled,fillcolor=%s]|}
-          id id label children color)
+        let fillcolor = vertex_color vertex graph cursor in
+        let color =
+          let num_parents = Edge.Set.cardinal (Graph.parents graph vertex) in
+          if num_parents < 2 then "black" else "orange"
+        in
+        Printf.sprintf
+          {|n%s [label="{%s: %s|{%s}}",style=filled,fillcolor=%s,color=%s]|} id
+          id label children fillcolor color)
       (Vertex.Set.elements (Graph.vertexes graph))
   in
   let edges : string list =
     let live_edges = Graph.live_edges graph in
     Edge.Set.fold
       (fun edge strs ->
-        let source : Vertex.t = (Edge.source edge).vertex in
-        let target : Vertex.t = Edge.target edge in
-        let source_id = Uuid.Id.show source.id in
-        let target_id = Uuid.Id.show target.id in
+        let source_id = Uuid.Id.show edge.value.source.vertex.id in
+        let target_id = Uuid.Id.show edge.value.target.id in
         let edge_id = Uuid.Id.show edge.id in
         let index =
           Format.asprintf "%a" Lang.Index.pp edge.value.source.index
         in
         let color =
-          let siblings =
-            Edge.Set.filter
-              (fun (e : Edge.t) -> Edge.source e = Edge.source edge)
-              live_edges
+          let num_conflicts =
+            Edge.Set.(
+              cardinal
+                (filter
+                   (fun (e : Edge.t) -> e.value.source = edge.value.source)
+                   (remove edge live_edges)))
           in
-          if Edge.Set.cardinal siblings < 2 then "black" else "red"
+          let num_parents =
+            Edge.Set.cardinal (Graph.parents graph edge.value.target)
+          in
+          if num_conflicts = 0 && num_parents = 1 then "black"
+          else if num_conflicts > 0 then "red"
+          else "orange"
         in
-        let field = Lang.Index.short_name (Edge.source edge).index in
+        let field = Lang.Index.short_name edge.value.source.index in
         Printf.sprintf
           {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s"]|}
           source_id field target_id color edge_id edge_id source_id index

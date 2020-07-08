@@ -102,6 +102,14 @@ and exp =
           down = Some "left";
           show = [ Index "left"; String "+"; Index "right" ];
         };
+        {
+          name = "times";
+          args = [];
+          indexes = [ ("left", exp); ("right", exp) ];
+          default = Some "left";
+          down = Some "left";
+          show = [ Index "left"; String "*"; Index "right" ];
+        };
         (* TODO: sums and pairs *)
         {
           name = "nil";

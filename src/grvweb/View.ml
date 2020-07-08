@@ -95,6 +95,11 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.break;
           Node.div []
             [
+              Gui.button "Drop Edge" inject editor tabindexes
+                ~on_click:(fun () ->
+                  match Js.prompt "edge_id" with
+                  | "" -> None
+                  | str -> Some (Edit (DropEdge (Uuid.Id.read str))));
               Gui.button "Show Source" inject editor tabindexes
                 ~on_click:(fun () ->
                   Printf.printf "%s\n"
@@ -209,6 +214,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.button "Right (→)" inject editor tabindexes ~on_click:(fun () ->
               Some (Move Right));
           Gui.button "Teleport" inject editor tabindexes ~on_click:(fun () ->
+              (* TODO: move Teleport logic into Gui.ml helper *)
               match Js.prompt "edge_id or vertex_id" with
               | "" -> None
               | str -> (

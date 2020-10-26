@@ -46,6 +46,7 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   match Js.to_string jstr with
   | "N" -> Some (Action.Edit (Create Typ_num))
   | "+" -> Some (Action.Edit (Create Exp_plus))
+  | "*" -> Some (Action.Edit (Create Exp_times))
   | ">" -> Some (Action.Edit (Create Typ_arrow))
   | _ -> None
 

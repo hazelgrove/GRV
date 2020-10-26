@@ -191,6 +191,10 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             ~on_click:(fun () ->
               Js.focus ("editor" ^ id);
               Some (Edit (Create Exp_plus)));
+          Gui.sorted_button "Times (*)" Lang.Sort.Exp inject editor tabindexes
+            ~on_click:(fun () ->
+              Js.focus ("editor" ^ id);
+              Some (Edit (Create Exp_times)));
         ];
       Gui.panel ~label:"Types"
         [

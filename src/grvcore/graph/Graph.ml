@@ -72,12 +72,13 @@ let multiparents (graph : t) : Vertex.Set.t =
 type roots = {
   root : Vertex.t;
   multiparent : Vertex.Set.t;
+  orphans : Vertex.Set.t;
   deleted : Vertex.Set.t;
 }
 
 let roots (graph : t) : roots =
   (* First, find the vertexes with no parents *)
-  let orphan_vertexes = orphans graph in
+  let orphans = orphans graph in
   let multiparent = multiparents graph in
 
   (* This set tracks the vertexes that are reachable from our selected roots *)
@@ -92,11 +93,11 @@ let roots (graph : t) : roots =
         (vertex_children graph vertex) )
   in
   (* Mark everything reachable from true_orphans or multiparents as reachable *)
-  Vertex.Set.iter add orphan_vertexes;
+  Vertex.Set.iter add orphans;
   Vertex.Set.iter add multiparent;
 
   (* Note that we rely on iter doing from least to greatest *)
-  let deleted = ref (Vertex.Set.remove Vertex.root orphan_vertexes) in
+  let deleted = ref (Vertex.Set.remove Vertex.root orphans) in
   Vertex.Set.iter
     (fun vertex ->
       if Vertex.Set.mem vertex !reachable then ()
@@ -105,4 +106,4 @@ let roots (graph : t) : roots =
         add vertex ))
     (vertexes graph);
 
-  { root = Vertex.root; multiparent; deleted = !deleted }
+  { root = Vertex.root; multiparent; orphans; deleted = !deleted }

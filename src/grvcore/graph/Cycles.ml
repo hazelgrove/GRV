@@ -34,51 +34,56 @@ type tree =
   | Ref of Uuid.Id.t
   | Con of Lang.Constructor.t * (Lang.Index.t * tree) list
 
-let rec reachable_tree (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
-    tree =
+let rec reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
   if Vertex.Set.mem v mp then Ref v.id
   else
-    (* let trees = Vertex.Set.fold (fun v' trees -> reachable_tree graph mp v :: trees) in *)
+    (* let trees = Vertex.Set.fold (fun v' trees -> reachable graph mp v :: trees) in *)
     Con
       ( v.value,
         Edge.Set.fold
           (fun e ts ->
-            (e.value.source.index, reachable_tree graph mp e.value.target) :: ts)
+            (e.value.source.index, reachable graph mp e.value.target) :: ts)
           (Graph.vertex_children graph v)
           [] )
 
-(* else Con (v.value, Vertex.Set.map (reachable_tree graph mp) (child_vertexes v)) *)
+(* else Con (v.value, Vertex.Set.map (reachable graph mp) (child_vertexes v)) *)
 
 (* so we don't immediately stop on the first vertex, since they're all in mp already *)
-(* let reachable_tree' (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
- *   Con (con of v, Vertex.Set.map (reachable_tree graph mp) (Graph.child_vertexes v)) *)
+(* let reachable' (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
+ *   Con (con of v, Vertex.Set.map (reachable graph mp) (Graph.child_vertexes v)) *)
 
-let find_a_cycle_vertex (graph : Graph.t) ?(seen = Vertex.Set.empty)
-    (v : Vertex.t) : Vertex.t =
-  let parents =
-    Edge.Set.fold
-      (fun e vs -> Vertex.Set.add e.value.source.vertex vs)
-      (Graph.parents graph v) Vertex.Set.empty
-  in
-  if Vertex.Set.disjoint parents seen then
-    Vertex.Set.find_first
-      (fun v' -> Vertex.Set.mem v' seen)
-      (Vertex.Set.inter parents seen)
-  else Vertex.Set.choose (Vertex.Set.inter parents seen)
+(* Returns option to enable backtracking *)
+let find_a_cycle_vertex ?(seen = Vertex.Set.empty) (graph : Graph.t)
+    (v : Vertex.t) : Vertex.t option =
+  let parents = Graph.parent_vertexes graph v in
+  let seen_parents = Vertex.Set.inter parents seen in
+  if Vertex.Set.is_empty seen_parents then
+    let seen = Vertex.Set.add v seen in
+    Vertex.Set.find_first_opt (fun v' -> Vertex.Set.mem v' seen) seen_parents
+  else Some (Vertex.Set.choose seen_parents)
 
-let[@warning "-27"] find_all_cycle_vertexes (graph : Graph.t) (v : Vertex.t) :
-    Vertex.Set.t =
-  failwith __LOC__
+(* Also returns option to enable backtracking *)
+let rec find_all_cycle_vertexes ?(seen = Vertex.Set.empty) (graph : Graph.t)
+    (v : Vertex.t) : Vertex.Set.t option =
+  if Vertex.Set.mem v seen then Some seen
+  else
+    let seen = Vertex.Set.add v seen in
+    Vertex.Set.fold
+      (fun v' last ->
+        match last with
+        | Some _ -> last
+        | None -> find_all_cycle_vertexes graph v' ~seen)
+      (Graph.parent_vertexes graph v)
+      None
 
-let[@warning "-27"] choose_root_cycle_vertex (vertexes : Vertex.Set.t) :
-    Vertex.t =
-  failwith __LOC__
+let least_vertex : Vertex.Set.t -> Vertex.t = Vertex.Set.min_elt
 
 let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
-  let v' = find_a_cycle_vertex graph v in
-  let cycle_vertexes = find_all_cycle_vertexes graph v' in
-  let cycle_root = choose_root_cycle_vertex cycle_vertexes in
-  reachable_tree graph mp cycle_root
+  (* assume these options will always be Some thing *)
+  let v' = Option.get (find_a_cycle_vertex graph v) in
+  let cycle_vertexes = Option.get (find_all_cycle_vertexes graph v') in
+  let cycle_root = least_vertex cycle_vertexes in
+  reachable graph mp cycle_root
 
 let rec tree_vertexes : tree -> Vertex.t list = function
   | Ref _ -> []
@@ -99,21 +104,10 @@ let rec simple_cycles (graph : Graph.t) (mp : Vertex.Set.t)
     this_tree :: simple_cycles graph mp remaining'
 
 let render (graph : Graph.t) : tree * tree list * tree list * tree list =
-  let cache = Graph.roots graph in
-  let rooted_tree = reachable_tree graph cache.multiparent cache.root in
-  let mp_trees =
-    Vertex.Set.fold
-      (fun v ts -> reachable_tree graph cache.multiparent v :: ts)
-      cache.multiparent []
-  in
-  let orphan_trees =
-    Vertex.Set.fold
-      (fun v ts -> reachable_tree graph cache.multiparent v :: ts)
-      cache.orphans []
-  in
-  let remaining =
-    Vertex.Set.(
-      diff (diff (Graph.vertexes graph) cache.multiparent) cache.orphans)
-  in
-  let simple_cycle_trees = simple_cycles graph cache.multiparent remaining in
-  (rooted_tree, mp_trees, orphan_trees, simple_cycle_trees)
+  let Graph.{ root; vertexes; multiparent; orphans; _ } = Graph.roots graph in
+  let reachable_trees v ts = reachable graph multiparent v :: ts in
+  let remaining = Vertex.Set.(diff vertexes (union multiparent orphans)) in
+  ( reachable graph multiparent root,
+    Vertex.Set.fold reachable_trees multiparent [],
+    Vertex.Set.fold reachable_trees orphans [],
+    simple_cycles graph multiparent remaining )

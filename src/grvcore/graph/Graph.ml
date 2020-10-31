@@ -36,6 +36,11 @@ let cursor_children (graph : t) (cursor : Cursor.t) : Edge.Set.t =
 let parents (graph : t) (vertex : Vertex.t) : Edge.Set.t =
   Edge.Set.filter (fun edge -> edge.value.target = vertex) (live_edges graph)
 
+let parent_vertexes (graph : t) (v : Vertex.t) : Vertex.Set.t =
+  Edge.Set.fold
+    (fun e vs -> Vertex.Set.add e.value.source.vertex vs)
+    (parents graph v) Vertex.Set.empty
+
 let vertexes (graph : t) : Vertex.Set.t =
   Edge.Set.fold
     (fun edge vertexes ->
@@ -71,6 +76,7 @@ let multiparents (graph : t) : Vertex.Set.t =
 
 type roots = {
   root : Vertex.t;
+  vertexes : Vertex.Set.t;
   multiparent : Vertex.Set.t;
   orphans : Vertex.Set.t;
   deleted : Vertex.Set.t;
@@ -97,6 +103,7 @@ let roots (graph : t) : roots =
   Vertex.Set.iter add multiparent;
 
   (* Note that we rely on iter doing from least to greatest *)
+  let vertexes = vertexes graph in
   let deleted = ref (Vertex.Set.remove Vertex.root orphans) in
   Vertex.Set.iter
     (fun vertex ->
@@ -104,6 +111,6 @@ let roots (graph : t) : roots =
       else (
         deleted := Vertex.Set.add vertex !deleted;
         add vertex ))
-    (vertexes graph);
+    vertexes;
 
-  { root = Vertex.root; multiparent; orphans; deleted = !deleted }
+  { root = Vertex.root; vertexes; multiparent; orphans; deleted = !deleted }

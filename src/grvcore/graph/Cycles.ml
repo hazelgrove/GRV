@@ -53,9 +53,18 @@ let rec reachable_tree (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
 (* let reachable_tree' (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
  *   Con (con of v, Vertex.Set.map (reachable_tree graph mp) (Graph.child_vertexes v)) *)
 
-let[@warning "-27"] find_cycle_vertex (graph : Graph.t) (v : Vertex.t) :
-    Vertex.t =
-  failwith __LOC__
+let find_a_cycle_vertex (graph : Graph.t) ?(seen = Vertex.Set.empty)
+    (v : Vertex.t) : Vertex.t =
+  let parents =
+    Edge.Set.fold
+      (fun e vs -> Vertex.Set.add e.value.source.vertex vs)
+      (Graph.parents graph v) Vertex.Set.empty
+  in
+  if Vertex.Set.disjoint parents seen then
+    Vertex.Set.find_first
+      (fun v' -> Vertex.Set.mem v' seen)
+      (Vertex.Set.inter parents seen)
+  else Vertex.Set.choose (Vertex.Set.inter parents seen)
 
 let[@warning "-27"] find_all_cycle_vertexes (graph : Graph.t) (v : Vertex.t) :
     Vertex.Set.t =
@@ -66,7 +75,7 @@ let[@warning "-27"] choose_root_cycle_vertex (vertexes : Vertex.Set.t) :
   failwith __LOC__
 
 let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
-  let v' = find_cycle_vertex graph v in
+  let v' = find_a_cycle_vertex graph v in
   let cycle_vertexes = find_all_cycle_vertexes graph v' in
   let cycle_root = choose_root_cycle_vertex cycle_vertexes in
   reachable_tree graph mp cycle_root

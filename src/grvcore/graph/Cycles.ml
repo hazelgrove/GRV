@@ -30,21 +30,48 @@ let naive_reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
   recur v
 
 (* faster *)
-type tree =
-  | Ref of Uuid.Id.t
-  | Con of Lang.Constructor.t * (Lang.Index.t * tree) list
+(* type tree =
+ *   | Ref of Uuid.Id.t
+ *   | Con of Lang.Constructor.t * (Lang.Index.t * tree) list *)
+
+module IndexMap = Map.Make (struct
+  type t = Lang.Index.t
+
+  let compare = compare
+end)
+
+type tree = Ref of Uuid.Id.t | Con of Vertex.t * tree list IndexMap.t
+
+let rec show_tree : tree -> string = function
+  | Ref id -> "#" ^ Format.asprintf "%a" Uuid.Id.pp id
+  | Con (vertex, children) ->
+      Vertex.show vertex ^ "{ "
+      ^ IndexMap.fold
+          (fun index trees str ->
+            str ^ " " ^ Lang.Index.show index ^ "=["
+            ^ List.fold_left
+                (fun str' tree -> str' ^ ", " ^ show_tree tree)
+                "" trees
+            ^ "];")
+          children ""
+      ^ " }"
 
 let rec reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
   if Vertex.Set.mem v mp then Ref v.id
   else
-    (* let trees = Vertex.Set.fold (fun v' trees -> reachable graph mp v :: trees) in *)
-    Con
-      ( v.value,
-        Edge.Set.fold
-          (fun e ts ->
-            (e.value.source.index, reachable graph mp e.value.target) :: ts)
-          (Graph.vertex_children graph v)
-          [] )
+    let children =
+      Edge.Set.fold
+        (fun e trees_map ->
+          let subtree = reachable graph mp e.value.target in
+          IndexMap.update e.value.source.index
+            (function
+              | None -> Some [ subtree ]
+              | Some trees -> Some (trees @ [ subtree ]))
+            trees_map)
+        (Graph.vertex_children graph v)
+        IndexMap.empty
+    in
+    Con (v, children)
 
 (* else Con (v.value, Vertex.Set.map (reachable graph mp) (child_vertexes v)) *)
 
@@ -78,18 +105,28 @@ let rec find_all_cycle_vertexes ?(seen = Vertex.Set.empty) (graph : Graph.t)
 
 let least_vertex : Vertex.Set.t -> Vertex.t = Vertex.Set.min_elt
 
-let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
-  (* assume these options will always be Some thing *)
-  let v' = Option.get (find_a_cycle_vertex graph v) in
+let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
+    tree option =
+  let%map.Util.Option v' = find_a_cycle_vertex graph v in
+  (* assume this option will always be Some thing *)
   let cycle_vertexes = Option.get (find_all_cycle_vertexes graph v') in
   let cycle_root = least_vertex cycle_vertexes in
   reachable graph mp cycle_root
 
+(* let rec tree_vertexes : tree -> Vertex.t list = function
+ *   | Ref _ -> []
+ *   | Con (_, children) ->
+ *       let _, ts = List.split children in
+ *       List.concat (List.map tree_vertexes ts) *)
+
 let rec tree_vertexes : tree -> Vertex.t list = function
   | Ref _ -> []
-  | Con (_, children) ->
-      let _, ts = List.split children in
-      List.concat (List.map tree_vertexes ts)
+  | Con (vertex, children) ->
+      IndexMap.fold
+        (fun _ trees vertexes ->
+          List.concat
+            [ vertexes; vertex :: List.concat (List.map tree_vertexes trees) ])
+        children []
 
 let subtract_tree_vertexes (vs : Vertex.Set.t) (t : tree) : Vertex.Set.t =
   Vertex.Set.diff vs (Vertex.Set.of_list (tree_vertexes t))
@@ -99,11 +136,19 @@ let rec simple_cycles (graph : Graph.t) (mp : Vertex.Set.t)
   if Vertex.Set.is_empty remaining then []
   else
     let v = Vertex.Set.choose remaining in
-    let this_tree = simple_cycle graph mp v in
-    let remaining' = subtract_tree_vertexes remaining this_tree in
-    this_tree :: simple_cycles graph mp remaining'
+    match simple_cycle graph mp v with
+    | None -> simple_cycles graph mp (Vertex.Set.remove v remaining)
+    | Some tree ->
+        let rest =
+          simple_cycles graph mp (subtract_tree_vertexes remaining tree)
+        in
+        tree :: rest
 
-let render (graph : Graph.t) : tree * tree list * tree list * tree list =
+(* let this_tree = simple_cycle graph mp v in
+ * let remaining' = subtract_tree_vertexes remaining this_tree in
+ * this_tree :: simple_cycles graph mp remaining' *)
+
+let decompose (graph : Graph.t) : tree * tree list * tree list * tree list =
   let Graph.{ root; vertexes; multiparent; orphans; _ } = Graph.roots graph in
   let reachable_trees v ts = reachable graph multiparent v :: ts in
   let remaining = Vertex.Set.(diff vertexes (union multiparent orphans)) in

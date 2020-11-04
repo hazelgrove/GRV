@@ -66,6 +66,69 @@ and view_vertex (inject : Action.t -> Event.t) (editor : Editor.t)
              vertex.value);
       ]
 
+let ref_node (id : Uuid.Id.t) : Node.t =
+  Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ]
+
+let hole_node (inject : Action.t -> Event.t) (editor : Editor.t)
+    (cursor : Cursor.t) : Node.t =
+  Node.span [ Attr.class_ "hole"; clicks_to cursor inject editor ] [ chars "_" ]
+
+let conflict_node (inject : Action.t -> Event.t) (editor : Editor.t)
+    (cursor : Cursor.t) (nodes : Node.t list) : Node.t =
+  Node.span
+    [ Attr.class_ "conflict"; clicks_to cursor inject editor ]
+    ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ])
+
+let vertex_node (inject : Action.t -> Event.t) (editor : Editor.t)
+    (parent : Cursor.t option) (id : Uuid.Id.t) (child_nodes : Node.t list) :
+    Node.t =
+  Node.span [ Attr.class_ "vertex" ]
+    [
+      Node.create "sub" [] [ Node.text (Uuid.Id.show id) ];
+      Node.span
+        ( match parent with
+        | None -> []
+        | Some p -> [ clicks_to p inject editor ] )
+        child_nodes;
+    ]
+
+let rec view_tree_vertex
+    (* (first : bool = false) *) (inject : Action.t -> Event.t)
+    (editor : Editor.t) (parent : Cursor.t option) (tree : Cycles.tree) : Node.t
+    =
+  match tree with
+  | Ref id ->
+      (* if first then vertex_node inject editor parent id else *) ref_node id
+  | Con (vertex, children) ->
+      let child_nodes =
+        List.map
+          (fun index ->
+            let cursor = Cursor.{ vertex; index } in
+            match Cycles.IndexMap.find_opt index children with
+            | None | Some [] -> hole_node inject editor cursor
+            | Some [ subtree ] ->
+                view_tree_vertex inject editor (Some cursor) subtree
+            | Some subtrees ->
+                let nodes =
+                  List.map
+                    (view_tree_vertex inject editor (Some cursor))
+                    subtrees
+                in
+                conflict_node inject editor cursor nodes)
+          (Lang.Index.child_indexes vertex.value)
+      in
+      vertex_node inject editor parent vertex.id child_nodes
+
+let view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
+    (cursor : Cursor.t) (tree : Cycles.tree) : Node.t =
+  (* There are two cursors at play:
+     The /view cursor/ (bound to cursor) crawls the tree as we draw.
+     The /edit cursor/ (bound to editor.cursor) points to the focus of user input.
+  *)
+  let node = view_tree_vertex inject editor None tree in
+  if editor.cursor = cursor then Node.span [ Attr.class_ "cursor" ] [ node ]
+  else node
+
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
   let roots = Graph.roots editor.graph in
@@ -74,6 +137,17 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   in
   assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
+  let[@warning "-27"] ( reachable_tree,
+                        multiparent_trees,
+                        orphan_trees,
+                        simple_cycle_trees ) =
+    Cycles.decompose editor.graph
+  in
+  print_string "multiparent_trees:\n";
+  (* print_endline (Cycles.show_tree reachable_tree); *)
+  List.iter
+    (fun tree -> print_endline (Cycles.show_tree tree))
+    multiparent_trees;
   Graphviz.draw editor;
   Node.div
     [
@@ -140,6 +214,16 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                        edge.value.source.vertex)
                    (Edge.Set.elements (Graph.parents editor.graph vertex)))
             [];
+          (* Gui.select_panel ~label:"Multiparented" ~multi:false
+           *   ("multiparent" ^ id) multiparent_trees
+           *   (fun tree ->
+           *     view_tree_vertex inject editor None vertex
+           *     :: List.map
+           *          (fun (edge : Edge.t) ->
+           *            view_vertex inject editor root_vertexes None
+           *              edge.value.source.vertex)
+           *          (Edge.Set.elements (Graph.parents editor.graph vertex)))
+           *   []; *)
           Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
             (Vertex.Set.elements roots.deleted)
             (fun vertex ->
@@ -155,6 +239,10 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                       ~on_change:(fun str -> Gui.restore editor str);
                   ] );
             ];
+          Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
+            simple_cycle_trees
+            (fun tree -> [ view_tree_vertex inject editor None tree ])
+            [];
         ];
       Gui.panel ~label:"Patterns and Expressions"
         [

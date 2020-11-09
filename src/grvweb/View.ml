@@ -137,7 +137,11 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   in
   assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
-  let _ = Graph.vertexes editor.graph ~printing:true in
+  let vertexes = Graph.vertexes editor.graph in
+  Format.(
+    printf "Graph.vertexes = ";
+    Vertex.print_set vertexes;
+    printf "%!");
   (* let[@warning "-27"] ( reachable_tree,
                            multiparent_trees,
                            orphan_trees,

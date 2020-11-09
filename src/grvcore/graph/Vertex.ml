@@ -20,9 +20,9 @@ module Map = Map.Make (OrderedType)
 module Set = Set.Make (OrderedType)
 
 let print_set (vertexes : Set.t) : unit =
-  print_string "[";
+  Format.printf "[";
   Set.iter (fun v -> Format.printf "%s; " (show v)) vertexes;
-  print_string "]"
+  Format.printf "]%!"
 
 (* Some tests of our assumptions about the semantics of (vertex) sets *)
 

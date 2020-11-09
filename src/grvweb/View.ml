@@ -137,17 +137,13 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   in
   assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
-  let[@warning "-27"] ( reachable_tree,
-                        multiparent_trees,
-                        orphan_trees,
-                        simple_cycle_trees ) =
-    Cycles.decompose editor.graph
-  in
-  print_string "multiparent_trees:\n";
-  (* print_endline (Cycles.show_tree reachable_tree); *)
-  List.iter
-    (fun tree -> print_endline (Cycles.show_tree tree))
-    multiparent_trees;
+  let _ = Graph.vertexes editor.graph ~printing:true in
+  (* let[@warning "-27"] ( reachable_tree,
+                           multiparent_trees,
+                           orphan_trees,
+                           simple_cycle_trees ) =
+       Cycles.decompose editor.graph
+     in *)
   Graphviz.draw editor;
   Node.div
     [
@@ -239,10 +235,10 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                       ~on_change:(fun str -> Gui.restore editor str);
                   ] );
             ];
-          Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
-            simple_cycle_trees
-            (fun tree -> [ view_tree_vertex inject editor None tree ])
-            [];
+          (* Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
+             simple_cycle_trees
+             (fun tree -> [ view_tree_vertex inject editor None tree ])
+             []; *)
         ];
       Gui.panel ~label:"Patterns and Expressions"
         [

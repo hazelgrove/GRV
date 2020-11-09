@@ -149,9 +149,22 @@ let rec simple_cycles (graph : Graph.t) (mp : Vertex.Set.t)
  * this_tree :: simple_cycles graph mp remaining' *)
 
 let decompose (graph : Graph.t) : tree * tree list * tree list * tree list =
-  let Graph.{ root; vertexes; multiparent; orphans; _ } = Graph.roots graph in
+  let root = Vertex.root in
+  let vertexes = Graph.vertexes graph in
+  let multiparent = Graph.multiparents graph in
+  let orphans = Graph.orphans graph in
+  (* let Graph.{ root; vertexes; multiparent; orphans; _ } = Graph.roots graph in *)
   let reachable_trees v ts = reachable graph multiparent v :: ts in
   let remaining = Vertex.Set.(diff vertexes (union multiparent orphans)) in
+  (* print_string "root = ";
+     print_string (Vertex.show root);
+     print_endline "";
+     print_string "vertexes = [";
+     Vertex.Set.iter (fun v -> Format.printf "%s; " (Vertex.show v)) vertexes;
+     print_endline "]";
+     print_string "multiparent = [ ";
+     Vertex.Set.iter (fun v -> Format.printf "%s; " (Vertex.show v)) multiparent;
+     print_endline "]"; *)
   ( reachable graph multiparent root,
     Vertex.Set.fold reachable_trees multiparent [],
     Vertex.Set.fold reachable_trees orphans [],

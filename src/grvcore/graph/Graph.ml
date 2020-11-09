@@ -41,12 +41,19 @@ let parent_vertexes (graph : t) (v : Vertex.t) : Vertex.Set.t =
     (fun e vs -> Vertex.Set.add e.value.source.vertex vs)
     (parents graph v) Vertex.Set.empty
 
-let vertexes (graph : t) : Vertex.Set.t =
-  Edge.Set.fold
-    (fun edge vertexes ->
-      Vertex.Set.add edge.value.source.vertex
-        (Vertex.Set.add edge.value.target vertexes))
-    (edges graph) Vertex.Set.empty
+let vertexes ?(printing : bool = false) (graph : t) : Vertex.Set.t =
+  let vs =
+    Edge.Set.fold
+      (fun edge vertexes ->
+        Vertex.Set.add edge.value.source.vertex
+          (Vertex.Set.add edge.value.target vertexes))
+      (edges graph) Vertex.Set.empty
+  in
+  if printing then (
+    print_string "Graph.vertexes = ";
+    Vertex.print_set vs;
+    print_endline "" );
+  vs
 
 let vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
   Vertex.Set.find_first_opt
@@ -76,7 +83,6 @@ let multiparents (graph : t) : Vertex.Set.t =
 
 type roots = {
   root : Vertex.t;
-  vertexes : Vertex.Set.t;
   multiparent : Vertex.Set.t;
   orphans : Vertex.Set.t;
   deleted : Vertex.Set.t;
@@ -113,4 +119,4 @@ let roots (graph : t) : roots =
         add vertex ))
     vertexes;
 
-  { root = Vertex.root; vertexes; multiparent; orphans; deleted = !deleted }
+  { root = Vertex.root; multiparent; orphans; deleted = !deleted }

@@ -94,8 +94,7 @@ let vertex_node (inject : Action.t -> Event.t) (editor : Editor.t)
 
 let rec view_tree_vertex
     (* (first : bool = false) *) (inject : Action.t -> Event.t)
-    (editor : Editor.t) (parent : Cursor.t option) (tree : Cycles.tree) : Node.t
-    =
+    (editor : Editor.t) (parent : Cursor.t option) (tree : Tree.t) : Node.t =
   match tree with
   | Ref id ->
       (* if first then vertex_node inject editor parent id else *) ref_node id
@@ -104,7 +103,7 @@ let rec view_tree_vertex
         List.map
           (fun index ->
             let cursor = Cursor.{ vertex; index } in
-            match Cycles.IndexMap.find_opt index children with
+            match Tree.IndexMap.find_opt index children with
             | None | Some [] -> hole_node inject editor cursor
             | Some [ subtree ] ->
                 view_tree_vertex inject editor (Some cursor) subtree
@@ -120,7 +119,7 @@ let rec view_tree_vertex
       vertex_node inject editor parent vertex.id child_nodes
 
 let view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
-    (cursor : Cursor.t) (tree : Cycles.tree) : Node.t =
+    (cursor : Cursor.t) (tree : Tree.t) : Node.t =
   (* There are two cursors at play:
      The /view cursor/ (bound to cursor) crawls the tree as we draw.
      The /edit cursor/ (bound to editor.cursor) points to the focus of user input.

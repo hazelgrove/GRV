@@ -40,34 +40,30 @@ module IndexMap = Map.Make (struct
   let compare = compare
 end)
 
-type tree = Ref of Uuid.Id.t | Con of Vertex.t * tree list IndexMap.t
+type t = Ref of Uuid.Id.t | Con of Vertex.t * t list IndexMap.t
 
-let rec show_tree : tree -> string = function
+let rec show : t -> string = function
   | Ref id -> "#" ^ Format.asprintf "%a" Uuid.Id.pp id
   | Con (vertex, children) ->
       Vertex.show vertex ^ "{ "
       ^ IndexMap.fold
-          (fun index trees str ->
+          (fun index ts str ->
             str ^ " " ^ Lang.Index.show index ^ "=["
-            ^ List.fold_left
-                (fun str' tree -> str' ^ ", " ^ show_tree tree)
-                "" trees
+            ^ List.fold_left (fun str' t -> str' ^ ", " ^ show t) "" ts
             ^ "];")
           children ""
       ^ " }"
 
-let rec reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : tree =
+let rec reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : t =
   if Vertex.Set.mem v mp then Ref v.id
   else
     let children =
       Edge.Set.fold
-        (fun e trees_map ->
-          let subtree = reachable graph mp e.value.target in
+        (fun e ts_map ->
+          let t = reachable graph mp e.value.target in
           IndexMap.update e.value.source.index
-            (function
-              | None -> Some [ subtree ]
-              | Some trees -> Some (trees @ [ subtree ]))
-            trees_map)
+            (function None -> Some [ t ] | Some ts -> Some (ts @ [ t ]))
+            ts_map)
         (Graph.vertex_children graph v)
         IndexMap.empty
     in
@@ -105,8 +101,8 @@ let rec find_all_cycle_vertexes ?(seen = Vertex.Set.empty) (graph : Graph.t)
 
 let least_vertex : Vertex.Set.t -> Vertex.t = Vertex.Set.min_elt
 
-let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
-    tree option =
+let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : t option
+    =
   let%map.Util.Option v' = find_a_cycle_vertex graph v in
   (* assume this option will always be Some thing *)
   let cycle_vertexes = Option.get (find_all_cycle_vertexes graph v') in
@@ -119,20 +115,19 @@ let simple_cycle (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
  *       let _, ts = List.split children in
  *       List.concat (List.map tree_vertexes ts) *)
 
-let rec tree_vertexes : tree -> Vertex.t list = function
+let rec tree_vertexes : t -> Vertex.t list = function
   | Ref _ -> []
-  | Con (vertex, children) ->
+  | Con (v, children) ->
       IndexMap.fold
-        (fun _ trees vertexes ->
-          List.concat
-            [ vertexes; vertex :: List.concat (List.map tree_vertexes trees) ])
+        (fun _ ts vs ->
+          List.concat [ vs; v :: List.concat (List.map tree_vertexes ts) ])
         children []
 
-let subtract_tree_vertexes (vs : Vertex.Set.t) (t : tree) : Vertex.Set.t =
+let subtract_tree_vertexes (vs : Vertex.Set.t) (t : t) : Vertex.Set.t =
   Vertex.Set.diff vs (Vertex.Set.of_list (tree_vertexes t))
 
 let rec simple_cycles (graph : Graph.t) (mp : Vertex.Set.t)
-    (remaining : Vertex.Set.t) : tree list =
+    (remaining : Vertex.Set.t) : t list =
   if Vertex.Set.is_empty remaining then []
   else
     let v = Vertex.Set.choose remaining in
@@ -148,7 +143,7 @@ let rec simple_cycles (graph : Graph.t) (mp : Vertex.Set.t)
  * let remaining' = subtract_tree_vertexes remaining this_tree in
  * this_tree :: simple_cycles graph mp remaining' *)
 
-let decompose (graph : Graph.t) : tree * tree list * tree list * tree list =
+let decompose (graph : Graph.t) : t * t list * t list * t list =
   let root = Vertex.root in
   let vertexes = Graph.vertexes graph in
   let multiparent = Graph.multiparents graph in
@@ -156,15 +151,6 @@ let decompose (graph : Graph.t) : tree * tree list * tree list * tree list =
   (* let Graph.{ root; vertexes; multiparent; orphans; _ } = Graph.roots graph in *)
   let reachable_trees v ts = reachable graph multiparent v :: ts in
   let remaining = Vertex.Set.(diff vertexes (union multiparent orphans)) in
-  (* print_string "root = ";
-     print_string (Vertex.show root);
-     print_endline "";
-     print_string "vertexes = [";
-     Vertex.Set.iter (fun v -> Format.printf "%s; " (Vertex.show v)) vertexes;
-     print_endline "]";
-     print_string "multiparent = [ ";
-     Vertex.Set.iter (fun v -> Format.printf "%s; " (Vertex.show v)) multiparent;
-     print_endline "]"; *)
   ( reachable graph multiparent root,
     Vertex.Set.fold reachable_trees multiparent [],
     Vertex.Set.fold reachable_trees orphans [],

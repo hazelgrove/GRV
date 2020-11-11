@@ -44,30 +44,31 @@ type t = Ref of Uuid.Id.t | Con of Vertex.t * t list IndexMap.t
 
 let rec show : t -> string = function
   | Ref id -> "#" ^ Format.asprintf "%a" Uuid.Id.pp id
-  | Con (vertex, children) ->
-      Vertex.show vertex ^ "{ "
+  | Con (v, children) ->
+      "[" ^ Vertex.show v ^ "={"
       ^ IndexMap.fold
-          (fun index ts str ->
-            str ^ " " ^ Lang.Index.show index ^ "=["
-            ^ List.fold_left (fun str' t -> str' ^ ", " ^ show t) "" ts
-            ^ "];")
+          (fun i ts str ->
+            str ^ Lang.Index.show i ^ "=["
+            ^ String.concat ", " (List.map show ts)
+            ^ "]; ")
           children ""
-      ^ " }"
+      ^ "}]"
 
-let rec reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) : t =
-  if Vertex.Set.mem v mp then Ref v.id
+let rec reachable (graph : Graph.t) (multiparent : Vertex.Set.t) (v : Vertex.t)
+    : t =
+  if Vertex.Set.mem v multiparent then Ref v.id
   else
     let children =
       Edge.Set.fold
-        (fun e ts_map ->
-          let t = reachable graph mp e.value.target in
+        (fun e children ->
+          let t = reachable graph multiparent e.value.target in
           IndexMap.update e.value.source.index
-            (function None -> Some [ t ] | Some ts -> Some (ts @ [ t ]))
-            ts_map)
+            (function None -> Some [ t ] | Some ts -> Some (t :: ts))
+            children)
         (Graph.vertex_children graph v)
         IndexMap.empty
     in
-    Con (v, children)
+    Con (v, IndexMap.map List.rev children)
 
 (* else Con (v.value, Vertex.Set.map (reachable graph mp) (child_vertexes v)) *)
 

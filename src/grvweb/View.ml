@@ -69,8 +69,12 @@ and view_vertex (inject : Action.t -> Event.t) (editor : Editor.t)
 let cursor_node (node : Node.t) : Node.t =
   Node.span [ Attr.class_ "cursor" ] [ node ]
 
-let ref_node (id : Uuid.Id.t) : Node.t =
-  Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ]
+let ref_node (editor : Editor.t) (parent_cursor : Cursor.t) (id : Uuid.Id.t) :
+    Node.t =
+  let node =
+    Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ]
+  in
+  if parent_cursor = editor.cursor then cursor_node node else node
 
 let hole_node (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent_cursor : Cursor.t) : Node.t =
@@ -123,7 +127,7 @@ and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
   let parent_cursor = Option.value ~default:Cursor.root parent in
   let node =
     match tree with
-    | Ref id -> ref_node id
+    | Ref id -> ref_node editor parent_cursor id
     | Con (vertex, subtrees_map) ->
         let child_nodes_map =
           Tree.IndexMap.fold
@@ -148,8 +152,9 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
 
-  let reachable_tree, _multiparent_trees, _orphan_trees, _simple_cycle_trees =
-    Tree.decompose editor.graph
+  let multiparent = Graph.multiparents editor.graph in
+  let reachable_tree, multiparent_trees, _orphan_trees, _simple_cycle_trees =
+    Tree.decompose editor.graph multiparent
   in
 
   Graphviz.draw editor;
@@ -210,26 +215,25 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   None);
             ];
           Gui.select_panel ~label:"Multiparented" ~multi:false
-            ("multiparent" ^ id)
-            (Vertex.Set.elements roots.multiparent)
-            (fun vertex ->
-              view_vertex inject editor root_vertexes None vertex
-              :: List.map
-                   (fun (edge : Edge.t) ->
-                     view_vertex inject editor root_vertexes None
-                       edge.value.source.vertex)
-                   (Edge.Set.elements (Graph.parents editor.graph vertex)))
+            ("multiparent" ^ id) multiparent_trees
+            (fun tree ->
+              let node = view_tree inject editor None tree in
+              let vertex =
+                match tree with
+                | Ref id -> Option.get (Graph.vertex editor.graph id)
+                | Con (vertex, _) -> vertex
+              in
+              let parent_trees =
+                List.map
+                  (Tree.reachable editor.graph multiparent)
+                  (Vertex.Set.elements
+                     (Graph.parent_vertexes editor.graph vertex))
+              in
+              let parent_nodes =
+                List.map (view_tree inject editor None) parent_trees
+              in
+              node :: parent_nodes)
             [];
-          (* Gui.select_panel ~label:"Multiparented" ~multi:false
-           *   ("multiparent" ^ id) multiparent_trees
-           *   (fun tree ->
-           *     view_tree_vertex inject editor None vertex
-           *     :: List.map
-           *          (fun (edge : Edge.t) ->
-           *            view_vertex inject editor root_vertexes None
-           *              edge.value.source.vertex)
-           *          (Edge.Set.elements (Graph.parents editor.graph vertex)))
-           *   []; *)
           Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
             (Vertex.Set.elements roots.deleted)
             (fun vertex ->

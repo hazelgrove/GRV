@@ -52,14 +52,16 @@ let rec show : t -> string = function
           children ""
       ^ "}]"
 
-let rec reachable (graph : Graph.t) (multiparent : Vertex.Set.t)
-    (vertex : Vertex.t) : t =
-  if Vertex.Set.mem vertex multiparent then Ref vertex.id
+let rec reachable ?(first_call : bool = true) (graph : Graph.t)
+    (multiparent : Vertex.Set.t) (vertex : Vertex.t) : t =
+  if (not first_call) && Vertex.Set.mem vertex multiparent then Ref vertex.id
   else
     let children =
       Edge.Set.fold
         (fun edge children ->
-          let tree = reachable graph multiparent edge.value.target in
+          let tree =
+            reachable ~first_call:false graph multiparent edge.value.target
+          in
           IndexMap.update edge.value.source.index
             (function
               | None -> Some [ tree ] | Some trees -> Some (tree :: trees))
@@ -134,9 +136,9 @@ let rec simple_cycles (graph : Graph.t) (multiparent : Vertex.Set.t)
         in
         tree :: cycle_trees
 
-let decompose (graph : Graph.t) : t * t list * t list * t list =
+let decompose (graph : Graph.t) (multiparent : Vertex.Set.t) :
+    t * t list * t list * t list =
   let vertexes = Graph.vertexes graph in
-  let multiparent = Graph.multiparents graph in
   let orphans = Graph.orphans graph in
   let reachable_trees v ts = reachable graph multiparent v :: ts in
   let remaining = Vertex.Set.(diff vertexes (union multiparent orphans)) in

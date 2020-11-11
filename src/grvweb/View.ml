@@ -73,14 +73,22 @@ let ref_node (id : Uuid.Id.t) : Node.t =
   Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ]
 
 let hole_node (inject : Action.t -> Event.t) (editor : Editor.t)
-    (cursor : Cursor.t) : Node.t =
-  Node.span [ Attr.class_ "hole"; clicks_to cursor inject editor ] [ chars "_" ]
+    (parent_cursor : Cursor.t) : Node.t =
+  let node =
+    Node.span
+      [ Attr.class_ "hole"; clicks_to parent_cursor inject editor ]
+      [ chars "_" ]
+  in
+  if parent_cursor = editor.cursor then cursor_node node else node
 
 let conflict_node (inject : Action.t -> Event.t) (editor : Editor.t)
-    (cursor : Cursor.t) (nodes : Node.t list) : Node.t =
-  Node.span
-    [ Attr.class_ "conflict"; clicks_to cursor inject editor ]
-    ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ])
+    (parent_cursor : Cursor.t) (nodes : Node.t list) : Node.t =
+  let node =
+    Node.span
+      [ Attr.class_ "conflict"; clicks_to parent_cursor inject editor ]
+      ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ])
+  in
+  if parent_cursor = editor.cursor then cursor_node node else node
 
 let constructor_node ?(show_id : bool = false) (inject : Action.t -> Event.t)
     (editor : Editor.t) (parent : Cursor.t) (vertex : Vertex.t)
@@ -90,28 +98,29 @@ let constructor_node ?(show_id : bool = false) (inject : Action.t -> Event.t)
       [ Node.create "sub" [] [ Node.text (Uuid.Id.show vertex.id) ] ]
     else []
   in
-  let node =
-    Node.span [ Attr.class_ "vertex" ]
-      ( maybe_id_node
-      @ [
-          Node.span
-            [ clicks_to parent inject editor ]
-            (Lang.show chars chars
-               (fun index ->
-                 match Tree.IndexMap.find_opt index child_nodes_map with
-                 | None | Some [] -> hole_node inject editor { vertex; index }
-                 | Some [ child_node ] -> child_node
-                 | Some child_nodes ->
-                     conflict_node inject editor { vertex; index } child_nodes)
-               vertex.value);
-        ] )
-  in
-  if parent = editor.cursor then cursor_node node else node
+  Node.span [ Attr.class_ "vertex" ]
+    ( maybe_id_node
+    @ [
+        Node.span
+          [ clicks_to parent inject editor ]
+          (Lang.show chars chars
+             (fun index ->
+               match Tree.IndexMap.find_opt index child_nodes_map with
+               | None | Some [] -> hole_node inject editor { vertex; index }
+               | Some [ child_node ] -> child_node
+               | Some child_nodes ->
+                   conflict_node inject editor { vertex; index } child_nodes)
+             vertex.value);
+      ] )
 
-let rec view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
-    (parent : Cursor.t) (tree : Tree.t) : Node.t =
-  Format.printf "XXX %s || %s%!" (Cursor.show parent)
-    (Cursor.show editor.cursor);
+let rec view_tree_constructor (inject : Action.t -> Event.t) (editor : Editor.t)
+    (parent_cursor : Cursor.t) (tree : Tree.t) : Node.t =
+  let node = view_tree inject editor (Some parent_cursor) tree in
+  if parent_cursor = editor.cursor then cursor_node node else node
+
+and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
+    (parent : Cursor.t option) (tree : Tree.t) : Node.t =
+  let parent_cursor = Option.value ~default:Cursor.root parent in
   let node =
     match tree with
     | Ref id -> ref_node id
@@ -120,13 +129,15 @@ let rec view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
           Tree.IndexMap.fold
             (fun index subtrees child_nodes_map ->
               Tree.IndexMap.add index
-                (List.map (view_tree inject editor { vertex; index }) subtrees)
+                (List.map
+                   (view_tree_constructor inject editor { vertex; index })
+                   subtrees)
                 child_nodes_map)
             subtrees_map Tree.IndexMap.empty
         in
-        constructor_node inject editor parent vertex child_nodes_map
+        constructor_node inject editor parent_cursor vertex child_nodes_map
   in
-  if parent = editor.cursor then cursor_node node else node
+  if parent_cursor = editor.cursor then cursor_node node else node
 
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
@@ -140,24 +151,6 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   let reachable_tree, _multiparent_trees, _orphan_trees, _simple_cycle_trees =
     Tree.decompose editor.graph
   in
-
-  if editor.id = fst (Uuid.Map.min_binding model.editors) then (
-    Format.printf "\n";
-
-    (* let vertexes = Graph.vertexes editor.graph in
-       Format.(
-         printf "Graph.vertexes = ";
-         Vertex.print_set vertexes;
-         printf "%!");
-
-       let Graph.{ root = _; multiparent; orphans = _; deleted = _ } =
-         Graph.roots editor.graph
-       in
-       Format.(
-         printf "Graph.multiparents = ";
-         Vertex.print_set multiparent;
-         printf "%!"); *)
-    Format.(printf "Tree.reachable = %s%!" (Tree.show reachable_tree)) );
 
   Graphviz.draw editor;
   Node.div
@@ -175,7 +168,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
       Gui.panel ~label:"Cursor"
         [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
       Gui.panel ~label:"Reachable"
-        [ view_tree inject editor Cursor.root reachable_tree ];
+        [ view_tree inject editor None reachable_tree ];
       Gui.panel ~label:"Graph"
         [
           Node.div [ Attr.id ("graph" ^ id) ] [ Node.span [] [] ];

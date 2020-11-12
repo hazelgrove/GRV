@@ -155,9 +155,12 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   let id = Uuid.Id.show editor.id in
 
   let multiparent = Graph.multiparents editor.graph in
-  let reachable_tree, multiparent_trees, deleted_trees, _simple_cycle_trees =
+  let reachable_tree, multiparent_trees, deleted_trees, simple_cycle_trees =
     Tree.decompose editor.graph multiparent
   in
+
+  Format.printf "\ncycles = %s%!"
+    (String.concat "; " (List.map Tree.show simple_cycle_trees));
 
   Graphviz.draw editor;
   Node.div
@@ -250,10 +253,10 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                       ~on_change:(fun str -> Gui.restore editor str);
                   ] );
             ];
-          (* Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
-             simple_cycle_trees
-             (fun tree -> [ view_tree_vertex inject editor None tree ])
-             []; *)
+          Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
+            simple_cycle_trees
+            (fun tree -> [ view_tree inject editor None tree ])
+            [];
         ];
       Gui.panel ~label:"Patterns and Expressions"
         [

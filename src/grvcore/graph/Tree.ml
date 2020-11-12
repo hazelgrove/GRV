@@ -98,11 +98,30 @@ let rec find_all_cycle_vertexes ?(seen = Vertex.Set.empty) (graph : Graph.t)
 
 let least_vertex : Vertex.Set.t -> Vertex.t = Vertex.Set.min_elt
 
+(* A simple cycle is a set of vertices connected by a closed path, consisting
+   of:
+
+   1) two or more vertices, all descendants of each other, and
+   2) the vertices of any non-multiparent subtrees reachable from the core, and
+      not reachable from the root vertex.
+
+  To determine the simple cycles of a graph, we:
+  
+  1) check if any vertex in the graph is a descendant of itself or some other
+     vertex that is (a descendant of itself),
+  2) find the least vertex in the core of this new(ly discovered) cycle, and
+  3) return a tree connecting every vertex reachable from the least (vertex).
+
+  The least vertex of a cycle is the one that was created first. If we begin
+  our search for reachable vertices at the least vertex in a cycle, we know
+  that <...>
+
+*)
 let simple_cycle (graph : Graph.t) (multiparent : Vertex.Set.t)
     (vertex : Vertex.t) : t option =
   let%map.Util.Option cycle_vertex = find_a_cycle_vertex graph vertex in
-  (* we can always assume the following result will be Some(non-empty set)
-     because it always contains at least cycle_vertex *)
+  (* we can always assume cycle_vertexes will be Some(non-empty set) because
+     it always contains the cycle_vertex *)
   let cycle_vertexes =
     Option.get (find_all_cycle_vertexes graph cycle_vertex)
   in
@@ -142,6 +161,9 @@ let decompose (graph : Graph.t) (multiparent : Vertex.Set.t) :
   let deleted = Vertex.Set.remove Vertex.root (Graph.orphans graph) in
   let reachable_trees v ts = reachable graph multiparent v :: ts in
   let remaining = Vertex.Set.(diff vertexes (union multiparent deleted)) in
+  Format.printf "remaining: ";
+  Vertex.print_set remaining;
+  Format.printf "%!";
   ( reachable graph multiparent Vertex.root,
     Vertex.Set.fold reachable_trees multiparent [],
     Vertex.Set.fold reachable_trees deleted [],

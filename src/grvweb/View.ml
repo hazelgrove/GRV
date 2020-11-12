@@ -141,7 +141,9 @@ and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
         in
         constructor_node inject editor parent_cursor vertex child_nodes_map
   in
-  if parent_cursor = editor.cursor then cursor_node node else node
+  if Option.is_some parent && parent_cursor = editor.cursor then
+    cursor_node node
+  else node
 
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
@@ -153,7 +155,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   let id = Uuid.Id.show editor.id in
 
   let multiparent = Graph.multiparents editor.graph in
-  let reachable_tree, multiparent_trees, _orphan_trees, _simple_cycle_trees =
+  let reachable_tree, multiparent_trees, deleted_trees, _simple_cycle_trees =
     Tree.decompose editor.graph multiparent
   in
 
@@ -235,9 +237,8 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
               node :: parent_nodes)
             [];
           Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
-            (Vertex.Set.elements roots.deleted)
-            (fun vertex ->
-              [ view_vertex inject editor root_vertexes None vertex ])
+            deleted_trees
+            (fun tree -> [ view_tree inject editor None tree ])
             [
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel

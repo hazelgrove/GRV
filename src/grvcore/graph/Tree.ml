@@ -139,10 +139,10 @@ let rec simple_cycles (graph : Graph.t) (multiparent : Vertex.Set.t)
 let decompose (graph : Graph.t) (multiparent : Vertex.Set.t) :
     t * t list * t list * t list =
   let vertexes = Graph.vertexes graph in
-  let orphans = Graph.orphans graph in
+  let deleted = Vertex.Set.remove Vertex.root (Graph.orphans graph) in
   let reachable_trees v ts = reachable graph multiparent v :: ts in
-  let remaining = Vertex.Set.(diff vertexes (union multiparent orphans)) in
+  let remaining = Vertex.Set.(diff vertexes (union multiparent deleted)) in
   ( reachable graph multiparent Vertex.root,
     Vertex.Set.fold reachable_trees multiparent [],
-    Vertex.Set.fold reachable_trees orphans [],
+    Vertex.Set.fold reachable_trees deleted [],
     simple_cycles graph multiparent remaining )

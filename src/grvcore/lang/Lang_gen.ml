@@ -100,7 +100,7 @@ and exp =
           indexes = [ ("left", exp); ("right", exp) ];
           default = Some "left";
           down = Some "left";
-          show = [ Index "left"; String "+"; Index "right" ];
+          show = [ Index "left"; String " + "; Index "right" ];
         };
         {
           name = "times";
@@ -108,7 +108,7 @@ and exp =
           indexes = [ ("left", exp); ("right", exp) ];
           default = Some "left";
           down = Some "left";
-          show = [ Index "left"; String "*"; Index "right" ];
+          show = [ Index "left"; String " * "; Index "right" ];
         };
         (* TODO: sums and pairs *)
         {

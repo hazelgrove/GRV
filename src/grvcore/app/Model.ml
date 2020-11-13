@@ -26,11 +26,12 @@ let editors_of_sexp (sexp : Sexplib.Sexp.t) : Editor.t Uuid.Map.t =
   Uuid.Map.of_seq (List.to_seq bindings)
 
 let sexp_of_t (model : t) : Sexplib.Sexp.t =
-  Sexplib.Sexp.List
-    [
-      sexp_of_editors model.editors;
-      sexp_of_option sexp_of_graph_action_sequence model.actions;
-    ]
+  Sexplib.(
+    Sexp.List
+      [
+        sexp_of_editors model.editors;
+        sexp_of_option sexp_of_graph_action_sequence model.actions;
+      ])
 
 let t_of_sexp : Sexplib.Sexp.t -> t = function
   | List [ editors_sexp; actions_sexp ] ->
@@ -46,8 +47,7 @@ let empty : t =
   let editor2 = Editor.mk () in
   (* TODO: helper for this *)
   let editors =
-    Uuid.Map.of_seq
-      (List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ])
+    Uuid.Map.(empty |> add editor1.id editor1 |> add editor2.id editor2)
   in
   { editors; actions = Some [] }
 

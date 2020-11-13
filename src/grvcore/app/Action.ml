@@ -21,6 +21,7 @@ type env =
   | Load of string
   | Clone of Uuid.Id.t
   | Drop of Uuid.Id.t
+  | ToggleIds of Uuid.Id.t
 [@@deriving sexp_of]
 
 type t' = Move of move | Edit of edit | Comm of comm | Env of env
@@ -234,6 +235,16 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
       { model with editors }
   | Drop editor_id ->
       let editors = Uuid.Map.remove editor_id model.editors in
+      Some { model with editors }
+  | ToggleIds editor_id ->
+      let editors =
+        Uuid.Map.update editor_id
+          (function
+            | None -> None
+            | Some editor ->
+                Some Editor.{ editor with show_ids = not editor.show_ids })
+          model.editors
+      in
       Some { model with editors }
 
 let apply (model : Model.t) (action : t) (_state : State.t)

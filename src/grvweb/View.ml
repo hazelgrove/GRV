@@ -94,11 +94,11 @@ let conflict_node (inject : Action.t -> Event.t) (editor : Editor.t)
   in
   if parent_cursor = editor.cursor then cursor_node node else node
 
-let constructor_node ?(show_id : bool = false) (inject : Action.t -> Event.t)
-    (editor : Editor.t) (parent : Cursor.t) (vertex : Vertex.t)
+let constructor_node (inject : Action.t -> Event.t) (editor : Editor.t)
+    (parent : Cursor.t) (vertex : Vertex.t)
     (child_nodes_map : Node.t list Tree.IndexMap.t) : Node.t =
   let maybe_id_node =
-    if show_id then
+    if editor.show_ids then
       [ Node.create "sub" [] [ Node.text (Uuid.Id.show vertex.id) ] ]
     else []
   in
@@ -195,6 +195,8 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   Printf.printf "%s\n"
                     (Graphviz.draw_graph editor.graph editor.cursor);
                   None);
+              Gui.button "Toggle IDs" inject editor tabindexes
+                ~on_click:(fun () -> Some (Env (ToggleIds editor.id)));
             ];
         ];
       Node.div

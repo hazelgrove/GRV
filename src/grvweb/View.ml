@@ -38,7 +38,7 @@ let hole_node (inject : Action.t -> Event.t) (editor : Editor.t)
   maybe_cursor_node editor parent_cursor
     (Node.span
        [ Attr.class_ "hole"; clicks_to parent_cursor inject editor ]
-       [ chars "_" ])
+       [ chars "□" ])
 
 let conflict_node (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent_cursor : Cursor.t) (nodes : Node.t list) : Node.t =

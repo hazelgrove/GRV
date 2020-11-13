@@ -110,9 +110,6 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     Tree.decompose editor.graph multiparent
   in
 
-  Format.printf "\ncycles = %s%!"
-    (String.concat "; " (List.map Tree.show simple_cycle_trees));
-
   Graphviz.draw editor;
   Node.div
     [

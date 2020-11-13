@@ -23,7 +23,7 @@ let clicks_to (cursor : Cursor.t) (inject : Action.t -> Event.t)
 
 (* Components *)
 
-let rec view_cursor (inject : Action.t -> Event.t) (editor : Editor.t)
+(* let rec view_cursor (inject : Action.t -> Event.t) (editor : Editor.t)
     (roots : Vertex.Set.t) (first_call : bool) (cursor : Cursor.t) : Node.t =
   let node =
     let view_vertex' : Cursor.t option -> Vertex.t -> Node.t =
@@ -64,7 +64,7 @@ and view_vertex (inject : Action.t -> Event.t) (editor : Editor.t)
              (fun index ->
                view_cursor inject editor roots false { vertex; index })
              vertex.value);
-      ]
+      ] *)
 
 let cursor_node (node : Node.t) : Node.t =
   Node.span [ Attr.class_ "cursor" ] [ node ]
@@ -148,9 +148,6 @@ and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
   let roots = Graph.roots editor.graph in
-  let root_vertexes =
-    Vertex.Set.add roots.root (Vertex.Set.union roots.multiparent roots.deleted)
-  in
   assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
 
@@ -173,12 +170,10 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     ]
     [
       (* main code *)
-      view_cursor inject editor root_vertexes false Cursor.root;
+      view_tree inject editor None reachable_tree;
       Gui.break;
       Gui.panel ~label:"Cursor"
         [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
-      Gui.panel ~label:"Reachable"
-        [ view_tree inject editor None reachable_tree ];
       Gui.panel ~label:"Graph"
         [
           Node.div [ Attr.id ("graph" ^ id) ] [ Node.span [] [] ];

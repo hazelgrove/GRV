@@ -4,14 +4,6 @@ module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
 module Event = Virtual_dom.Vdom.Event
 
-(* Nodes *)
-
-let chars (str : string) : Node.t =
-  Node.span [ Attr.class_ "chars" ] [ Node.text str ]
-
-let errs (str : string) : Node.t =
-  Node.span [ Attr.class_ "errs" ] [ Node.text str ]
-
 (* Attrs *)
 
 let clicks_to (cursor : Cursor.t) (inject : Action.t -> Event.t)
@@ -21,78 +13,39 @@ let clicks_to (cursor : Cursor.t) (inject : Action.t -> Event.t)
       Dom_html.stopPropagation event;
       inject { Action.editor_id = editor.id; action = Move (Select cursor) })
 
-(* Components *)
+(* Nodes *)
 
-(* let rec view_cursor (inject : Action.t -> Event.t) (editor : Editor.t)
-    (roots : Vertex.Set.t) (first_call : bool) (cursor : Cursor.t) : Node.t =
-  let node =
-    let view_vertex' : Cursor.t option -> Vertex.t -> Node.t =
-      view_vertex inject editor roots ~first_call
-    in
-    match Edge.Set.elements (Graph.cursor_children editor.graph cursor) with
-    | [] ->
-        Node.span
-          [ Attr.class_ "hole"; clicks_to cursor inject editor ]
-          [ chars "_" ]
-    | [ edge ] -> view_vertex' (Some cursor) (Edge.target edge)
-    | edges ->
-        let nodes =
-          List.map (view_vertex' (Some cursor)) (List.map Edge.target edges)
-        in
-        Node.span
-          [ Attr.class_ "conflict"; clicks_to cursor inject editor ]
-          ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ])
-  in
-  if editor.cursor = cursor then Node.span [ Attr.class_ "cursor" ] [ node ]
-  else node
+let chars (str : string) : Node.t =
+  Node.span [ Attr.class_ "chars" ] [ Node.text str ]
 
-and view_vertex (inject : Action.t -> Event.t) (editor : Editor.t)
-    (roots : Vertex.Set.t) ?(first_call = true) (parent : Cursor.t option)
-    (vertex : Vertex.t) : Node.t =
-  if (not first_call) && Vertex.Set.mem vertex roots then
-    Node.span [ Attr.class_ "vertex" ]
-      [ Node.text ("#" ^ Uuid.Id.show vertex.id) ]
-  else
-    Node.span [ Attr.class_ "vertex" ]
-      [
-        Node.create "sub" [] [ Node.text (Uuid.Id.show vertex.id) ];
-        Node.span
-          ( match parent with
-          | None -> []
-          | Some p -> [ clicks_to p inject editor ] )
-          (Lang.show chars chars
-             (fun index ->
-               view_cursor inject editor roots false { vertex; index })
-             vertex.value);
-      ] *)
+let errs (str : string) : Node.t =
+  Node.span [ Attr.class_ "errs" ] [ Node.text str ]
 
 let cursor_node (node : Node.t) : Node.t =
   Node.span [ Attr.class_ "cursor" ] [ node ]
 
+let maybe_cursor_node (editor : Editor.t) (parent_cursor : Cursor.t)
+    (node : Node.t) : Node.t =
+  if parent_cursor = editor.cursor then cursor_node node else node
+
 let ref_node (editor : Editor.t) (parent_cursor : Cursor.t) (id : Uuid.Id.t) :
     Node.t =
-  let node =
-    Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ]
-  in
-  if parent_cursor = editor.cursor then cursor_node node else node
+  maybe_cursor_node editor parent_cursor
+    (Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ])
 
 let hole_node (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent_cursor : Cursor.t) : Node.t =
-  let node =
-    Node.span
-      [ Attr.class_ "hole"; clicks_to parent_cursor inject editor ]
-      [ chars "_" ]
-  in
-  if parent_cursor = editor.cursor then cursor_node node else node
+  maybe_cursor_node editor parent_cursor
+    (Node.span
+       [ Attr.class_ "hole"; clicks_to parent_cursor inject editor ]
+       [ chars "_" ])
 
 let conflict_node (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent_cursor : Cursor.t) (nodes : Node.t list) : Node.t =
-  let node =
-    Node.span
-      [ Attr.class_ "conflict"; clicks_to parent_cursor inject editor ]
-      ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ])
-  in
-  if parent_cursor = editor.cursor then cursor_node node else node
+  maybe_cursor_node editor parent_cursor
+    (Node.span
+       [ Attr.class_ "conflict"; clicks_to parent_cursor inject editor ]
+       ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ]))
 
 let constructor_node (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent : Cursor.t) (vertex : Vertex.t)
@@ -102,25 +55,28 @@ let constructor_node (inject : Action.t -> Event.t) (editor : Editor.t)
       [ Node.create "sub" [] [ Node.text (Uuid.Id.show vertex.id) ] ]
     else []
   in
-  Node.span [ Attr.class_ "vertex" ]
-    ( maybe_id_node
-    @ [
-        Node.span
-          [ clicks_to parent inject editor ]
-          (Lang.show chars chars
-             (fun index ->
-               match Tree.IndexMap.find_opt index child_nodes_map with
-               | None | Some [] -> hole_node inject editor { vertex; index }
-               | Some [ child_node ] -> child_node
-               | Some child_nodes ->
-                   conflict_node inject editor { vertex; index } child_nodes)
-             vertex.value);
-      ] )
+  let nodes =
+    [
+      Node.span
+        [ clicks_to parent inject editor ]
+        (Lang.show chars chars
+           (fun index ->
+             match Tree.IndexMap.find_opt index child_nodes_map with
+             | None | Some [] -> hole_node inject editor { vertex; index }
+             | Some [ child_node ] -> child_node
+             | Some child_nodes ->
+                 conflict_node inject editor { vertex; index } child_nodes)
+           vertex.value);
+    ]
+  in
+  Node.span [ Attr.class_ "vertex" ] (maybe_id_node @ nodes)
+
+(* Views *)
 
 let rec view_tree_constructor (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent_cursor : Cursor.t) (tree : Tree.t) : Node.t =
-  let node = view_tree inject editor (Some parent_cursor) tree in
-  if parent_cursor = editor.cursor then cursor_node node else node
+  maybe_cursor_node editor parent_cursor
+    (view_tree inject editor (Some parent_cursor) tree)
 
 and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent : Cursor.t option) (tree : Tree.t) : Node.t =
@@ -130,14 +86,12 @@ and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
     | Ref id -> ref_node editor parent_cursor id
     | Con (vertex, subtrees_map) ->
         let child_nodes_map =
-          Tree.IndexMap.fold
-            (fun index subtrees child_nodes_map ->
-              Tree.IndexMap.add index
-                (List.map
-                   (view_tree_constructor inject editor { vertex; index })
-                   subtrees)
-                child_nodes_map)
-            subtrees_map Tree.IndexMap.empty
+          Tree.IndexMap.mapi
+            (fun index subtrees ->
+              List.map
+                (view_tree_constructor inject editor { vertex; index })
+                subtrees)
+            subtrees_map
         in
         constructor_node inject editor parent_cursor vertex child_nodes_map
   in

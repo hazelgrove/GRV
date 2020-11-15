@@ -21,6 +21,9 @@ let chars (str : string) : Node.t =
 let errs (str : string) : Node.t =
   Node.span [ Attr.class_ "errs" ] [ Node.text str ]
 
+let parenthesize (node : Node.t) : Node.t =
+  Node.span [] [ chars "("; node; chars ")" ]
+
 let cursor_node (node : Node.t) : Node.t =
   Node.span [ Attr.class_ "cursor" ] [ node ]
 
@@ -45,7 +48,7 @@ let conflict_node (inject : Action.t -> Event.t) (editor : Editor.t)
   maybe_cursor_node editor parent_cursor
     (Node.span
        [ Attr.class_ "conflict"; clicks_to parent_cursor inject editor ]
-       ([ errs "{" ] @ Util.List.intersperse (errs "|") nodes @ [ errs "}" ]))
+       ([ errs "{ " ] @ Util.List.intersperse (errs " | ") nodes @ [ errs " }" ]))
 
 let constructor_node (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent : Cursor.t) (vertex : Vertex.t)
@@ -73,31 +76,38 @@ let constructor_node (inject : Action.t -> Event.t) (editor : Editor.t)
 
 (* Views *)
 
-let rec view_tree_constructor (inject : Action.t -> Event.t) (editor : Editor.t)
+let rec view_tree_constructor ?(at_top : bool = false)
+    (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent_cursor : Cursor.t) (tree : Tree.t) : Node.t =
   maybe_cursor_node editor parent_cursor
-    (view_tree inject editor (Some parent_cursor) tree)
+    (view_tree ~at_top inject editor (Some parent_cursor) tree)
 
-and view_tree (inject : Action.t -> Event.t) (editor : Editor.t)
-    (parent : Cursor.t option) (tree : Tree.t) : Node.t =
+and view_tree ?(at_top : bool = false) (inject : Action.t -> Event.t)
+    (editor : Editor.t) (parent : Cursor.t option) (tree : Tree.t) : Node.t =
+  Format.printf "view_tree %b %s%!" at_top (Tree.show tree);
   let parent_cursor = Option.value ~default:Cursor.root parent in
   let node =
     match tree with
     | Ref id -> ref_node editor parent_cursor id
-    | Con (vertex, subtrees_map) ->
+    | Con (vertex, subtrees_map) -> (
         let child_nodes_map =
           Tree.IndexMap.mapi
             (fun index subtrees ->
               List.map
-                (view_tree_constructor inject editor { vertex; index })
+                (view_tree_constructor
+                   ~at_top:(vertex = Vertex.root || vertex.value = Exp_lam)
+                   inject editor { vertex; index })
                 subtrees)
             subtrees_map
         in
-        constructor_node inject editor parent_cursor vertex child_nodes_map
+        let node =
+          constructor_node inject editor parent_cursor vertex child_nodes_map
+        in
+        match vertex.value with
+        | Exp_plus | Exp_times -> if not at_top then parenthesize node else node
+        | _ -> node )
   in
-  if Option.is_some parent && parent_cursor = editor.cursor then
-    cursor_node node
-  else node
+  maybe_cursor_node editor parent_cursor node
 
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
@@ -121,7 +131,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     ]
     [
       (* main code *)
-      view_tree inject editor None reachable_tree;
+      view_tree ~at_top:true inject editor None reachable_tree;
       Gui.break;
       Gui.panel ~label:"Cursor"
         [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
@@ -170,7 +180,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
           Gui.select_panel ~label:"Multiparented" ~multi:false
             ("multiparent" ^ id) multiparent_trees
             (fun tree ->
-              let node = view_tree inject editor None tree in
+              let node = view_tree ~at_top:true inject editor None tree in
               let vertex =
                 match tree with
                 | Ref id -> Option.get (Graph.vertex editor.graph id)
@@ -183,13 +193,15 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                      (Graph.parent_vertexes editor.graph vertex))
               in
               let parent_nodes =
-                List.map (view_tree inject editor None) parent_trees
+                List.map
+                  (view_tree ~at_top:true inject editor None)
+                  parent_trees
               in
               node :: parent_nodes)
             [];
           Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
             deleted_trees
-            (fun tree -> [ view_tree inject editor None tree ])
+            (fun tree -> [ view_tree ~at_top:true inject editor None tree ])
             [
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel
@@ -203,7 +215,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             ];
           Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
             simple_cycle_trees
-            (fun tree -> [ view_tree inject editor None tree ])
+            (fun tree -> [ view_tree ~at_top:true inject editor None tree ])
             [];
         ];
       Gui.panel ~label:"Patterns and Expressions"

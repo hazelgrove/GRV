@@ -21,3 +21,14 @@ end
 
 module Map = Map.Make (OrderedType)
 module Set = Set.Make (OrderedType)
+
+let print_set (edges : Set.t) : unit =
+  Format.(
+    printf "[";
+    Set.iter
+      (fun e ->
+        printf "%s -> %s; "
+          (Uuid.Id.show e.value.source.vertex.id)
+          (Uuid.Id.show e.value.target.id))
+      edges;
+    printf "]%!")

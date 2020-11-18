@@ -158,7 +158,7 @@ input {
     background-color: white;
 }
 
-.Multiparented > .selectItems > .selectItem > .vertex {
+.Multiparented > .selectItems > .selectItem > * {
     display: block;
     width: 100%;
 }
@@ -167,10 +167,10 @@ input {
     background-color: #FFB643;
 }
 
-.Multiparented > .selectItems > .selectItem > .vertex:not(:first-child)::before {
+.Multiparented > .selectItems > .selectItem > :not(:first-child)::before {
     color: gray;
 }
 
-.Multiparented > .selectItems > .selectItem > .vertex:not(:first-child)::before {
+.Multiparented > .selectItems > .selectItem > :not(:first-child)::before {
     content: "parent: ";
 }

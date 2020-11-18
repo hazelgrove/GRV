@@ -52,22 +52,26 @@ let rec show : t -> string = function
           children ""
       ^ "}]"
 
-let rec reachable ?(seen : Vertex.Set.t = Vertex.Set.empty) (graph : Graph.t)
+let rec reachable_children ?(seen : Vertex.Set.t = Vertex.Set.empty)
+    (graph : Graph.t) (multiparent : Vertex.Set.t) (vertex : Vertex.t) :
+    t list IndexMap.t =
+  Edge.Set.fold
+    (fun edge children ->
+      let tree = reachable ~seen graph multiparent edge.value.target in
+      IndexMap.update edge.value.source.index
+        (function None -> Some [ tree ] | Some trees -> Some (tree :: trees))
+        children)
+    (Edge.Set.filter
+       (fun e -> not (Vertex.Set.mem e.value.target multiparent))
+       (Graph.vertex_children graph vertex))
+    IndexMap.empty
+
+and reachable ?(seen : Vertex.Set.t = Vertex.Set.empty) (graph : Graph.t)
     (multiparent : Vertex.Set.t) (vertex : Vertex.t) : t =
   if Vertex.Set.(mem vertex multiparent || mem vertex seen) then Ref vertex.id
   else
     let seen = Vertex.Set.add vertex seen in
-    let children =
-      Edge.Set.fold
-        (fun edge children ->
-          let tree = reachable ~seen graph multiparent edge.value.target in
-          IndexMap.update edge.value.source.index
-            (function
-              | None -> Some [ tree ] | Some trees -> Some (tree :: trees))
-            children)
-        (Graph.vertex_children graph vertex)
-        IndexMap.empty
-    in
+    let children = reachable_children ~seen graph multiparent vertex in
     Con (vertex, IndexMap.map List.rev children)
 
 (* Returns option to enable backtracking OR to indicate failure *)
@@ -75,14 +79,14 @@ let rec find_a_cycle_vertex ?(seen = Vertex.Set.empty) (graph : Graph.t)
     (vertex : Vertex.t) : Vertex.t option =
   Format.printf "seen = ";
   Vertex.print_set seen;
-  Format.printf "]%!";
+  Format.printf "%!";
   if Vertex.Set.mem vertex seen then Some vertex
   else
+    let seen = Vertex.Set.add vertex seen in
     let parents = Graph.parent_vertexes graph vertex in
     Format.printf "parents = ";
     Vertex.print_set parents;
-    Format.printf "]%!";
-    let seen = Vertex.Set.add vertex seen in
+    Format.printf "%!";
     Vertex.Set.fold
       (fun v cycle_vertex_opt ->
         match cycle_vertex_opt with
@@ -142,7 +146,12 @@ let simple_cycle (graph : Graph.t) (multiparent : Vertex.Set.t)
 
 let rec tree_vertexes (graph : Graph.t) (tree : t) : Vertex.t list =
   match tree with
-  | Ref id -> [ Option.get (Graph.vertex graph id) ]
+  | Ref id -> (
+      match Graph.live_vertex graph id with
+      | None ->
+          Format.printf "bad id %s%!" (Uuid.Id.show id);
+          failwith __LOC__
+      | Some v -> [ v ] )
   | Con (vertex, children) ->
       IndexMap.fold
         (fun _ trees vertexes ->
@@ -166,6 +175,7 @@ let rec simple_cycles (graph : Graph.t) (multiparent : Vertex.Set.t)
   else
     let vertex = Vertex.Set.choose remaining in
     match simple_cycle graph multiparent vertex with
+    | None when Vertex.Set.cardinal remaining = 1 -> []
     | None ->
         simple_cycles graph multiparent (Vertex.Set.remove vertex remaining)
     | Some tree ->
@@ -177,8 +187,24 @@ let rec simple_cycles (graph : Graph.t) (multiparent : Vertex.Set.t)
 
 let decompose (graph : Graph.t) (multiparent : Vertex.Set.t) :
     t * t list * t list * t list =
-  let vertexes = Graph.vertexes graph in
+  let cons_reachable (v : Vertex.t) (ts : t list) : t list =
+    reachable graph multiparent v :: ts
+  in
+  let liveVertexes = Graph.live_vertexes graph in
+  let multiparent_trees = Vertex.Set.fold cons_reachable multiparent [] in
+  let multiparent_vertexes : Vertex.Set.t =
+    let vs = Vertex.Set.elements multiparent in
+    let cs = List.map (reachable_children graph multiparent) vs in
+    let bs = List.(concat (map IndexMap.bindings cs)) in
+    let ts = List.(concat (map snd bs)) in
+    let vs = List.(concat (map (tree_vertexes graph) ts)) in
+    Vertex.Set.(union multiparent (of_list vs))
+  in
   let deleted = Vertex.Set.remove Vertex.root (Graph.orphans graph) in
+  let deleted_trees = Vertex.Set.fold cons_reachable deleted [] in
+  let deleted_vertexes =
+    Vertex.Set.of_list List.(concat (map (tree_vertexes graph) deleted_trees))
+  in
   let reachable_tree = reachable graph multiparent Vertex.root in
   let reachable_vertexes =
     Vertex.Set.of_list (tree_vertexes graph reachable_tree)
@@ -186,21 +212,27 @@ let decompose (graph : Graph.t) (multiparent : Vertex.Set.t) :
   let remaining =
     Vertex.Set.(
       diff
-        (diff vertexes (union multiparent deleted) |> remove Vertex.root)
+        ( diff liveVertexes (union multiparent_vertexes deleted_vertexes)
+        |> remove Vertex.root )
         reachable_vertexes)
   in
-  Format.printf "\nvertexes: ";
-  Vertex.print_set vertexes;
+  Format.printf "\ngraph: %s%!"
+    (Sexplib.Sexp.to_string_hum (Graph.sexp_of_t graph));
+  Format.printf "liveEdges: ";
+  Edge.print_set (Graph.live_edges graph);
+  Format.printf "liveVertexes: ";
+  Vertex.print_set liveVertexes;
+  Format.printf "multiparent: ";
+  Vertex.print_set multiparent_vertexes;
   Format.printf "reachable: ";
   Vertex.print_set reachable_vertexes;
   Format.printf "deleted: ";
-  Vertex.print_set deleted;
+  Vertex.print_set deleted_vertexes;
   Format.printf "%!";
   Format.printf "cycles: %s%!"
     (String.concat "\n"
-       (List.map show (simple_cycles graph multiparent remaining)));
-  let reachable_trees v ts = reachable graph multiparent v :: ts in
+       (List.map show (simple_cycles graph multiparent_vertexes remaining)));
   ( reachable_tree,
-    Vertex.Set.fold reachable_trees multiparent [],
-    Vertex.Set.fold reachable_trees deleted [],
-    simple_cycles graph multiparent remaining )
+    multiparent_trees,
+    deleted_trees,
+    simple_cycles graph multiparent_vertexes remaining )

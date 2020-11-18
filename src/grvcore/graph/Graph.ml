@@ -2,6 +2,7 @@
 type t = Edge_state.t Edge.Map.t
 
 let sexp_of_t (graph : t) : Sexplib.Sexp.t =
+  Format.printf "XXX %d%!" (Edge.Map.cardinal graph);
   Sexp.of_map (Edge.Map.bindings graph) Edge.sexp_of_t Edge_state.sexp_of_t
 
 let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
@@ -20,10 +21,8 @@ let edges (graph : t) : Edge.Set.t =
   Edge.Set.of_list (List.map fst (Edge.Map.bindings graph))
 
 let live_edges (graph : t) : Edge.Set.t =
-  Edge.Map.fold
-    (fun edge state edges ->
-      if state = Edge_state.Created then Edge.Set.add edge edges else edges)
-    graph Edge.Set.empty
+  let live_edges = Edge.Map.filter (fun _ s -> s = Edge_state.Created) graph in
+  Edge.Set.of_list (List.map fst (Edge.Map.bindings live_edges))
 
 let vertex_children (graph : t) (vertex : Vertex.t) : Edge.Set.t =
   Edge.Set.filter
@@ -48,10 +47,22 @@ let vertexes (graph : t) : Vertex.Set.t =
         (Vertex.Set.add edge.value.target vertexes))
     (edges graph) Vertex.Set.empty
 
+let live_vertexes (graph : t) : Vertex.Set.t =
+  Edge.Set.fold
+    (fun edge vertexes ->
+      Vertex.Set.add edge.value.source.vertex
+        (Vertex.Set.add edge.value.target vertexes))
+    (live_edges graph) Vertex.Set.empty
+
 let vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
   Vertex.Set.find_first_opt
     (fun vertex -> vertex.id = vertex_id)
     (vertexes graph)
+
+let live_vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
+  Vertex.Set.find_first_opt
+    (fun vertex -> vertex.id = vertex_id)
+    (live_vertexes graph)
 
 let orphans (graph : t) : Vertex.Set.t =
   Edge.Set.fold

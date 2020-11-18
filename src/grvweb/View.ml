@@ -77,25 +77,29 @@ let constructor_node (inject : Action.t -> Event.t) (editor : Editor.t)
 (* Views *)
 
 let rec view_tree_constructor ?(at_top : bool = false)
-    (inject : Action.t -> Event.t) (editor : Editor.t)
-    (parent_cursor : Cursor.t) (tree : Tree.t) : Node.t =
+    ?(with_parens : bool = true) (inject : Action.t -> Event.t)
+    (editor : Editor.t) (parent_cursor : Cursor.t) (tree : Tree.t) : Node.t =
   maybe_cursor_node editor parent_cursor
-    (view_tree ~at_top inject editor (Some parent_cursor) tree)
+    (view_tree ~at_top ~with_parens inject editor (Some parent_cursor) tree)
 
-and view_tree ?(at_top : bool = false) (inject : Action.t -> Event.t)
-    (editor : Editor.t) (parent : Cursor.t option) (tree : Tree.t) : Node.t =
+and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
+    (inject : Action.t -> Event.t) (editor : Editor.t)
+    (parent : Cursor.t option) (tree : Tree.t) : Node.t =
   Format.printf "view_tree %b %s%!" at_top (Tree.show tree);
   let parent_cursor = Option.value ~default:Cursor.root parent in
   let node =
     match tree with
     | Ref id -> ref_node editor parent_cursor id
+    | Con (v, _) when v.id = Uuid.Id.read "0" && not at_top ->
+        ref_node editor Cursor.root (Uuid.Id.read "0")
     | Con (vertex, subtrees_map) -> (
         let child_nodes_map =
           Tree.IndexMap.mapi
             (fun index subtrees ->
               List.map
-                (view_tree_constructor
-                   ~at_top:(vertex = Vertex.root || vertex.value = Exp_lam)
+                (view_tree_constructor ~at_top
+                   ~with_parens:
+                     (not (vertex = Vertex.root || vertex.value = Exp_lam))
                    inject editor { vertex; index })
                 subtrees)
             subtrees_map
@@ -104,7 +108,8 @@ and view_tree ?(at_top : bool = false) (inject : Action.t -> Event.t)
           constructor_node inject editor parent_cursor vertex child_nodes_map
         in
         match vertex.value with
-        | Exp_plus | Exp_times -> if not at_top then parenthesize node else node
+        | Exp_plus | Exp_times ->
+            if with_parens then parenthesize node else node
         | _ -> node )
   in
   maybe_cursor_node editor parent_cursor node
@@ -131,7 +136,8 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     ]
     [
       (* main code *)
-      view_tree ~at_top:true inject editor None reachable_tree;
+      view_tree ~at_top:true ~with_parens:false inject editor None
+        reachable_tree;
       Gui.break;
       Gui.panel ~label:"Cursor"
         [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
@@ -177,31 +183,49 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   Js.clear_selection ("editors" ^ id);
                   None);
             ];
-          Gui.select_panel ~label:"Multiparented" ~multi:false
-            ("multiparent" ^ id) multiparent_trees
-            (fun tree ->
-              let node = view_tree ~at_top:true inject editor None tree in
-              let vertex =
-                match tree with
-                | Ref id -> Option.get (Graph.vertex editor.graph id)
-                | Con (vertex, _) -> vertex
-              in
-              let parent_trees =
-                List.map
-                  (Tree.reachable editor.graph multiparent)
-                  (Vertex.Set.elements
-                     (Graph.parent_vertexes editor.graph vertex))
-              in
-              let parent_nodes =
-                List.map
-                  (view_tree ~at_top:true inject editor None)
-                  parent_trees
-              in
-              node :: parent_nodes)
-            [];
+          ( Format.printf "multiparent = [";
+            List.iter
+              (fun t -> Format.printf "%s; " (Tree.show t))
+              multiparent_trees;
+            Format.printf "]%!";
+            Gui.select_panel ~label:"Multiparented" ~multi:false
+              ("multiparent" ^ id) multiparent_trees
+              (fun tree ->
+                let node =
+                  view_tree ~with_parens:false inject editor None tree
+                in
+                let vertex =
+                  match tree with
+                  | Ref id -> (
+                      match Graph.vertex editor.graph id with
+                      | None ->
+                          Format.printf "bad id2 %s%!" (Uuid.Id.show id);
+                          failwith __LOC__
+                      | Some v -> v )
+                  | Con (vertex, _) -> vertex
+                in
+                let parent_trees =
+                  List.map
+                    (Tree.reachable editor.graph multiparent)
+                    (Vertex.Set.elements
+                       (Graph.parent_vertexes editor.graph vertex))
+                in
+                Format.printf "parent_trees = [";
+                List.iter
+                  (fun t -> Format.printf "%s; " (Tree.show t))
+                  parent_trees;
+                Format.printf "]%!";
+                let parent_nodes =
+                  List.map
+                    (view_tree ~with_parens:false inject editor None)
+                    parent_trees
+                in
+                node :: parent_nodes)
+              [] );
           Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
             deleted_trees
-            (fun tree -> [ view_tree ~at_top:true inject editor None tree ])
+            (fun tree ->
+              [ view_tree ~with_parens:false inject editor None tree ])
             [
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel
@@ -215,7 +239,8 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
             ];
           Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
             simple_cycle_trees
-            (fun tree -> [ view_tree ~at_top:true inject editor None tree ])
+            (fun tree ->
+              [ view_tree ~with_parens:false inject editor None tree ])
             [];
         ];
       Gui.panel ~label:"Patterns and Expressions"

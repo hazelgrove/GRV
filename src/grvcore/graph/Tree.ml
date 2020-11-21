@@ -1,238 +1,419 @@
-(* let child_vertexes (graph : Graph.t) (v : Vertex.t) : Vertex.Set.t =
-  Edge.Set.fold
-    (fun e vs -> Vertex.Set.add e.value.target vs)
-    (Graph.vertex_children graph v)
-    Vertex.Set.empty *)
-
-(* very slow *)
-
-(* let naive_reachable (graph : Graph.t) (mp : Vertex.Set.t) (v : Vertex.t) :
-    Vertex.Set.t =
-  (* recomputing every time = slow *)
-  let rec recur (v' : Vertex.t) : Vertex.Set.t =
-    if Vertex.Set.mem v' mp then Vertex.Set.empty
-    else
-      let descendants : Vertex.Set.t list =
-        Vertex.Set.fold
-          (fun v'' vs -> recur v'' :: vs)
-          (child_vertexes graph v') []
-        (* Vertex.Set.fold
-         *   (fun vertex vertexes -> Vertex.Set.union (recur vertex) vertexes)
-         *   (child_vertexes graph v') Vertex.Set.empty *)
-      in
-      (* many unions between large sets = slow b/c smallest set keeps getting
-         bigger. Want to do incremental (e.g., unioning singleton sets every
-         time)
-      *)
-      List.fold_right Vertex.Set.union
-        (Vertex.Set.singleton v' :: descendants)
-        Vertex.Set.empty
-  in
-  recur v *)
-
-(* faster *)
-
 module IndexMap = Map.Make (struct
   type t = Lang.Index.t
 
   let compare = compare
 end)
 
-type t = Ref of Uuid.Id.t | Con of Vertex.t * t list IndexMap.t
+type t = Ref of Vertex.t | Con of Vertex.t * t list IndexMap.t
 
 let rec show : t -> string = function
-  | Ref id -> "#" ^ Format.asprintf "%a" Uuid.Id.pp id
+  | Ref vertex -> "#" ^ Uuid.Id.show vertex.id
   | Con (vertex, children) ->
-      "[" ^ Vertex.show vertex ^ "={"
-      ^ IndexMap.fold
-          (fun index trees str ->
-            str ^ Lang.Index.show index ^ "=["
-            ^ String.concat ", " (List.map show trees)
-            ^ "]; ")
-          children ""
-      ^ "}]"
+      "Con (" ^ Uuid.Id.show vertex.id ^ ", {"
+      ^ String.concat "; "
+          (IndexMap.fold
+             (fun index ts strs ->
+               let str =
+                 Lang.Index.short_name index
+                 ^ " -> " ^ "["
+                 ^ String.concat ", " (List.map show ts)
+                 ^ "]"
+               in
+               str :: strs)
+             children [])
+      ^ "})"
 
-let rec reachable_children ?(seen : Vertex.Set.t = Vertex.Set.empty)
-    (graph : Graph.t) (multiparent : Vertex.Set.t) (vertex : Vertex.t) :
-    t list IndexMap.t =
-  Edge.Set.fold
-    (fun edge children ->
-      let tree = reachable ~seen graph multiparent edge.value.target in
-      IndexMap.update edge.value.source.index
-        (function None -> Some [ tree ] | Some trees -> Some (tree :: trees))
-        children)
-    (Edge.Set.filter
-       (fun e -> not (Vertex.Set.mem e.value.target multiparent))
-       (Graph.vertex_children graph vertex))
-    IndexMap.empty
+let rec vertexes : t -> Vertex.Set.t = function
+  | Ref vertex -> Vertex.Set.singleton vertex
+  | Con (vertex, map) ->
+      IndexMap.bindings map |> List.map snd
+      |> List.map (List.map vertexes)
+      |> List.map (List.map Vertex.Set.elements)
+      |> List.map List.concat |> List.concat |> Vertex.Set.of_list
+      |> Vertex.Set.add vertex
 
-and reachable ?(seen : Vertex.Set.t = Vertex.Set.empty) (graph : Graph.t)
-    (multiparent : Vertex.Set.t) (vertex : Vertex.t) : t =
-  if Vertex.Set.(mem vertex multiparent || mem vertex seen) then Ref vertex.id
+let partition (edges : Edge.Set.t) (pivot : Vertex.t) : Edge.Set.t * Edge.Set.t
+    =
+  Edge.Set.partition (fun (e : Edge.t) -> e.value.source.vertex = pivot) edges
+
+let rec mk ?(seen : Vertex.Set.t = Vertex.Set.empty) (source : Vertex.t)
+    (descendants : Edge.Set.t) : t * Edge.Set.t =
+  if Vertex.Set.mem source seen then (Ref source, descendants)
   else
-    let seen = Vertex.Set.add vertex seen in
-    let children = reachable_children ~seen graph multiparent vertex in
-    Con (vertex, IndexMap.map List.rev children)
+    let seen = Vertex.Set.add source seen in
+    let (children, others) : Edge.Set.t * Edge.Set.t =
+      partition descendants source
+    in
+    if Edge.Set.is_empty children then (Con (source, IndexMap.empty), others)
+    else
+      let (map, others) : t list IndexMap.t * Edge.Set.t =
+        Edge.Set.fold
+          (fun e (map, others) ->
+            assert (e.value.source.vertex = source);
+            let (t, others') : t * Edge.Set.t =
+              mk ~seen e.value.target others
+            in
+            ( IndexMap.update e.value.source.index
+                (function None -> Some [ t ] | Some ts -> Some (t :: ts))
+                map,
+              Edge.Set.diff others others' ))
+          children (IndexMap.empty, others)
+      in
+      (Con (source, map), others)
 
-(* Returns option to enable backtracking OR to indicate failure *)
-let rec find_a_cycle_vertex ?(seen = Vertex.Set.empty) (graph : Graph.t)
-    (vertex : Vertex.t) : Vertex.t option =
-  Format.printf "seen = ";
-  Vertex.print_set seen;
+let edge_set_concat (sets : Edge.Set.t list) : Edge.Set.t =
+  List.map Edge.Set.elements sets |> List.concat |> Edge.Set.of_list
+
+(* TODO: introduce "remaining" edge set to guarantee single pass *)
+let rec reachable (live : Edge.Set.t) (seen : Vertex.Set.t) (vertex : Vertex.t)
+    : t * Edge.Set.t =
+  (* Format.printf "REACHABLE %s%!" (Vertex.show vertex); *)
+  if Vertex.Set.mem vertex seen then
+    ((* Format.printf "REF%!"; *)
+     Ref vertex, Edge.Set.empty)
+  else
+    (* Format.printf "CON%!"; *)
+    let children : Edge.Set.t =
+      Edge.Set.filter (fun e -> e.value.source.vertex = vertex) live
+    in
+
+    (* Format.printf "CHILDREN = ";
+       Edge.print_set children;
+       Format.printf "%!"; *)
+    let descendants : Edge.Set.t =
+      Edge.Set.elements children
+      |> List.map (fun (edge : Edge.t) -> edge.value.target)
+      (* NOTE: SLOW *)
+      |> List.map (reachable live (Vertex.Set.add vertex seen))
+      |> List.split |> snd |> edge_set_concat
+    in
+
+    (* Format.printf "DESCENDANTS = ";
+       Edge.print_set descendants;
+       Format.printf "%!"; *)
+    let edge_set = Edge.Set.union children descendants in
+
+    (* Format.printf "EDGE_SET = ";
+       Edge.print_set edge_set;
+       Format.printf "%!"; *)
+    let t = mk ~seen:(Vertex.Set.remove vertex seen) vertex edge_set |> fst in
+
+    (* Format.printf "GOT %s%!" (show t); *)
+    (t, edge_set)
+
+let decompose (graph : Graph.t) : t * t list * t list * t list =
+  Format.printf "\nBEGIN DECOMP%!";
+
+  let all : Edge.Set.t =
+    Edge.Map.bindings graph |> List.map fst |> Edge.Set.of_list
+  in
+
+  Format.printf "all = ";
+  Edge.print_set all;
   Format.printf "%!";
-  if Vertex.Set.mem vertex seen then Some vertex
-  else
-    let seen = Vertex.Set.add vertex seen in
-    let parents = Graph.parent_vertexes graph vertex in
-    Format.printf "parents = ";
-    Vertex.print_set parents;
-    Format.printf "%!";
-    Vertex.Set.fold
-      (fun v cycle_vertex_opt ->
-        match cycle_vertex_opt with
-        | Some _ -> cycle_vertex_opt
-        | None -> find_a_cycle_vertex ~seen graph v)
-      parents None
 
-(* Returns option to enable backtracking ONLY. Every result is
-   Some(set containing vertex). *)
-let rec find_all_cycle_vertexes ?(seen = Vertex.Set.empty) (graph : Graph.t)
-    (vertex : Vertex.t) : Vertex.Set.t =
-  if Vertex.Set.mem vertex seen then seen
-  else
-    let seen = Vertex.Set.add vertex seen in
-    let parents = Graph.parent_vertexes graph vertex in
-    Vertex.Set.fold
-      (fun v parent_vertex_set ->
-        Vertex.Set.union parent_vertex_set
-          (find_all_cycle_vertexes ~seen graph v))
-      parents Vertex.Set.empty
+  let live : Edge.Set.t =
+    graph
+    |> Edge.Map.filter (fun _ ->
+         function Edge_state.Created -> true | _ -> false)
+    |> Edge.Map.bindings |> List.map fst |> Edge.Set.of_list
+  in
 
-let least_vertex : Vertex.Set.t -> Vertex.t = Vertex.Set.min_elt
-
-(* A simple cycle is a set of vertices connected by a closed path, consisting
-   of:
-
-   1) two or more vertices, all descendants of each other, and
-   2) the vertices of any non-multiparent subtrees reachable from the core, and
-      not reachable from the root vertex.
-
-  To determine the simple cycles of a graph, we:
-  
-  1) check if any vertex in the graph is a descendant of itself or some other
-     vertex that is (a descendant of itself),
-  2) find the least vertex in the core of this new(ly discovered) cycle, and
-  3) return a tree connecting every vertex reachable from the least (vertex).
-
-  The least vertex of a cycle is the one that was created first. If we begin
-  our search for reachable vertices at the least vertex in a cycle, we know
-  that <...>
-
-*)
-let simple_cycle (graph : Graph.t) (multiparent : Vertex.Set.t)
-    (vertex : Vertex.t) : t option =
-  Format.printf "vertex = %s%!" (Vertex.show vertex);
-  let%map.Util.Option cycle_vertex = find_a_cycle_vertex graph vertex in
-  (* we can always assume cycle_vertexes will be Some(non-empty set) because
-     it always contains the cycle_vertex *)
-  Format.printf "cycle_vertex = %s%!" (Vertex.show cycle_vertex);
-  let cycle_vertexes = find_all_cycle_vertexes graph cycle_vertex in
-  Format.printf "cycle_vertexes = ";
-  Vertex.print_set cycle_vertexes;
+  Format.printf "live = ";
+  Edge.print_set live;
   Format.printf "%!";
-  let cycle_root = least_vertex cycle_vertexes in
-  Format.printf "cycle_root = %s%!" (Vertex.show cycle_root);
-  reachable graph multiparent cycle_root
 
-let rec tree_vertexes (graph : Graph.t) (tree : t) : Vertex.t list =
-  match tree with
-  | Ref id -> (
-      match Graph.live_vertex graph id with
-      | None ->
-          Format.printf "bad id %s%!" (Uuid.Id.show id);
-          failwith __LOC__
-      | Some v -> [ v ] )
-  | Con (vertex, children) ->
-      IndexMap.fold
-        (fun _ trees vertexes ->
-          List.concat
-            [
-              vertexes;
-              vertex :: List.concat (List.map (tree_vertexes graph) trees);
-            ])
-        children [ vertex ]
+  let multiparent : Vertex.Set.t =
+    (* find them all in one pass *)
+    let hist : int Vertex.Map.t =
+      Edge.Set.fold
+        (fun edge hist ->
+          hist
+          |> Vertex.Map.update edge.value.target (function
+               | None -> Some 1
+               | Some _ -> Some 2))
+        live Vertex.Map.empty
+    in
+    Vertex.Map.filter (fun _ count -> count = 2) hist
+    |> Vertex.Map.bindings |> List.map fst |> Vertex.Set.of_list
+  in
 
-let subtract_tree_vertexes (graph : Graph.t) (vertexes : Vertex.Set.t)
-    (tree : t) : Vertex.Set.t =
-  Vertex.Set.diff vertexes (Vertex.Set.of_list (tree_vertexes graph tree))
-
-let rec simple_cycles (graph : Graph.t) (multiparent : Vertex.Set.t)
-    (remaining : Vertex.Set.t) : t list =
-  Format.printf "remaining: ";
-  Vertex.print_set remaining;
+  Format.printf "multiparent = ";
+  Vertex.print_set multiparent;
   Format.printf "%!";
-  if Vertex.Set.is_empty remaining then []
-  else
-    let vertex = Vertex.Set.choose remaining in
-    match simple_cycle graph multiparent vertex with
-    | None when Vertex.Set.cardinal remaining = 1 -> []
-    | None ->
-        simple_cycles graph multiparent (Vertex.Set.remove vertex remaining)
-    | Some tree ->
-        let cycle_trees =
-          simple_cycles graph multiparent
-            (subtract_tree_vertexes graph remaining tree)
+
+  let orphans : Vertex.Set.t =
+    Edge.Set.fold
+      (fun edge vertexes ->
+        vertexes
+        |> Vertex.Set.add edge.value.source.vertex
+        |> Vertex.Set.add edge.value.target)
+      all
+      (Vertex.Set.singleton Vertex.root)
+    |> Edge.Set.fold
+         (fun edge orphans -> Vertex.Set.remove edge.value.target orphans)
+         live
+  in
+
+  Format.printf "orphans = ";
+  Vertex.print_set orphans;
+  Format.printf "%!";
+
+  let deleted : Vertex.Set.t = Vertex.Set.remove Vertex.root orphans in
+
+  Format.printf "deleted = ";
+  Vertex.print_set deleted;
+  Format.printf "%!";
+
+  let (r, r_edges) : t * Edge.Set.t = reachable live multiparent Vertex.root in
+
+  Format.printf "R = %s%!" (show r);
+
+  let (mp, mp_edges) : t list * Edge.Set.t =
+    let ts, edge_sets =
+      Vertex.Set.elements multiparent
+      |> List.map (fun vertex ->
+             reachable live (Vertex.Set.remove vertex multiparent) vertex)
+      |> List.split
+    in
+    (ts, edge_set_concat edge_sets)
+  in
+
+  Format.printf "MP = [%s]%!" (List.map show mp |> String.concat "; ");
+
+  let (d, d_edges) : t list * Edge.Set.t =
+    let ts, edge_sets =
+      Vertex.Set.elements deleted
+      |> List.map (reachable live multiparent)
+      |> List.split
+    in
+    (ts, edge_set_concat edge_sets)
+  in
+
+  Format.printf "D = [%s]%!" (List.map show d |> String.concat "; ");
+
+  let rec simple_cycles (remaining : Edge.Set.t) (acc : (t * Edge.Set.t) list) :
+      (t * Edge.Set.t) list =
+    match Edge.Set.min_elt_opt remaining with
+    | None -> acc
+    | Some edge ->
+        let (t, edge_set) : t * Edge.Set.t =
+          reachable live multiparent edge.value.source.vertex
         in
-        tree :: cycle_trees
+        let remaining : Edge.Set.t = Edge.Set.diff remaining edge_set in
+        simple_cycles remaining ((t, edge_set) :: acc)
+  in
 
-let decompose (graph : Graph.t) (multiparent : Vertex.Set.t) :
-    t * t list * t list * t list =
-  let cons_reachable (v : Vertex.t) (ts : t list) : t list =
-    reachable graph multiparent v :: ts
+  let (sc, _sc_edges) : t list * Edge.Set.t =
+    let ts, edge_sets =
+      simple_cycles
+        (Edge.Set.diff live (edge_set_concat [ r_edges; d_edges; mp_edges ]))
+        []
+      |> List.split
+    in
+    (ts, edge_set_concat edge_sets)
   in
-  let liveVertexes = Graph.live_vertexes graph in
-  let multiparent_trees = Vertex.Set.fold cons_reachable multiparent [] in
-  let multiparent_vertexes : Vertex.Set.t =
-    let vs = Vertex.Set.elements multiparent in
-    let cs = List.map (reachable_children graph multiparent) vs in
-    let bs = List.(concat (map IndexMap.bindings cs)) in
-    let ts = List.(concat (map snd bs)) in
-    let vs = List.(concat (map (tree_vertexes graph) ts)) in
-    Vertex.Set.(union multiparent (of_list vs))
+
+  Format.printf "SC = [%s]%!" (List.map show sc |> String.concat "; ");
+
+  (r, d, mp, sc)
+
+(*******************************************************************************
+ * Unit Tests
+ ******************************************************************************)
+
+let%test "mk 0" =
+  Format.printf "\n--\n%!";
+  let t = mk Vertex.root Edge.Set.empty |> fst in
+  let want = Con (Vertex.root, IndexMap.empty) in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n%!" (show want);
+  t = want
+
+let%test "mk 1" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
   in
-  let deleted = Vertex.Set.remove Vertex.root (Graph.orphans graph) in
-  let deleted_trees = Vertex.Set.fold cons_reachable deleted [] in
-  let deleted_vertexes =
-    Vertex.Set.of_list List.(concat (map (tree_vertexes graph) deleted_trees))
+  let t = mk Vertex.root (Edge.Set.singleton edge01) |> fst in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [ Con (target1, IndexMap.empty) ] )
   in
-  let reachable_tree = reachable graph multiparent Vertex.root in
-  let reachable_vertexes =
-    Vertex.Set.of_list (tree_vertexes graph reachable_tree)
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n%!" (show want);
+  t = want
+
+let%test "mk 2" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
   in
-  let remaining =
-    Vertex.Set.(
-      diff
-        ( diff liveVertexes (union multiparent_vertexes deleted_vertexes)
-        |> remove Vertex.root )
-        reachable_vertexes)
+  let edge02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target2
   in
-  Format.printf "\ngraph: %s%!"
-    (Sexplib.Sexp.to_string_hum (Graph.sexp_of_t graph));
-  Format.printf "liveEdges: ";
-  Edge.print_set (Graph.live_edges graph);
-  Format.printf "liveVertexes: ";
-  Vertex.print_set liveVertexes;
-  Format.printf "multiparent: ";
-  Vertex.print_set multiparent_vertexes;
-  Format.printf "reachable: ";
-  Vertex.print_set reachable_vertexes;
-  Format.printf "deleted: ";
-  Vertex.print_set deleted_vertexes;
-  Format.printf "%!";
-  Format.printf "cycles: %s%!"
-    (String.concat "\n"
-       (List.map show (simple_cycles graph multiparent_vertexes remaining)));
-  ( reachable_tree,
-    multiparent_trees,
-    deleted_trees,
-    simple_cycles graph multiparent_vertexes remaining )
+  let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge02 ]) |> fst in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [ Con (target2, IndexMap.empty); Con (target1, IndexMap.empty) ] )
+  in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n%!" (show want);
+  t = want
+
+let%test "mk 1.1" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
+  in
+  let edge12 : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) target2
+  in
+  let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge12 ]) |> fst in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [
+            Con
+              ( target1,
+                IndexMap.singleton Lang.Index.Exp_plus_left
+                  [ Con (target2, IndexMap.empty) ] );
+          ] )
+  in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n%!" (show want);
+  t = want
+
+let%test "mk 1.2" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let target3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
+  in
+  let edge12 : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) target2
+  in
+  let edge13 : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_right) target3
+  in
+  let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge12; edge13 ]) |> fst in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [
+            Con
+              ( target1,
+                IndexMap.empty
+                |> IndexMap.add Lang.Index.Exp_plus_left
+                     [ Con (target2, IndexMap.empty) ]
+                |> IndexMap.add Lang.Index.Exp_plus_right
+                     [ Con (target3, IndexMap.empty) ] );
+          ] )
+  in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n\n%!" (show want);
+  t = want
+
+let%test "mk 1.1.1" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let target3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
+  in
+  let edge12 : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) target2
+  in
+  let edge23 : Edge.t =
+    Edge.mk (Cursor.mk target2 Lang.Index.Exp_plus_right) target3
+  in
+  let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge12; edge23 ]) |> fst in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [
+            Con
+              ( target1,
+                IndexMap.singleton Lang.Index.Exp_plus_left
+                  [
+                    Con
+                      ( target2,
+                        IndexMap.singleton Lang.Index.Exp_plus_right
+                          [ Con (target3, IndexMap.empty) ] );
+                  ] );
+          ] )
+  in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n\n%!" (show want);
+  t = want
+
+let%test "mk sc" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
+  in
+  let edge10 : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) Vertex.root
+  in
+  let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge10 ]) |> fst in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [
+            Con
+              ( target1,
+                IndexMap.empty
+                |> IndexMap.add Lang.Index.Exp_plus_left [ Ref Vertex.root ] );
+          ] )
+  in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n%!" (show want);
+  t = want
+
+let%test "mk mp" =
+  Format.printf "\n--\n%!";
+  let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
+  in
+  let edge10 : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) Vertex.root
+  in
+  let edge10' : Edge.t =
+    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_right) Vertex.root
+  in
+  let t =
+    mk Vertex.root (Edge.Set.of_list [ edge01; edge10; edge10' ]) |> fst
+  in
+  let want =
+    Con
+      ( Vertex.root,
+        IndexMap.singleton Lang.Index.Root_root_root
+          [
+            Con
+              ( target1,
+                IndexMap.empty
+                |> IndexMap.add Lang.Index.Exp_plus_left [ Ref Vertex.root ]
+                |> IndexMap.add Lang.Index.Exp_plus_right [ Ref Vertex.root ] );
+          ] )
+  in
+  Format.printf "\nGOT  %s%!" (show t);
+  Format.printf "\nWANT %s\n%!" (show want);
+  t = want

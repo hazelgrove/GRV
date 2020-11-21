@@ -88,7 +88,7 @@ and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
   let parent_cursor = Option.value ~default:Cursor.root parent in
   let node =
     match tree with
-    | Ref id -> ref_node editor parent_cursor id
+    | Ref v -> ref_node editor parent_cursor v.id
     | Con (v, _) when v.id = Uuid.Id.read "0" && not at_top ->
         ref_node editor Cursor.root (Uuid.Id.read "0")
     | Con (vertex, subtrees_map) -> (
@@ -119,10 +119,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
   assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
 
-  let multiparent = Graph.multiparents editor.graph in
-  let reachable_tree, multiparent_trees, deleted_trees, simple_cycle_trees =
-    Tree.decompose editor.graph multiparent
-  in
+  let r, d, mp, sc = Tree.decompose editor.graph in
 
   Graphviz.draw editor;
   Node.div
@@ -134,9 +131,9 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
       Attr.on_keydown (Key.dispatch ~inject model editor tabindexes);
     ]
     [
-      (* main code *)
-      view_tree ~at_top:true ~with_parens:false inject editor None
-        reachable_tree;
+      (* BEGIN MAIN EDIT VIEW *)
+      view_tree ~at_top:true ~with_parens:false inject editor None r;
+      (* END MAIN EDIT VIEW *)
       Gui.break;
       Gui.panel ~label:"Cursor"
         [ chars (Format.asprintf "%a@." Cursor.pp editor.cursor) ];
@@ -182,49 +179,43 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   Js.clear_selection ("editors" ^ id);
                   None);
             ];
-          ( Format.printf "multiparent = [";
-            List.iter
-              (fun t -> Format.printf "%s; " (Tree.show t))
-              multiparent_trees;
-            Format.printf "]%!";
-            Gui.select_panel ~label:"Multiparented" ~multi:false
-              ("multiparent" ^ id) multiparent_trees
-              (fun tree ->
-                let node =
-                  view_tree ~with_parens:false inject editor None tree
-                in
-                let vertex =
-                  match tree with
-                  | Ref id -> (
-                      match Graph.vertex editor.graph id with
-                      | None ->
-                          Format.printf "bad id2 %s%!" (Uuid.Id.show id);
-                          failwith __LOC__
-                      | Some v -> v )
-                  | Con (vertex, _) -> vertex
-                in
-                let parent_trees =
-                  List.map
-                    (Tree.reachable editor.graph multiparent)
-                    (Vertex.Set.elements
-                       (Graph.parent_vertexes editor.graph vertex))
-                in
-                Format.printf "parent_trees = [";
-                List.iter
-                  (fun t -> Format.printf "%s; " (Tree.show t))
-                  parent_trees;
-                Format.printf "]%!";
-                let parent_nodes =
-                  List.map
-                    (view_tree ~with_parens:false inject editor None)
-                    parent_trees
-                in
-                node :: parent_nodes)
-              [] );
-          Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id)
-            deleted_trees
+          (* TODO: fix buggy cursor inside Multiparented box *)
+          Gui.select_panel ~label:"Multiparented" ~multi:false
+            ("multiparent" ^ id) mp
             (fun tree ->
-              [ view_tree ~with_parens:false inject editor None tree ])
+              let node =
+                view_tree ~at_top:true ~with_parens:false inject editor None
+                  tree
+              in
+              let vertex =
+                match tree with
+                | Ref vertex -> (
+                    match Graph.vertex editor.graph vertex.id with
+                    | None -> failwith __LOC__
+                    | Some v -> v )
+                | Con (vertex, _) -> vertex
+              in
+              let parent_nodes : Node.t list =
+                Graph.parent_vertexes editor.graph vertex
+                |> Vertex.Set.elements
+                |> List.map
+                     (Tree.reachable
+                        (Graph.live_edges editor.graph)
+                        (Graph.multiparents editor.graph))
+                |> List.map fst
+                |> List.map
+                     (view_tree ~at_top:true ~with_parens:false inject editor
+                        None)
+              in
+
+              node :: parent_nodes)
+            [];
+          Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id) d
+            (fun tree ->
+              [
+                view_tree ~at_top:true ~with_parens:false inject editor None
+                  tree;
+              ])
             [
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel
@@ -237,7 +228,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   ] );
             ];
           Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
-            simple_cycle_trees
+            sc
             (fun tree ->
               [ view_tree ~with_parens:false inject editor None tree ])
             [];

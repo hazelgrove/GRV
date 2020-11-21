@@ -85,7 +85,6 @@ let rec view_tree_constructor ?(at_top : bool = false)
 and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
     (inject : Action.t -> Event.t) (editor : Editor.t)
     (parent : Cursor.t option) (tree : Tree.t) : Node.t =
-  Format.printf "view_tree %b %s%!" at_top (Tree.show tree);
   let parent_cursor = Option.value ~default:Cursor.root parent in
   let node =
     match tree with

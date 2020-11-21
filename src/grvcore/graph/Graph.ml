@@ -2,7 +2,6 @@
 type t = Edge_state.t Edge.Map.t
 
 let sexp_of_t (graph : t) : Sexplib.Sexp.t =
-  Format.printf "XXX %d%!" (Edge.Map.cardinal graph);
   Sexp.of_map (Edge.Map.bindings graph) Edge.sexp_of_t Edge_state.sexp_of_t
 
 let t_of_sexp (sexp : Sexplib.Sexp.t) : t =

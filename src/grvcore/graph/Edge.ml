@@ -2,6 +2,11 @@ type t' = { source : Cursor.t; target : Vertex.t } [@@deriving sexp, show]
 
 type t = t' Uuid.Wrap.t [@@deriving sexp, show]
 
+let show (edge : t) : string =
+  Uuid.Id.show edge.value.source.vertex.id
+  ^ " -> "
+  ^ Uuid.Id.show edge.value.target.id
+
 let mk (source : Cursor.t) (target : Vertex.t) : t =
   Uuid.Wrap.mk { source; target }
 
@@ -31,4 +36,4 @@ let print_set (edges : Set.t) : unit =
           (Uuid.Id.show e.value.source.vertex.id)
           (Uuid.Id.show e.value.target.id))
       edges;
-    printf "]%!")
+    printf "]")

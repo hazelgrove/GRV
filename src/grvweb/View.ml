@@ -108,7 +108,7 @@ and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
           constructor_node inject editor parent_cursor vertex child_nodes_map
         in
         match vertex.value with
-        | Exp_plus | Exp_times ->
+        | Exp_app | Exp_plus | Exp_times ->
             if with_parens then parenthesize node else node
         | _ -> node )
   in

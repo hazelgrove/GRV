@@ -83,8 +83,7 @@ and exp =
           indexes = [ ("fun", exp); ("arg", exp) ];
           default = Some "fun";
           down = Some "fun";
-          show =
-            [ String "("; Index "fun"; String " "; Index "arg"; String ")" ];
+          show = [ Index "fun"; String " "; Index "arg" ];
         };
         {
           name = "num";

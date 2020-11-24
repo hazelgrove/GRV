@@ -223,15 +223,11 @@ let decompose (graph : Graph.t) : t * t list * t list * t list =
  ******************************************************************************)
 
 let%test "mk 0" =
-  Format.printf "\n--\n%!";
   let t = mk Vertex.root Edge.Set.empty |> fst in
   let want = Con (Vertex.root, IndexMap.empty) in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n%!" (show want);
   t = want
 
 let%test "mk 1" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let edge01 : Edge.t =
     Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
@@ -243,12 +239,9 @@ let%test "mk 1" =
         IndexMap.singleton Lang.Index.Root_root_root
           [ Con (target1, IndexMap.empty) ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n%!" (show want);
   t = want
 
 let%test "mk 2" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let edge01 : Edge.t =
@@ -264,12 +257,9 @@ let%test "mk 2" =
         IndexMap.singleton Lang.Index.Root_root_root
           [ Con (target2, IndexMap.empty); Con (target1, IndexMap.empty) ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n%!" (show want);
   t = want
 
 let%test "mk 1.1" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let edge01 : Edge.t =
@@ -290,12 +280,9 @@ let%test "mk 1.1" =
                   [ Con (target2, IndexMap.empty) ] );
           ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n%!" (show want);
   t = want
 
 let%test "mk 1.2" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let target3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
@@ -323,12 +310,9 @@ let%test "mk 1.2" =
                      [ Con (target3, IndexMap.empty) ] );
           ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n\n%!" (show want);
   t = want
 
 let%test "mk 1.1.1" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let target3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
@@ -358,12 +342,9 @@ let%test "mk 1.1.1" =
                   ] );
           ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n\n%!" (show want);
   t = want
 
 let%test "mk sc" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let edge01 : Edge.t =
     Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
@@ -383,12 +364,9 @@ let%test "mk sc" =
                 |> IndexMap.add Lang.Index.Exp_plus_left [ Ref Vertex.root ] );
           ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n%!" (show want);
   t = want
 
 let%test "mk mp" =
-  Format.printf "\n--\n%!";
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let edge01 : Edge.t =
     Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
@@ -414,6 +392,244 @@ let%test "mk mp" =
                 |> IndexMap.add Lang.Index.Exp_plus_right [ Ref Vertex.root ] );
           ] )
   in
-  Format.printf "\nGOT  %s%!" (show t);
-  Format.printf "\nWANT %s\n%!" (show want);
   t = want
+
+let%test "decompose 0" =
+  let graph = Graph.empty in
+  decompose graph = (Con (Vertex.root, IndexMap.empty), [], [], [])
+
+let%test "decompose 0->1" =
+  let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
+  in
+  let graph : Graph.t = Edge.Map.(empty |> add edge01 Edge_state.Created) in
+  decompose graph
+  = ( Con
+        ( Vertex.root,
+          IndexMap.(
+            empty
+            |> add Lang.Index.Root_root_root [ Con (vertex1, IndexMap.empty) ])
+        ),
+      [],
+      [],
+      [] )
+
+let%test "decompose 0 1" =
+  let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
+  in
+  let graph : Graph.t = Edge.Map.(empty |> add edge01 Edge_state.Destroyed) in
+  decompose graph
+  = ( Con (Vertex.root, IndexMap.empty),
+      [ Con (vertex1, IndexMap.empty) ],
+      [],
+      [] )
+
+let%test "decompose 0->2 1" =
+  let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let vertex2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
+  in
+  let edge02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex2
+  in
+  let graph : Graph.t =
+    Edge.Map.empty
+    |> Edge.Map.add edge01 Edge_state.Destroyed
+    |> Edge.Map.add edge02 Edge_state.Created
+  in
+  decompose graph
+  = ( Con
+        ( Vertex.root,
+          IndexMap.singleton Lang.Index.Root_root_root
+            [ Con (vertex2, IndexMap.empty) ] ),
+      [ Con (vertex1, IndexMap.empty) ],
+      [],
+      [] )
+
+let%test "decompose 0->2->3 1" =
+  let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let vertex2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let vertex3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
+  in
+  let edge02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex2
+  in
+  let edge23 : Edge.t =
+    Edge.mk (Cursor.mk vertex2 Lang.Index.Exp_times_left) vertex3
+  in
+  let graph : Graph.t =
+    Edge.Map.empty
+    |> Edge.Map.add edge01 Edge_state.Destroyed
+    |> Edge.Map.add edge02 Edge_state.Created
+    |> Edge.Map.add edge23 Edge_state.Created
+  in
+  decompose graph
+  = ( Con
+        ( Vertex.root,
+          IndexMap.singleton Lang.Index.Root_root_root
+            [
+              Con
+                ( vertex2,
+                  IndexMap.singleton Lang.Index.Exp_times_left
+                    [ Con (vertex3, IndexMap.empty) ] );
+            ] ),
+      [ Con (vertex1, IndexMap.empty) ],
+      [],
+      [] )
+
+let%test "decompose 0->2->3 1->3" =
+  let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let vertex2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let vertex3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let edge01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
+  in
+  let edge02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex2
+  in
+  let edge23 : Edge.t =
+    Edge.mk (Cursor.mk vertex2 Lang.Index.Exp_times_left) vertex3
+  in
+  let edge13 : Edge.t =
+    Edge.mk (Cursor.mk vertex1 Lang.Index.Exp_plus_left) vertex3
+  in
+  let graph : Graph.t =
+    Edge.Map.empty
+    |> Edge.Map.add edge01 Edge_state.Destroyed
+    |> Edge.Map.add edge02 Edge_state.Created
+    |> Edge.Map.add edge23 Edge_state.Created
+    |> Edge.Map.add edge13 Edge_state.Created
+  in
+  decompose graph
+  = ( Con
+        ( Vertex.root,
+          IndexMap.singleton Lang.Index.Root_root_root
+            [
+              Con
+                ( vertex2,
+                  IndexMap.singleton Lang.Index.Exp_times_left [ Ref vertex3 ]
+                );
+            ] ),
+      [ Con (vertex1, IndexMap.singleton Exp_plus_left [ Ref vertex3 ]) ],
+      [ Con (vertex3, IndexMap.empty) ],
+      [] )
+
+let%test "decompose 0->2<->3<-1" =
+  let v1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let v2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let v3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let e01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v1
+  in
+  let e02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v2
+  in
+  let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
+  let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
+  let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
+  let g : Graph.t =
+    Edge.Map.empty
+    |> Edge.Map.add e01 Edge_state.Destroyed
+    |> Edge.Map.add e02 Edge_state.Created
+    |> Edge.Map.add e23 Edge_state.Created
+    |> Edge.Map.add e13 Edge_state.Created
+    |> Edge.Map.add e32 Edge_state.Created
+  in
+  let got_r, got_d, got_mp, got_sc = decompose g in
+  let want_r, want_d, want_mp, want_sc =
+    ( Con (Vertex.root, IndexMap.singleton Lang.Index.Root_root_root [ Ref v2 ]),
+      [ Con (v1, IndexMap.singleton Lang.Index.Exp_plus_left [ Ref v3 ]) ],
+      [
+        Con (v2, IndexMap.singleton Lang.Index.Exp_times_left [ Ref v3 ]);
+        Con (v3, IndexMap.singleton Lang.Index.Exp_app_arg [ Ref v2 ]);
+      ],
+      [] )
+  in
+  (got_r, got_d, got_mp, got_sc) = (want_r, want_d, want_mp, want_sc)
+
+let%test "decompose 0 2<->3<-1" =
+  let v1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let v2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let v3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let e01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v1
+  in
+  let e02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v2
+  in
+  let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
+  let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
+  let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
+  let g : Graph.t =
+    Edge.Map.empty
+    |> Edge.Map.add e01 Edge_state.Destroyed
+    |> Edge.Map.add e02 Edge_state.Destroyed
+    |> Edge.Map.add e23 Edge_state.Created
+    |> Edge.Map.add e13 Edge_state.Created
+    |> Edge.Map.add e32 Edge_state.Created
+  in
+  let got_r, got_d, got_mp, got_sc = decompose g in
+  let want_r, want_d, want_mp, want_sc =
+    ( Con (Vertex.root, IndexMap.empty),
+      [ Con (v1, IndexMap.singleton Lang.Index.Exp_plus_left [ Ref v3 ]) ],
+      [
+        Con
+          ( v3,
+            IndexMap.singleton Lang.Index.Exp_app_arg
+              [
+                Con (v2, IndexMap.singleton Lang.Index.Exp_times_left [ Ref v3 ]);
+              ] );
+      ],
+      [] )
+  in
+  (got_r, got_d, got_mp, got_sc) = (want_r, want_d, want_mp, want_sc)
+
+let%test "decompose 0 2<->3 1" =
+  let v1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
+  let v2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
+  let v3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
+  let e01 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v1
+  in
+  let e02 : Edge.t =
+    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v2
+  in
+  let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
+  let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
+  let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
+  let g : Graph.t =
+    Edge.Map.empty
+    |> Edge.Map.add e01 Edge_state.Destroyed
+    |> Edge.Map.add e02 Edge_state.Destroyed
+    |> Edge.Map.add e23 Edge_state.Created
+    |> Edge.Map.add e13 Edge_state.Destroyed
+    |> Edge.Map.add e32 Edge_state.Created
+  in
+  let got_r, got_d, got_mp, got_sc = decompose g in
+  let want_r, want_d, want_mp, want_sc =
+    ( Con (Vertex.root, IndexMap.empty),
+      [ Con (v1, IndexMap.empty) ],
+      [],
+      [
+        Con
+          ( v2,
+            IndexMap.singleton Lang.Index.Exp_times_left
+              [ Con (v3, IndexMap.singleton Lang.Index.Exp_app_arg [ Ref v2 ]) ]
+          );
+      ] )
+  in
+  (* Format.printf "\n--\n\n GOT  R: %s\n%!" (show got_r);
+     Format.printf "WANT  R: %s\n%!" (show want_r);
+     Format.printf " GOT  D: [%s]\n%!" (String.concat "; " (List.map show got_d));
+     Format.printf "WANT  D: [%s]\n%!" (String.concat "; " (List.map show want_d));
+     Format.printf " GOT MP: [%s]\n%!" (String.concat "; " (List.map show got_mp));
+     Format.printf "WANT MP: [%s]\n%!" (String.concat "; " (List.map show want_mp));
+     Format.printf " GOT SC: [%s]\n%!" (String.concat "; " (List.map show got_sc));
+     Format.printf "WANT SC: [%s]\n%!" (String.concat "; " (List.map show want_sc)); *)
+  (got_r, got_d, got_mp, got_sc) = (want_r, want_d, want_mp, want_sc)

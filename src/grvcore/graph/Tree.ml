@@ -9,166 +9,60 @@ type t = Ref of Vertex.t | Con of Vertex.t * t list IndexMap.t
 let rec show : t -> string = function
   | Ref vertex -> "#" ^ Uuid.Id.show vertex.id
   | Con (vertex, children) ->
-      "Con (" ^ Uuid.Id.show vertex.id ^ ", {"
-      ^ String.concat "; "
-          (IndexMap.fold
-             (fun index ts strs ->
-               let str =
-                 Lang.Index.short_name index
-                 ^ " -> " ^ "["
-                 ^ String.concat ", " (List.map show ts)
-                 ^ "]"
-               in
-               str :: strs)
-             children [])
-      ^ "})"
-
-let rec vertexes : t -> Vertex.Set.t = function
-  | Ref vertex -> Vertex.Set.singleton vertex
-  | Con (vertex, map) ->
-      IndexMap.bindings map |> List.map snd
-      |> List.map (List.map vertexes)
-      |> List.map (List.map Vertex.Set.elements)
-      |> List.map List.concat |> List.concat |> Vertex.Set.of_list
-      |> Vertex.Set.add vertex
-
-let partition (edges : Edge.Set.t) (pivot : Vertex.t) : Edge.Set.t * Edge.Set.t
-    =
-  Edge.Set.partition (fun (e : Edge.t) -> e.value.source.vertex = pivot) edges
+      Format.sprintf "Con (%s, {%s})" (Uuid.Id.show vertex.id)
+        (String.concat "; "
+           ( IndexMap.bindings children
+           |> List.map (fun (index, ts) ->
+                  Format.sprintf "%s -> [%s]"
+                    (Lang.Index.short_name index)
+                    (List.map show ts |> String.concat ", ")) ))
 
 let rec mk ?(seen : Vertex.Set.t = Vertex.Set.empty) (source : Vertex.t)
     (descendants : Edge.Set.t) : t * Edge.Set.t =
   if Vertex.Set.mem source seen then (Ref source, descendants)
   else
-    let seen = Vertex.Set.add source seen in
+    let seen : Vertex.Set.t = Vertex.Set.add source seen in
     let (children, others) : Edge.Set.t * Edge.Set.t =
-      partition descendants source
+      Edge.partition_set descendants source
     in
-    if Edge.Set.is_empty children then (Con (source, IndexMap.empty), others)
-    else
-      let (map, others) : t list IndexMap.t * Edge.Set.t =
-        Edge.Set.fold
-          (fun e (map, others) ->
-            assert (e.value.source.vertex = source);
-            let (t, others') : t * Edge.Set.t =
-              mk ~seen e.value.target others
-            in
-            ( IndexMap.update e.value.source.index
-                (function None -> Some [ t ] | Some ts -> Some (t :: ts))
-                map,
-              Edge.Set.diff others others' ))
-          children (IndexMap.empty, others)
-      in
-      (Con (source, map), others)
-
-let edge_set_concat (sets : Edge.Set.t list) : Edge.Set.t =
-  List.map Edge.Set.elements sets |> List.concat |> Edge.Set.of_list
+    let (map, others) : t list IndexMap.t * Edge.Set.t =
+      Edge.Set.fold
+        (fun e (map, others) ->
+          assert (e.value.source.vertex = source);
+          let (t, others') : t * Edge.Set.t = mk ~seen e.value.target others in
+          ( IndexMap.update e.value.source.index
+              (function None -> Some [ t ] | Some ts -> Some (t :: ts))
+              map,
+            Edge.Set.diff others others' ))
+        children (IndexMap.empty, others)
+    in
+    (Con (source, map), others)
 
 (* TODO: introduce "remaining" edge set to guarantee single pass *)
 let rec reachable (live : Edge.Set.t) (seen : Vertex.Set.t) (vertex : Vertex.t)
     : t * Edge.Set.t =
-  (* Format.printf "REACHABLE %s%!" (Vertex.show vertex); *)
-  if Vertex.Set.mem vertex seen then
-    ((* Format.printf "REF%!"; *)
-     Ref vertex, Edge.Set.empty)
+  if Vertex.Set.mem vertex seen then (Ref vertex, Edge.Set.empty)
   else
-    (* Format.printf "CON%!"; *)
     let children : Edge.Set.t =
       Edge.Set.filter (fun e -> e.value.source.vertex = vertex) live
     in
-
-    (* Format.printf "CHILDREN = ";
-       Edge.print_set children;
-       Format.printf "%!"; *)
     let descendants : Edge.Set.t =
       Edge.Set.elements children
       |> List.map (fun (edge : Edge.t) -> edge.value.target)
       (* NOTE: SLOW *)
       |> List.map (reachable live (Vertex.Set.add vertex seen))
-      |> List.split |> snd |> edge_set_concat
+      |> List.split |> snd |> Edge.concat_sets
     in
-
-    (* Format.printf "DESCENDANTS = ";
-       Edge.print_set descendants;
-       Format.printf "%!"; *)
     let edge_set = Edge.Set.union children descendants in
-
-    (* Format.printf "EDGE_SET = ";
-       Edge.print_set edge_set;
-       Format.printf "%!"; *)
     let t = mk ~seen:(Vertex.Set.remove vertex seen) vertex edge_set |> fst in
-
-    (* Format.printf "GOT %s%!" (show t); *)
     (t, edge_set)
 
 let decompose (graph : Graph.t) : t * t list * t list * t list =
-  Format.printf "\nBEGIN DECOMP%!";
-
-  let all : Edge.Set.t =
-    Edge.Map.bindings graph |> List.map fst |> Edge.Set.of_list
-  in
-
-  Format.printf "all = ";
-  Edge.print_set all;
-  Format.printf "%!";
-
-  let live : Edge.Set.t =
-    graph
-    |> Edge.Map.filter (fun _ ->
-         function Edge_state.Created -> true | _ -> false)
-    |> Edge.Map.bindings |> List.map fst |> Edge.Set.of_list
-  in
-
-  Format.printf "live = ";
-  Edge.print_set live;
-  Format.printf "%!";
-
-  let multiparent : Vertex.Set.t =
-    (* find them all in one pass *)
-    let hist : int Vertex.Map.t =
-      Edge.Set.fold
-        (fun edge hist ->
-          hist
-          |> Vertex.Map.update edge.value.target (function
-               | None -> Some 1
-               | Some _ -> Some 2))
-        live Vertex.Map.empty
-    in
-    Vertex.Map.filter (fun _ count -> count = 2) hist
-    |> Vertex.Map.bindings |> List.map fst |> Vertex.Set.of_list
-  in
-
-  Format.printf "multiparent = ";
-  Vertex.print_set multiparent;
-  Format.printf "%!";
-
-  let orphans : Vertex.Set.t =
-    Edge.Set.fold
-      (fun edge vertexes ->
-        vertexes
-        |> Vertex.Set.add edge.value.source.vertex
-        |> Vertex.Set.add edge.value.target)
-      all
-      (Vertex.Set.singleton Vertex.root)
-    |> Edge.Set.fold
-         (fun edge orphans -> Vertex.Set.remove edge.value.target orphans)
-         live
-  in
-
-  Format.printf "orphans = ";
-  Vertex.print_set orphans;
-  Format.printf "%!";
-
+  let live : Edge.Set.t = Graph.live_edges graph in
+  let multiparent : Vertex.Set.t = Graph.multiparents graph in
+  let orphans : Vertex.Set.t = Graph.orphans graph in
   let deleted : Vertex.Set.t = Vertex.Set.remove Vertex.root orphans in
-
-  Format.printf "deleted = ";
-  Vertex.print_set deleted;
-  Format.printf "%!";
-
   let (r, r_edges) : t * Edge.Set.t = reachable live multiparent Vertex.root in
-
-  Format.printf "R = %s%!" (show r);
-
   let (mp, mp_edges) : t list * Edge.Set.t =
     let ts, edge_sets =
       Vertex.Set.elements multiparent
@@ -176,22 +70,16 @@ let decompose (graph : Graph.t) : t * t list * t list * t list =
              reachable live (Vertex.Set.remove vertex multiparent) vertex)
       |> List.split
     in
-    (ts, edge_set_concat edge_sets)
+    (ts, Edge.concat_sets edge_sets)
   in
-
-  Format.printf "MP = [%s]%!" (List.map show mp |> String.concat "; ");
-
   let (d, d_edges) : t list * Edge.Set.t =
     let ts, edge_sets =
       Vertex.Set.elements deleted
       |> List.map (reachable live multiparent)
       |> List.split
     in
-    (ts, edge_set_concat edge_sets)
+    (ts, Edge.concat_sets edge_sets)
   in
-
-  Format.printf "D = [%s]%!" (List.map show d |> String.concat "; ");
-
   let rec simple_cycles (remaining : Edge.Set.t) (acc : (t * Edge.Set.t) list) :
       (t * Edge.Set.t) list =
     match Edge.Set.min_elt_opt remaining with
@@ -203,19 +91,15 @@ let decompose (graph : Graph.t) : t * t list * t list * t list =
         let remaining : Edge.Set.t = Edge.Set.diff remaining edge_set in
         simple_cycles remaining ((t, edge_set) :: acc)
   in
-
   let (sc, _sc_edges) : t list * Edge.Set.t =
     let ts, edge_sets =
       simple_cycles
-        (Edge.Set.diff live (edge_set_concat [ r_edges; d_edges; mp_edges ]))
+        (Edge.Set.diff live (Edge.concat_sets [ r_edges; d_edges; mp_edges ]))
         []
       |> List.split
     in
-    (ts, edge_set_concat edge_sets)
+    (ts, Edge.concat_sets edge_sets)
   in
-
-  Format.printf "SC = [%s]%!" (List.map show sc |> String.concat "; ");
-
   (r, d, mp, sc)
 
 (*******************************************************************************

@@ -45,6 +45,19 @@ let t_of_sexp : Sexplib.Sexp.t -> t = function
       { id; graph; cursor; actions; known_actions; show_ids }
   | _ -> failwith __LOC__
 
+let sexp_of_map (editors : t Uuid.Map.t) : Sexplib.Sexp.t =
+  Uuid.Map.bindings editors
+  |> Sexplib.Std.sexp_of_list (fun (id, editor) ->
+         Sexplib.Sexp.List [ Uuid.Id.sexp_of_t id; sexp_of_t editor ])
+
+let map_of_sexp (sexp : Sexplib.Sexp.t) : t Uuid.Map.t =
+  sexp
+  |> Sexplib.Std.list_of_sexp (function
+       | Sexplib.Sexp.List [ id_sexp; editor_sexp ] ->
+           (Uuid.Id.t_of_sexp id_sexp, t_of_sexp editor_sexp)
+       | _ -> failwith __LOC__)
+  |> List.to_seq |> Uuid.Map.of_seq
+
 let mk () : t =
   {
     id = Uuid.Id.next ();

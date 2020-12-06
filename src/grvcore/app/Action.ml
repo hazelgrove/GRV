@@ -31,7 +31,7 @@ type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
 
 let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
     Editor.t =
-  let graph : Graph.t = Graph_action.apply graph_action editor.graph in
+  let graph = Graph_action.apply graph_action editor.graph in
   let known_actions = Graph_action.Set.add graph_action editor.known_actions in
   let actions = Graph_action.Set.add graph_action editor.actions in
   { editor with graph; known_actions; actions }
@@ -42,11 +42,8 @@ let record_actions (model : Model.t) (editor_id : Uuid.Id.t)
   let new_actions = List.map (fun x -> (editor_id, x)) graph_actions in
   new_actions @ actions
 
-let report_sexp (sexp : Sexplib0.Sexp.t) : unit =
-  print_endline (Sexplib0.Sexp.to_string_hum sexp)
-
 let report_actions (actions : Model.graph_action_sequence) : unit =
-  report_sexp (Model.sexp_of_graph_action_sequence actions)
+  Model.sexp_of_graph_action_sequence actions |> Util.Sexp.print
 
 let replay_actions (model : Model.t) (actions : Model.graph_action_sequence) :
     Model.t option =
@@ -67,14 +64,15 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
   let cursor : Cursor.t Option.t =
     match move_action with
     | Left ->
-        let%map.Util.Option index = Lang.Index.left cursor.index in
+        let%map.Util.Option index = Lang.Index.left editor.cursor.index in
         { cursor with index }
     | Right ->
-        let%map.Util.Option index = Lang.Index.right cursor.index in
+        let%map.Util.Option index = Lang.Index.right editor.cursor.index in
         { cursor with index }
     | Up -> (
         match
-          Edge.Set.elements (Graph.parent_edges editor.graph cursor.vertex)
+          Graph.parent_edges editor.graph editor.cursor.vertex
+          |> Edge.Set.elements
         with
         | [ edge ] -> Some (Edge.source edge)
         | _ -> None )
@@ -89,8 +87,7 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
     | Select cursor -> Some cursor
   in
   let%map.Util.Option cursor = cursor in
-  let editor = { editor with cursor } in
-  let editors = Uuid.Map.add editor_id editor model.editors in
+  let editors = Uuid.Map.add editor_id { editor with cursor } model.editors in
   { model with editors }
 
 let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
@@ -106,50 +103,47 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
             = Lang.Constructor.sort_of constructor )
         then (false, [])
         else
-          let vertex : Vertex.t = Vertex.mk constructor in
+          let vertex = Vertex.mk constructor in
           let create_parent_edge =
             [
-              Uuid.Wrap.mk
-                Graph_action.
-                  { state = Created; edge = Edge.mk editor.cursor vertex };
+              Graph_action.
+                { state = Created; edge = Edge.mk editor.cursor vertex }
+              |> Uuid.Wrap.mk;
             ]
           in
           match Lang.Index.default_index constructor with
           | None -> (false, create_parent_edge)
           | Some index ->
               let create_new_children_edges =
-                List.map
-                  (fun (old_edge : Edge.t) ->
-                    ( let source = Cursor.mk vertex index in
-                      let edge = Edge.mk source (Edge.target old_edge) in
-                      Uuid.Wrap.mk Graph_action.{ state = Created; edge }
-                      : Graph_action.t ))
-                  (Edge.Set.elements children)
+                Edge.Set.elements children
+                |> List.map (fun edge ->
+                       let source = Cursor.mk vertex index in
+                       let edge = Edge.mk source (Edge.target edge) in
+                       Uuid.Wrap.mk Graph_action.{ state = Created; edge })
               in
+
               let destroy_old_children_edges =
-                List.map
-                  (fun edge ->
-                    Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
-                  (Edge.Set.elements children)
+                Edge.Set.elements children
+                |> List.map (fun edge ->
+                       Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
               in
               ( true,
                 create_parent_edge @ create_new_children_edges
                 @ destroy_old_children_edges ) )
     | Destroy ->
         ( false,
-          List.map
-            (fun edge -> Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
-            (Edge.Set.elements
-               (Graph.cursor_children editor.graph editor.cursor)) )
+          Graph.cursor_children editor.graph editor.cursor
+          |> Edge.Set.elements
+          |> List.map (fun edge ->
+                 Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge }) )
     | Restore vertex ->
         let edge : Edge.t = Edge.mk editor.cursor vertex in
         (false, [ Uuid.Wrap.mk Graph_action.{ state = Created; edge } ])
     | DropEdge edge_id -> (
         ( false,
           match
-            Edge.Set.find_first_opt
-              (fun edge -> edge.id = edge_id)
-              (Graph.edges editor.graph)
+            Graph.edges editor.graph
+            |> Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
           with
           | Some edge ->
               [ Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge } ]
@@ -165,35 +159,30 @@ let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
   match comm_action with
   | Send (edit_actions, editor_ids) ->
-      let%map.Util.Option editor_list : Editor.t list option =
+      let%map.Util.Option editors =
         List.fold_left
-          (fun (editor_list : Editor.t list option) (editor_id : Uuid.Id.t) ->
-            match editor_list with
-            | None -> None
-            | Some editor_list -> (
-                match Uuid.Map.find_opt editor_id model.editors with
-                | Some editor -> Some (editor :: editor_list)
-                | None -> None ))
+          (fun editors_opt editor_id ->
+            let%bind.Util.Option editors = editors_opt in
+            let%map.Util.Option editor =
+              Uuid.Map.find_opt editor_id model.editors
+            in
+            editor :: editors)
           (Some []) editor_ids
       in
-      let model : Model.t =
+      let model =
         List.fold_left
           (fun (model : Model.t) (editor : Editor.t) ->
-            let editors : Editor.t Uuid.Map.t =
-              Uuid.Map.remove editor.id model.editors
-            in
-            let editor : Editor.t =
+            let editor =
               List.fold_right apply_graph_action edit_actions editor
             in
-            let editors : Editor.t Uuid.Map.t =
-              Uuid.Map.add editor.id editor editors
+            let editors =
+              Uuid.Map.remove editor.id model.editors
+              |> Uuid.Map.add editor.id editor
             in
-            let model : Model.t = { model with editors } in
-            let actions : Model.graph_action_sequence option =
-              record_actions model editor_id edit_actions
-            in
-            ({ model with actions } : Model.t))
-          model editor_list
+            let model = Model.{ model with editors } in
+            let actions = record_actions model editor_id edit_actions in
+            { model with actions })
+          model editors
       in
       Model.remove_known_actions model
 
@@ -207,12 +196,10 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
       | Some _ ->
           Printf.printf "(already recording)\n";
           None )
-  | Report -> (
-      match model.actions with
-      | None -> None
-      | Some actions ->
-          report_actions actions;
-          None )
+  | Report ->
+      let%bind.Util.Option actions = model.actions in
+      report_actions actions;
+      None
   | Stop -> (
       match model.actions with
       | None ->
@@ -223,10 +210,10 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
           Printf.printf "Stopped!\n";
           Some { model with actions = None } )
   | Replay str ->
-      replay_actions model
-        (Model.graph_action_sequence_of_sexp (Sexplib.Sexp.of_string str))
+      Sexplib.Sexp.of_string str |> Model.graph_action_sequence_of_sexp
+      |> replay_actions model
   | Dump ->
-      report_sexp (Model.sexp_of_t model);
+      Model.sexp_of_t model |> Util.Sexp.print;
       None
   | Load str -> Some (Model.t_of_sexp (Sexplib.Sexp.of_string str))
   | Clone editor_id ->
@@ -240,12 +227,10 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
       Some { model with editors }
   | ToggleIds editor_id ->
       let editors =
-        Uuid.Map.update editor_id
-          (function
-            | None -> None
-            | Some editor ->
-                Some Editor.{ editor with show_ids = not editor.show_ids })
-          model.editors
+        model.editors
+        |> Uuid.Map.update editor_id
+             (Option.map (fun editor ->
+                  Editor.{ editor with show_ids = not editor.show_ids }))
       in
       Some { model with editors }
 

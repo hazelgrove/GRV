@@ -3,7 +3,7 @@
 type t = Edge_state.t Edge.Map.t
 
 let sexp_of_t (graph : t) : Sexplib.Sexp.t =
-  Sexp.of_map (Edge.Map.bindings graph) Edge.sexp_of_t Edge_state.sexp_of_t
+  Util.Sexp.of_map (Edge.Map.bindings graph) Edge.sexp_of_t Edge_state.sexp_of_t
 
 let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
   sexp

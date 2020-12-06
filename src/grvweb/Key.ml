@@ -1,41 +1,34 @@
 module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 
+let moveLR (editor : Editor.t) (tabindexes : int Uuid.Map.t)
+    (event : Dom_html.keyboardEvent Js.t) (delta : int) : unit =
+  Js.claim_event event;
+  Js.focus
+    ( "editor"
+    ^ Int.to_string
+        ( match Uuid.Map.find_opt editor.id tabindexes with
+        | Some tabindex ->
+            if tabindex = snd (Uuid.Map.max_binding tabindexes) then 1
+            else tabindex + delta
+        | None -> 1 ) )
+
 let ctrl (model : Model.t) (editor : Editor.t) (tabindexes : int Uuid.Map.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   match Dom_html.Keyboard_code.of_event event with
   | KeyS -> (
       match Gui.send model editor with
       | None ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
+          Js.claim_event event;
           None
       | result -> result )
   | key -> (
       match key with
       | ArrowRight ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
-          Js.focus
-            ( "editor"
-            ^ Int.to_string
-                ( match Uuid.Map.find_opt editor.id tabindexes with
-                | Some tabindex ->
-                    if tabindex = snd (Uuid.Map.max_binding tabindexes) then 1
-                    else tabindex + 1
-                | None -> 1 ) );
+          moveLR editor tabindexes event 1;
           None
       | ArrowLeft ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
-          Js.focus
-            ( "editor"
-            ^ Int.to_string
-                ( match Uuid.Map.find_opt editor.id tabindexes with
-                | Some tabindex ->
-                    if tabindex = 1 then snd (Uuid.Map.max_binding tabindexes)
-                    else tabindex - 1
-                | None -> 1 ) );
+          moveLR editor tabindexes event (-1);
           None
       | _ -> None )
 
@@ -57,8 +50,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | KeyN -> (
       match Js.prompt "num_id" with
       | "" ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
+          Js.claim_event event;
           None
       | str ->
           Js.focus ("editor" ^ id);
@@ -66,8 +58,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | KeyP -> (
       match Js.prompt "pat_id" with
       | "" ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
+          Js.claim_event event;
           None
       | str ->
           Js.focus ("editor" ^ id);
@@ -75,8 +66,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | KeyV -> (
       match Js.prompt "var_id" with
       | "" ->
-          Js_of_ocaml.Dom.preventDefault event;
-          Js_of_ocaml.Dom_html.stopPropagation event;
+          Js.claim_event event;
           None
       | str ->
           Js.focus ("editor" ^ id);
@@ -96,21 +86,15 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     (editor : Editor.t) (tabindexes : int Uuid.Map.t)
     (event : Dom_html.keyboardEvent Js.t) : Vdom.Event.t =
   let handle =
-    match
-      Js.
-        ( to_bool event##.shiftKey,
-          to_bool event##.ctrlKey,
-          to_bool event##.altKey )
-    with
-    | false, false, false -> base editor
-    | true, false, false -> shift
-    | false, true, false -> ctrl model editor tabindexes
-    | _, _, _ -> fun _ -> (None : Action.t' Option.t)
+    match Js.(to_bool event##.shiftKey, to_bool event##.ctrlKey) with
+    | false, false -> base editor
+    | true, false -> shift
+    | false, true -> ctrl model editor tabindexes
+    | _, _ -> fun _ -> (None : Action.t' Option.t)
   in
   match handle event with
   | Some action ->
-      Js_of_ocaml.Dom.preventDefault event;
-      Js_of_ocaml.Dom_html.stopPropagation event;
+      Js.claim_event event;
       Js.focus ("editor" ^ Uuid.Id.show editor.id);
       inject { editor_id = editor.id; action }
   | None -> Vdom.Event.Ignore

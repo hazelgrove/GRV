@@ -6,8 +6,7 @@ type context = { inject : Action.t -> Vdom.Event.t; editor : Editor.t }
 
 let clicks_to (ctx : context) (cursor : Cursor.t) : Attr.t =
   Attr.on_click (fun event ->
-      Js_of_ocaml.Dom.preventDefault event;
-      Js_of_ocaml.Dom_html.stopPropagation event;
+      Js.claim_event event;
       ctx.inject
         { Action.editor_id = ctx.editor.id; action = Move (Select cursor) })
 

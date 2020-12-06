@@ -1,5 +1,9 @@
 include Js_of_ocaml.Js
 
+let claim_event (event : 'a t) : unit =
+  Js_of_ocaml.Dom.preventDefault event;
+  Js_of_ocaml.Dom_html.stopPropagation event
+
 let eval_to_string (js : string) : string = to_string (Unsafe.eval_string js)
 
 let eval_to_unit (js : string) : unit =

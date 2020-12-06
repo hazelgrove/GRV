@@ -115,11 +115,10 @@ and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
 
 let view_editor (model : Model.t) (inject : Action.t -> Event.t)
     (tabindexes : int Uuid.Map.t) (editor : Editor.t) : Node.t =
-  let roots = Graph.roots editor.graph in
-  assert (roots.root = Cursor.root.vertex);
   let id = Uuid.Id.show editor.id in
 
-  let r, d, mp, sc = Tree.decompose editor.graph in
+  let tree_ctx : Tree.context = Tree.context editor.graph in
+  let r, d, mp, sc = Tree.decompose tree_ctx in
 
   Graphviz.draw editor;
   Node.div
@@ -201,7 +200,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                 |> List.map
                      (Tree.reachable
                         (Graph.live_edges editor.graph)
-                        (Graph.multiparents editor.graph))
+                        (Graph.multiparented editor.graph))
                 |> List.map fst
                 |> List.map
                      (view_tree ~at_top:true ~with_parens:false inject editor
@@ -222,9 +221,11 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                   [
                     Gui.button "Restore" inject editor tabindexes
                       ~on_click:(fun () ->
-                        Gui.restore editor (Js.get_input ("restore" ^ id)));
+                        Gui.restore editor tree_ctx.deleted
+                          (Js.get_input ("restore" ^ id)));
                     Gui.text_input ("restore" ^ id) inject editor tabindexes
-                      ~on_change:(fun str -> Gui.restore editor str);
+                      ~on_change:(fun str ->
+                        Gui.restore editor tree_ctx.deleted str);
                   ] );
             ];
           Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id)
@@ -317,7 +318,7 @@ let view_editor (model : Model.t) (inject : Action.t -> Event.t)
                       | Some vertex -> (
                           match
                             Edge.Set.choose_opt
-                              (Graph.parents editor.graph vertex)
+                              (Graph.parent_edges editor.graph vertex)
                           with
                           | Some edge -> Some (Move (Select edge.value.source))
                           | None -> None ) ) ));

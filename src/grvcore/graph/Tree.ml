@@ -57,11 +57,21 @@ let rec reachable (live : Edge.Set.t) (seen : Vertex.Set.t) (vertex : Vertex.t)
     let t = mk ~seen:(Vertex.Set.remove vertex seen) vertex edge_set |> fst in
     (t, edge_set)
 
-let decompose (graph : Graph.t) : t * t list * t list * t list =
-  let live : Edge.Set.t = Graph.live_edges graph in
-  let multiparent : Vertex.Set.t = Graph.multiparents graph in
-  let orphans : Vertex.Set.t = Graph.orphans graph in
-  let deleted : Vertex.Set.t = Vertex.Set.remove Vertex.root orphans in
+type context = {
+  live : Edge.Set.t;
+  multiparent : Vertex.Set.t;
+  deleted : Vertex.Set.t;
+}
+
+let context (graph : Graph.t) : context =
+  {
+    live = Graph.live_edges graph;
+    multiparent = Graph.multiparented graph;
+    deleted = Graph.deleted graph;
+  }
+
+let decompose ({ live; multiparent; deleted } : context) :
+    t * t list * t list * t list =
   let (r, r_edges) : t * Edge.Set.t = reachable live multiparent Vertex.root in
   let (mp, mp_edges) : t list * Edge.Set.t =
     let ts, edge_sets =
@@ -280,7 +290,8 @@ let%test "mk mp" =
 
 let%test "decompose 0" =
   let graph = Graph.empty in
-  decompose graph = (Con (Vertex.root, IndexMap.empty), [], [], [])
+  let ctx = context graph in
+  decompose ctx = (Con (Vertex.root, IndexMap.empty), [], [], [])
 
 let%test "decompose 0->1" =
   let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
@@ -288,7 +299,8 @@ let%test "decompose 0->1" =
     Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
   in
   let graph : Graph.t = Edge.Map.(empty |> add edge01 Edge_state.Created) in
-  decompose graph
+  let ctx = context graph in
+  decompose ctx
   = ( Con
         ( Vertex.root,
           IndexMap.(
@@ -305,7 +317,8 @@ let%test "decompose 0 1" =
     Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
   in
   let graph : Graph.t = Edge.Map.(empty |> add edge01 Edge_state.Destroyed) in
-  decompose graph
+  let ctx = context graph in
+  decompose ctx
   = ( Con (Vertex.root, IndexMap.empty),
       [ Con (vertex1, IndexMap.empty) ],
       [],
@@ -325,7 +338,8 @@ let%test "decompose 0->2 1" =
     |> Edge.Map.add edge01 Edge_state.Destroyed
     |> Edge.Map.add edge02 Edge_state.Created
   in
-  decompose graph
+  let ctx = context graph in
+  decompose ctx
   = ( Con
         ( Vertex.root,
           IndexMap.singleton Lang.Index.Root_root_root
@@ -353,7 +367,8 @@ let%test "decompose 0->2->3 1" =
     |> Edge.Map.add edge02 Edge_state.Created
     |> Edge.Map.add edge23 Edge_state.Created
   in
-  decompose graph
+  let ctx = context graph in
+  decompose ctx
   = ( Con
         ( Vertex.root,
           IndexMap.singleton Lang.Index.Root_root_root
@@ -390,7 +405,8 @@ let%test "decompose 0->2->3 1->3" =
     |> Edge.Map.add edge23 Edge_state.Created
     |> Edge.Map.add edge13 Edge_state.Created
   in
-  decompose graph
+  let ctx = context graph in
+  decompose ctx
   = ( Con
         ( Vertex.root,
           IndexMap.singleton Lang.Index.Root_root_root
@@ -417,7 +433,7 @@ let%test "decompose 0->2<->3<-1" =
   let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
   let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
   let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
-  let g : Graph.t =
+  let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add e01 Edge_state.Destroyed
     |> Edge.Map.add e02 Edge_state.Created
@@ -425,7 +441,8 @@ let%test "decompose 0->2<->3<-1" =
     |> Edge.Map.add e13 Edge_state.Created
     |> Edge.Map.add e32 Edge_state.Created
   in
-  let got_r, got_d, got_mp, got_sc = decompose g in
+  let ctx = context graph in
+  let got_r, got_d, got_mp, got_sc = decompose ctx in
   let want_r, want_d, want_mp, want_sc =
     ( Con (Vertex.root, IndexMap.singleton Lang.Index.Root_root_root [ Ref v2 ]),
       [ Con (v1, IndexMap.singleton Lang.Index.Exp_plus_left [ Ref v3 ]) ],
@@ -450,7 +467,7 @@ let%test "decompose 0 2<->3<-1" =
   let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
   let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
   let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
-  let g : Graph.t =
+  let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add e01 Edge_state.Destroyed
     |> Edge.Map.add e02 Edge_state.Destroyed
@@ -458,7 +475,8 @@ let%test "decompose 0 2<->3<-1" =
     |> Edge.Map.add e13 Edge_state.Created
     |> Edge.Map.add e32 Edge_state.Created
   in
-  let got_r, got_d, got_mp, got_sc = decompose g in
+  let ctx = context graph in
+  let got_r, got_d, got_mp, got_sc = decompose ctx in
   let want_r, want_d, want_mp, want_sc =
     ( Con (Vertex.root, IndexMap.empty),
       [ Con (v1, IndexMap.singleton Lang.Index.Exp_plus_left [ Ref v3 ]) ],
@@ -487,7 +505,7 @@ let%test "decompose 0 2<->3 1" =
   let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
   let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
   let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
-  let g : Graph.t =
+  let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add e01 Edge_state.Destroyed
     |> Edge.Map.add e02 Edge_state.Destroyed
@@ -495,7 +513,8 @@ let%test "decompose 0 2<->3 1" =
     |> Edge.Map.add e13 Edge_state.Destroyed
     |> Edge.Map.add e32 Edge_state.Created
   in
-  let got_r, got_d, got_mp, got_sc = decompose g in
+  let ctx = context graph in
+  let got_r, got_d, got_mp, got_sc = decompose ctx in
   let want_r, want_d, want_mp, want_sc =
     ( Con (Vertex.root, IndexMap.empty),
       [ Con (v1, IndexMap.empty) ],

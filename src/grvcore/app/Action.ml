@@ -73,7 +73,9 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
         let%map.Util.Option index = Lang.Index.right cursor.index in
         { cursor with index }
     | Up -> (
-        match Edge.Set.elements (Graph.parents editor.graph cursor.vertex) with
+        match
+          Edge.Set.elements (Graph.parent_edges editor.graph cursor.vertex)
+        with
         | [ edge ] -> Some (Edge.source edge)
         | _ -> None )
     | Down -> (

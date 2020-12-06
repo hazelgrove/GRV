@@ -12,7 +12,7 @@ let vertex_color (vertex : Vertex.t) (graph : Graph.t) (cursor : Cursor.t) :
     string =
   if vertex = Vertex.root then "black"
   else
-    let parents = Graph.parents graph vertex in
+    let parents = Graph.parent_edges graph vertex in
     if Edge.Set.is_empty parents then "white"
     else if
       Edge.Set.exists
@@ -38,7 +38,9 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
         in
         let fillcolor = vertex_color vertex graph cursor in
         let color =
-          let num_parents = Edge.Set.cardinal (Graph.parents graph vertex) in
+          let num_parents =
+            Edge.Set.cardinal (Graph.parent_edges graph vertex)
+          in
           if num_parents < 2 then "black" else orange_color
         in
         Printf.sprintf
@@ -65,7 +67,7 @@ let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
                    (remove edge live_edges)))
           in
           let num_parents =
-            Edge.Set.cardinal (Graph.parents graph edge.value.target)
+            Edge.Set.cardinal (Graph.parent_edges graph edge.value.target)
           in
           if num_conflicts = 0 && num_parents = 1 then "black"
           else if num_conflicts > 0 then red_color

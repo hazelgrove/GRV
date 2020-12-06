@@ -24,13 +24,12 @@ let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
       Js.fill_selection ("actions" ^ Uuid.Id.show editor.id);
       Some (Comm (Send (actions, editor_ids)))
 
-let restore (editor : Editor.t) (vertex_id : string) : Action.t' Option.t =
+let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :
+    Action.t' Option.t =
   let%map.Util.Option selection : Vertex.t option =
     if String.equal vertex_id "" then
       let selection = Js.get_selection ("deleted" ^ Uuid.Id.show editor.id) in
-      let vertexes : Vertex.t list =
-        Vertex.Set.elements (Graph.roots editor.graph).deleted
-      in
+      let vertexes : Vertex.t list = Vertex.Set.elements deleted in
       let%map.Util.Option result : (bool * Vertex.t) Option.t =
         List.find_opt fst (List.combine selection vertexes)
       in

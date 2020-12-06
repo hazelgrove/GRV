@@ -1,30 +1,28 @@
 module Dom_html = Js_of_ocaml.Dom_html
+module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
-module Event = Virtual_dom.Vdom.Event
 
-type context = { inject : Action.t -> Event.t; editor : Editor.t }
+type context = { inject : Action.t -> Vdom.Event.t; editor : Editor.t }
 
-let context (inject : Action.t -> Event.t) (editor : Editor.t) : context =
+let context (inject : Action.t -> Vdom.Event.t) (editor : Editor.t) : context =
   { inject; editor }
+
+let selected (selection : bool list) (elements : 'a list) : 'a list =
+  List.combine selection elements |> List.filter fst |> List.map snd
 
 let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
   match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
   | [] -> None
   | selection ->
-      let actions =
-        List.(
-          map snd
-            (filter fst
-               (combine selection (Graph_action.Set.elements editor.actions))))
+      let actions : Graph_action.t list =
+        Graph_action.Set.elements editor.actions |> selected selection
       in
       let editor_ids : Uuid.Id.t list =
-        let selection = Js.get_selection ("editors" ^ Uuid.Id.show editor.id) in
-        let editors = List.rev_map snd (Uuid.Map.bindings model.editors) in
-        List.(
-          map
-            (fun (editor : Editor.t) -> editor.id)
-            (map snd (filter fst (combine selection editors))))
+        Uuid.Map.bindings model.editors
+        |> List.rev_map snd
+        |> selected (Js.get_selection ("editors" ^ Uuid.Id.show editor.id))
+        |> List.map (fun (editor : Editor.t) -> editor.id)
       in
       Js.fill_selection ("actions" ^ Uuid.Id.show editor.id);
       Some (Comm (Send (actions, editor_ids)))
@@ -33,89 +31,89 @@ let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :
     Action.t' Option.t =
   let%map.Util.Option selection : Vertex.t option =
     if String.equal vertex_id "" then
-      let selection = Js.get_selection ("deleted" ^ Uuid.Id.show editor.id) in
-      let vertexes : Vertex.t list = Vertex.Set.elements deleted in
-      let%map.Util.Option result : (bool * Vertex.t) Option.t =
-        List.find_opt fst (List.combine selection vertexes)
+      let selection : bool list =
+        Js.get_selection ("deleted" ^ Uuid.Id.show editor.id)
       in
-      snd result
+      let vertexes : Vertex.t list = Vertex.Set.elements deleted in
+      List.nth_opt (selected selection vertexes) 0
     else Graph.vertex editor.graph (Uuid.Id.read vertex_id)
   in
   Action.Edit (Restore selection)
 
-let base_attrs ?(id : string option) ~(classes : string list)
-    ?(disabled : bool = false) () : Attr.t list =
+let base_attrs ~(classes : string list) ?(disabled : bool = false)
+    (id : string option) : Attr.t list =
   (match id with None -> [] | Some id -> [ Attr.id id ])
   @ [ Attr.classes classes ]
   @ if disabled then [ Attr.disabled ] else []
 
-let apply_action (action : Action.t' option) (ctx : context)
-    (tabindexes : int Uuid.Map.t) : Event.t =
+let apply_action (ctx : context) (action : Action.t' option)
+    (tabindexes : int Uuid.Map.t) : Vdom.Event.t =
   match action with
-  | None -> Event.Ignore
+  | None -> Vdom.Event.Ignore
   | Some action ->
       Js.focus
         ("editor" ^ Int.to_string (Uuid.Map.find ctx.editor.id tabindexes));
       ctx.inject { editor_id = ctx.editor.id; action }
 
 let text_input ?(classes : string list = []) ?(disabled : bool = false)
-    ~(on_change : string -> Action.t' option) (id : string) (ctx : context)
+    ~(on_change : string -> Action.t' option) (ctx : context) (id : string)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Js.set_input id "";
   Node.input
-    ( base_attrs ~id ~classes ~disabled ()
+    ( base_attrs (Some id) ~classes ~disabled
     @ [
         Attr.on_change (fun _ (value : string) ->
             match value with
-            | "" -> Event.Ignore
-            | str -> apply_action (on_change str) ctx tabindexes);
+            | "" -> Vdom.Event.Ignore
+            | str -> apply_action ctx (on_change str) tabindexes);
       ] )
     []
 
 let button ?(classes : string list = []) ?(disabled : bool = false)
-    ~(on_click : unit -> Action.t' option) (label : string) (ctx : context)
+    ~(on_click : unit -> Action.t' option) (ctx : context) (label : string)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Node.button
-    ( base_attrs ~classes ~disabled ()
-    @ [ Attr.on_click (fun _ -> apply_action (on_click ()) ctx tabindexes) ] )
+    ( base_attrs None ~classes ~disabled
+    @ [ Attr.on_click (fun _ -> apply_action ctx (on_click ()) tabindexes) ] )
     [ Node.text label ]
 
 let button_text_input ?(classes : string list = []) ?(disabled : bool option)
     ~(on_click : unit -> Action.t' option)
-    ~(on_change : string -> Action.t' option) (label : string) (id : string)
-    (ctx : context) (tabindexes : int Uuid.Map.t) : Node.t =
+    ~(on_change : string -> Action.t' option) (ctx : context) (label : string)
+    (id : string) (tabindexes : int Uuid.Map.t) : Node.t =
   let disabled = Option.value disabled ~default:false in
   Node.div
-    (base_attrs ~id ~classes ~disabled ())
+    (base_attrs (Some id) ~classes ~disabled)
     [
-      button label ctx ~disabled ~on_click tabindexes;
-      text_input id ctx ~disabled ~on_change tabindexes;
+      button ctx label tabindexes ~disabled ~on_click;
+      text_input ctx id tabindexes ~disabled ~on_change;
     ]
 
 let sorted_text_input ?(classes : string list = [])
-    ~(on_change : string -> Action.t' option) (id : string) (sort : Lang.Sort.t)
-    (ctx : context) (tabindexes : int Uuid.Map.t) : Node.t =
+    ~(on_change : string -> Action.t' option) (ctx : context) (id : string)
+    (sort : Lang.Sort.t) (tabindexes : int Uuid.Map.t) : Node.t =
   let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
-  text_input id ctx ~classes ~disabled ~on_change tabindexes
+  text_input ctx id tabindexes ~classes ~disabled ~on_change
 
 let sorted_button ?(classes : string list = [])
-    ~(on_click : unit -> Action.t' option) (label : string) (sort : Lang.Sort.t)
-    (ctx : context) (tabindexes : int Uuid.Map.t) : Node.t =
+    ~(on_click : unit -> Action.t' option) (ctx : context) (label : string)
+    (sort : Lang.Sort.t) (tabindexes : int Uuid.Map.t) : Node.t =
   let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
-  button label ctx ~classes ~disabled ~on_click tabindexes
+  button ctx label tabindexes ~classes ~disabled ~on_click
 
 let select ?(classes : string list = []) ?(multi : bool = true)
     ?(default : bool = multi) ?(label : string option) (id : string)
     (items : 'a list) (view_item : 'a -> Node.t list) : Node.t =
+  let classes : string list =
+    classes @ [ "selectItem" ] @ if default then [ "selected" ] else []
+  in
   let select_item (i : int) (item : 'a) : Node.t =
     Node.div
-      ( base_attrs
-          ~classes:([ "selectItem" ] @ if default then [ "selected" ] else [])
-          ~disabled:false ()
+      ( base_attrs None ~classes ~disabled:false
       @ [
           Attr.on_click (fun _ ->
               if multi then Js.toggle_item id i else Js.select_item id i;
-              Event.Ignore);
+              Vdom.Event.Ignore);
         ] )
       (view_item item)
   in
@@ -145,7 +143,7 @@ let panel ?(classes : string list = []) ?(label : string option)
     | None -> []
   in
   Node.div
-    (base_attrs ~classes:(classes @ [ "panel" ]) ())
+    (base_attrs None ~classes:(classes @ [ "panel" ]))
     (heading @ [ break ] @ nodes)
 
 let select_panel ?(classes : string list = []) ?(multi : bool = true)
@@ -154,10 +152,10 @@ let select_panel ?(classes : string list = []) ?(multi : bool = true)
     Node.t =
   let selector =
     match label with
-    | None -> select ~multi ~default id items view_item
+    | None -> select id items view_item ~multi ~default
     | Some label when String.contains label ' ' ->
-        select ~multi ~default ~label ~classes id items view_item
-    | Some label -> select ~multi ~default ~label id items view_item
+        select id items view_item ~multi ~default ~label ~classes
+    | Some label -> select id items view_item ~multi ~default ~label
   in
   Node.div
     [ Attr.classes (classes @ [ "selector" ]) ]

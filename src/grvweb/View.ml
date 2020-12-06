@@ -1,8 +1,8 @@
 module Dom = Js_of_ocaml.Dom
 module Dom_html = Js_of_ocaml.Dom_html
+module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
-module Event = Virtual_dom.Vdom.Event
 
 (* Attrs *)
 
@@ -136,15 +136,15 @@ let view_editor (model : Model.t) (ctx : Gui.context)
           Gui.break;
           Node.div []
             [
-              Gui.button "Drop Edge" ctx tabindexes ~on_click:(fun () ->
+              Gui.button ctx "Drop Edge" tabindexes ~on_click:(fun () ->
                   match Js.prompt "edge_id" with
                   | "" -> None
                   | str -> Some (Edit (DropEdge (Uuid.Id.read str))));
-              Gui.button "Show Source" ctx tabindexes ~on_click:(fun () ->
+              Gui.button ctx "Show Source" tabindexes ~on_click:(fun () ->
                   Printf.printf "%s\n"
                     (Graphviz.draw_graph ctx.editor.graph ctx.editor.cursor);
                   None);
-              Gui.button "Toggle IDs" ctx tabindexes ~on_click:(fun () ->
+              Gui.button ctx "Toggle IDs" tabindexes ~on_click:(fun () ->
                   Some (Env (ToggleIds ctx.editor.id)));
             ];
         ];
@@ -161,12 +161,12 @@ let view_editor (model : Model.t) (ctx : Gui.context)
             (List.rev_map fst (Uuid.Map.bindings model.editors))
             (fun editor_id -> [ Node.text (Uuid.Id.show editor_id) ])
             [
-              Gui.button "Send (ctrl-s)" ctx tabindexes ~on_click:(fun () ->
+              Gui.button ctx "Send (ctrl-s)" tabindexes ~on_click:(fun () ->
                   Gui.send model ctx.editor);
-              Gui.button "All" ctx tabindexes ~on_click:(fun () ->
+              Gui.button ctx "All" tabindexes ~on_click:(fun () ->
                   Js.fill_selection ("editors" ^ id);
                   None);
-              Gui.button "None" ctx tabindexes ~on_click:(fun () ->
+              Gui.button ctx "None" tabindexes ~on_click:(fun () ->
                   Js.clear_selection ("editors" ^ id);
                   None);
             ];
@@ -205,10 +205,10 @@ let view_editor (model : Model.t) (ctx : Gui.context)
               ( Js.set_input ("restore" ^ id) "";
                 Gui.panel
                   [
-                    Gui.button "Restore" ctx tabindexes ~on_click:(fun () ->
+                    Gui.button ctx "Restore" tabindexes ~on_click:(fun () ->
                         Gui.restore ctx.editor tree_ctx.deleted
                           (Js.get_input ("restore" ^ id)));
-                    Gui.text_input ("restore" ^ id) ctx tabindexes
+                    Gui.text_input ctx ("restore" ^ id) tabindexes
                       ~on_change:(fun str ->
                         Gui.restore ctx.editor tree_ctx.deleted str);
                   ] );
@@ -220,65 +220,65 @@ let view_editor (model : Model.t) (ctx : Gui.context)
         ];
       Gui.panel ~label:"Patterns and Expressions"
         [
-          Gui.sorted_button "Pat (p)" Lang.Sort.Pat ctx tabindexes
+          Gui.sorted_button ctx "Pat (p)" Lang.Sort.Pat tabindexes
             ~on_click:(fun () ->
               match Js.prompt "pat_id" with
               | "" -> None
               | str ->
                   Js.focus ("editor" ^ id);
                   Some (Edit (Create (Pat_var str))));
-          Gui.sorted_button "Var (v)" Lang.Sort.Exp ctx tabindexes
+          Gui.sorted_button ctx "Var (v)" Lang.Sort.Exp tabindexes
             ~on_click:(fun () ->
               match Js.prompt "var_id" with
               | "" -> None
               | str ->
                   Js.focus ("editor" ^ id);
                   Some (Edit (Create (Exp_var str))));
-          Gui.sorted_button "Num (n)" Lang.Sort.Exp ctx tabindexes
+          Gui.sorted_button ctx "Num (n)" Lang.Sort.Exp tabindexes
             ~on_click:(fun () ->
               match Js.prompt "num_id" with
               | "" -> None
               | str ->
                   Js.focus ("editor" ^ id);
                   Some (Edit (Create (Exp_num (int_of_string str)))));
-          Gui.sorted_button "Lam (\\)" Lang.Sort.Exp ctx tabindexes
+          Gui.sorted_button ctx "Lam (\\)" Lang.Sort.Exp tabindexes
             ~on_click:(fun () ->
               Js.focus ("editor" ^ id);
               Some (Edit (Create Exp_lam)));
-          Gui.sorted_button "App (space)" Lang.Sort.Exp ctx tabindexes
+          Gui.sorted_button ctx "App (space)" Lang.Sort.Exp tabindexes
             ~on_click:(fun () ->
               Js.focus ("editor" ^ id);
               Some (Edit (Create Exp_app)));
-          Gui.sorted_button "Plus (+)" Lang.Sort.Exp ctx tabindexes
+          Gui.sorted_button ctx "Plus (+)" Lang.Sort.Exp tabindexes
             ~on_click:(fun () ->
               Js.focus ("editor" ^ id);
               Some (Edit (Create Exp_plus)));
-          Gui.sorted_button "Times (*)" Lang.Sort.Exp ctx tabindexes
+          Gui.sorted_button ctx "Times (*)" Lang.Sort.Exp tabindexes
             ~on_click:(fun () ->
               Js.focus ("editor" ^ id);
               Some (Edit (Create Exp_times)));
         ];
       Gui.panel ~label:"Types"
         [
-          Gui.sorted_button "Num (N)" Lang.Sort.Typ ctx tabindexes
+          Gui.sorted_button ctx "Num (N)" Lang.Sort.Typ tabindexes
             ~on_click:(fun () -> Some (Edit (Create Typ_num)));
-          Gui.sorted_button "Arrow (>)" Lang.Sort.Typ ctx tabindexes
+          Gui.sorted_button ctx "Arrow (>)" Lang.Sort.Typ tabindexes
             ~on_click:(fun () -> Some (Edit (Create Typ_arrow)));
         ];
       Gui.panel ~label:"Cursor"
         [
-          Gui.button "Delete (delete)" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Delete (delete)" tabindexes ~on_click:(fun () ->
               Js.clear_selection ("deleted" ^ id);
               Some (Edit Destroy));
-          Gui.button "Up (↑)" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Up (↑)" tabindexes ~on_click:(fun () ->
               Some (Move Up));
-          Gui.button "Down (↓)" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Down (↓)" tabindexes ~on_click:(fun () ->
               Some (Move Down));
-          Gui.button "Left (←)" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Left (←)" tabindexes ~on_click:(fun () ->
               Some (Move Left));
-          Gui.button "Right (→)" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Right (→)" tabindexes ~on_click:(fun () ->
               Some (Move Right));
-          Gui.button "Teleport" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Teleport" tabindexes ~on_click:(fun () ->
               (* TODO: move Teleport logic into Gui.ml helper *)
               match Js.prompt "edge_id or vertex_id" with
               | "" -> None
@@ -308,32 +308,32 @@ let view_editor (model : Model.t) (ctx : Gui.context)
         ];
       Gui.panel ~label:"Environment"
         [
-          Gui.button "Record" ctx tabindexes
+          Gui.button ctx "Record" tabindexes
             ~on_click:(fun () -> Some (Env Record))
             ~disabled:(Option.is_some model.actions);
-          Gui.button "Report" ctx tabindexes
+          Gui.button ctx "Report" tabindexes
             ~on_click:(fun () -> Some (Env Report))
             ~disabled:(Option.is_none model.actions);
-          Gui.button "Stop" ctx tabindexes
+          Gui.button ctx "Stop" tabindexes
             ~on_click:(fun () -> Some (Env Stop))
             ~disabled:(Option.is_none model.actions);
-          Gui.button "Replay" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Replay" tabindexes ~on_click:(fun () ->
               Some (Env (Replay (Js.prompt "Replay Recording"))));
-          Gui.button "Dump" ctx tabindexes ~on_click:(fun () -> Some (Env Dump));
-          Gui.button "Load" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Dump" tabindexes ~on_click:(fun () -> Some (Env Dump));
+          Gui.button ctx "Load" tabindexes ~on_click:(fun () ->
               Some (Env (Load (Js.prompt "Load a Dump"))));
         ];
       Gui.panel ~label:"Editor"
         [
-          Gui.button "Clone" ctx tabindexes ~on_click:(fun () ->
+          Gui.button ctx "Clone" tabindexes ~on_click:(fun () ->
               Some (Env (Clone ctx.editor.id)));
-          Gui.button "Drop" ctx tabindexes
+          Gui.button ctx "Drop" tabindexes
             ~on_click:(fun () -> Some (Env (Drop ctx.editor.id)))
             ~disabled:(Uuid.Map.cardinal model.editors < 2);
         ];
     ]
 
-let view ~(inject : Action.t -> Event.t) (model : Model.t) : Node.t =
+let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Node.t =
   let editors = List.map snd (Uuid.Map.bindings model.editors) in
   let editor_ids = List.map (fun (editor : Editor.t) -> editor.id) editors in
   let indexes = List.init (List.length editors) (fun i -> i + 1) in

@@ -3,6 +3,11 @@ module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
 module Event = Virtual_dom.Vdom.Event
 
+type context = { inject : Action.t -> Event.t; editor : Editor.t }
+
+let context (inject : Action.t -> Event.t) (editor : Editor.t) : context =
+  { inject; editor }
+
 let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
   match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
   | [] -> None
@@ -44,17 +49,17 @@ let base_attrs ?(id : string option) ~(classes : string list)
   @ [ Attr.classes classes ]
   @ if disabled then [ Attr.disabled ] else []
 
-let apply_action (action : Action.t' option) (inject : Action.t -> Event.t)
-    (editor : Editor.t) (tabindexes : int Uuid.Map.t) : Event.t =
+let apply_action (action : Action.t' option) (ctx : context)
+    (tabindexes : int Uuid.Map.t) : Event.t =
   match action with
   | None -> Event.Ignore
   | Some action ->
-      Js.focus ("editor" ^ Int.to_string (Uuid.Map.find editor.id tabindexes));
-      inject { editor_id = editor.id; action }
+      Js.focus
+        ("editor" ^ Int.to_string (Uuid.Map.find ctx.editor.id tabindexes));
+      ctx.inject { editor_id = ctx.editor.id; action }
 
 let text_input ?(classes : string list = []) ?(disabled : bool = false)
-    ~(on_change : string -> Action.t' option) (id : string)
-    (inject : Action.t -> Event.t) (editor : Editor.t)
+    ~(on_change : string -> Action.t' option) (id : string) (ctx : context)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Js.set_input id "";
   Node.input
@@ -63,48 +68,41 @@ let text_input ?(classes : string list = []) ?(disabled : bool = false)
         Attr.on_change (fun _ (value : string) ->
             match value with
             | "" -> Event.Ignore
-            | str -> apply_action (on_change str) inject editor tabindexes);
+            | str -> apply_action (on_change str) ctx tabindexes);
       ] )
     []
 
 let button ?(classes : string list = []) ?(disabled : bool = false)
-    ~(on_click : unit -> Action.t' option) (label : string)
-    (inject : Action.t -> Event.t) (editor : Editor.t)
+    ~(on_click : unit -> Action.t' option) (label : string) (ctx : context)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Node.button
     ( base_attrs ~classes ~disabled ()
-    @ [
-        Attr.on_click (fun _ ->
-            apply_action (on_click ()) inject editor tabindexes);
-      ] )
+    @ [ Attr.on_click (fun _ -> apply_action (on_click ()) ctx tabindexes) ] )
     [ Node.text label ]
 
 let button_text_input ?(classes : string list = []) ?(disabled : bool option)
     ~(on_click : unit -> Action.t' option)
     ~(on_change : string -> Action.t' option) (label : string) (id : string)
-    (inject : Action.t -> Event.t) (editor : Editor.t)
-    (tabindexes : int Uuid.Map.t) : Node.t =
+    (ctx : context) (tabindexes : int Uuid.Map.t) : Node.t =
   let disabled = Option.value disabled ~default:false in
   Node.div
     (base_attrs ~id ~classes ~disabled ())
     [
-      button label inject editor ~disabled ~on_click tabindexes;
-      text_input id inject editor ~disabled ~on_change tabindexes;
+      button label ctx ~disabled ~on_click tabindexes;
+      text_input id ctx ~disabled ~on_change tabindexes;
     ]
 
 let sorted_text_input ?(classes : string list = [])
     ~(on_change : string -> Action.t' option) (id : string) (sort : Lang.Sort.t)
-    (inject : Action.t -> Event.t) (editor : Editor.t)
-    (tabindexes : int Uuid.Map.t) : Node.t =
-  let disabled = not (Lang.Index.child_sort editor.cursor.index = sort) in
-  text_input id inject editor ~classes ~disabled ~on_change tabindexes
+    (ctx : context) (tabindexes : int Uuid.Map.t) : Node.t =
+  let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
+  text_input id ctx ~classes ~disabled ~on_change tabindexes
 
 let sorted_button ?(classes : string list = [])
     ~(on_click : unit -> Action.t' option) (label : string) (sort : Lang.Sort.t)
-    (inject : Action.t -> Event.t) (editor : Editor.t)
-    (tabindexes : int Uuid.Map.t) : Node.t =
-  let disabled = not (Lang.Index.child_sort editor.cursor.index = sort) in
-  button label inject editor ~classes ~disabled ~on_click tabindexes
+    (ctx : context) (tabindexes : int Uuid.Map.t) : Node.t =
+  let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
+  button label ctx ~classes ~disabled ~on_click tabindexes
 
 let select ?(classes : string list = []) ?(multi : bool = true)
     ?(default : bool = multi) ?(label : string option) (id : string)

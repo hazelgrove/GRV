@@ -1,12 +1,15 @@
-module Dom_html = Js_of_ocaml.Dom_html
 module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
 
 type context = { inject : Action.t -> Vdom.Event.t; editor : Editor.t }
 
-let context (inject : Action.t -> Vdom.Event.t) (editor : Editor.t) : context =
-  { inject; editor }
+let clicks_to (ctx : context) (cursor : Cursor.t) : Attr.t =
+  Attr.on_click (fun event ->
+      Js_of_ocaml.Dom.preventDefault event;
+      Js_of_ocaml.Dom_html.stopPropagation event;
+      ctx.inject
+        { Action.editor_id = ctx.editor.id; action = Move (Select cursor) })
 
 let selected (selection : bool list) (elements : 'a list) : 'a list =
   List.combine selection elements |> List.filter fst |> List.map snd
@@ -77,6 +80,16 @@ let button ?(classes : string list = []) ?(disabled : bool = false)
     @ [ Attr.on_click (fun _ -> apply_action ctx (on_click ()) tabindexes) ] )
     [ Node.text label ]
 
+let none_button ~(on_click : unit -> unit) (ctx : context) (label : string)
+    (tabindexes : int Uuid.Map.t) : Node.t =
+  button ctx label tabindexes ~on_click:(fun () ->
+      on_click ();
+      None)
+
+let some_button ?(disabled : bool = false) (ctx : context) (label : string)
+    (tabindexes : int Uuid.Map.t) (action : Action.t') : Node.t =
+  button ctx label tabindexes ~disabled ~on_click:(fun () -> Some action)
+
 let button_text_input ?(classes : string list = []) ?(disabled : bool option)
     ~(on_click : unit -> Action.t' option)
     ~(on_change : string -> Action.t' option) (ctx : context) (label : string)
@@ -100,6 +113,17 @@ let sorted_button ?(classes : string list = [])
     (sort : Lang.Sort.t) (tabindexes : int Uuid.Map.t) : Node.t =
   let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
   button ctx label tabindexes ~classes ~disabled ~on_click
+
+let action_button (ctx : context) (label : string) (sort : Lang.Sort.t)
+    (tabindexes : int Uuid.Map.t) (id_opt : string option)
+    (mk_action : string -> Action.t') : Node.t =
+  sorted_button ctx label sort tabindexes ~on_click:(fun () ->
+      match Option.map Js.prompt id_opt with
+      | None -> Some (mk_action "")
+      | Some "" -> None
+      | Some str ->
+          Js.focus ("editor" ^ Option.get id_opt);
+          Some (mk_action str))
 
 let select ?(classes : string list = []) ?(multi : bool = true)
     ?(default : bool = multi) ?(label : string option) (id : string)
@@ -132,6 +156,33 @@ let select ?(classes : string list = []) ?(multi : bool = true)
           [ Attr.id id; Attr.class_ "selectItems" ]
           (List.mapi select_item items);
       ] )
+
+let teleport (ctx : context) (id : string) : unit -> Action.t' option =
+ fun () ->
+  match Js.prompt "edge_id or vertex_id" with
+  | "" -> None
+  | str -> (
+      let teleport_id = Uuid.Id.read str in
+      Js.focus ("editor" ^ id);
+      match
+        Edge.Set.find_first_opt
+          (fun edge -> edge.id = teleport_id)
+          (Graph.edges ctx.editor.graph)
+      with
+      | Some edge -> Some (Move (Select edge.value.source))
+      | None -> (
+          match
+            Vertex.Set.find_first_opt
+              (fun vertex -> vertex.id = teleport_id)
+              (Graph.vertexes ctx.editor.graph)
+          with
+          | None -> None
+          | Some vertex -> (
+              match
+                Edge.Set.choose_opt (Graph.parent_edges ctx.editor.graph vertex)
+              with
+              | Some edge -> Some (Move (Select edge.value.source))
+              | None -> None ) ) )
 
 let break : Node.t = Node.div [ Attr.class_ "break" ] []
 

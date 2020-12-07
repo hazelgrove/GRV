@@ -74,12 +74,12 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
           Graph.parent_edges editor.graph editor.cursor.vertex
           |> Edge.Set.elements
         with
-        | [ edge ] -> Some (Edge.source edge)
+        | [ edge ] -> Some edge.value.source
         | _ -> None )
     | Down -> (
         match Edge.Set.elements (Graph.cursor_children editor.graph cursor) with
         | [ edge ] ->
-            let vertex = Edge.target edge in
+            let vertex = edge.value.target in
             let%map.Util.Option index = Lang.Index.down vertex.value in
             { Cursor.vertex; index }
             (* TODO: how to choose between ambiguous children *)
@@ -116,9 +116,9 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
           | Some index ->
               let create_new_children_edges =
                 Edge.Set.elements children
-                |> List.map (fun edge ->
+                |> List.map (fun (edge : Edge.t) ->
                        let source = Cursor.{ vertex; index } in
-                       let edge = Edge.mk source (Edge.target edge) in
+                       let edge = Edge.mk source edge.value.target in
                        Uuid.Wrap.mk Graph_action.{ state = Created; edge })
               in
 

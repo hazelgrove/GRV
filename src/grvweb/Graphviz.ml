@@ -16,7 +16,7 @@ let vertex_color (vertex : Vertex.t) (graph : Graph.t) (cursor : Cursor.t) :
     if Edge.Set.is_empty parents then "white"
     else if
       Edge.Set.exists
-        (fun edge -> Edge.source edge = cursor && Edge.target edge = vertex)
+        (fun edge -> edge.value.source = cursor && edge.value.target = vertex)
         parents
     then purple_color
     else "white"

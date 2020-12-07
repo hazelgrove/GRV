@@ -1,6 +1,9 @@
 type t = { vertex : Vertex.t; index : Lang.Index.t }
 [@@deriving ord, sexp, show]
 
+let to_string (cursor : t) : string =
+  Uuid.Id.show cursor.vertex.id ^ "." ^ Lang.Index.short_name cursor.index
+
 let root = { vertex = Vertex.root; index = Root_root_root }
 
 module OrderedType = struct

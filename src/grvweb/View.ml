@@ -93,8 +93,7 @@ and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
   |> maybe_cursor_node ctx.editor parent
 
 let cursor_panel (ctx : Gui.context) : Node.t =
-  Gui.panel ~label:"Cursor"
-    [ chars (Format.asprintf "%a@." Cursor.pp ctx.editor.cursor) ]
+  Gui.panel ~label:"Cursor" [ chars (Cursor.to_string ctx.editor.cursor) ]
 
 let graph_panel (ctx : Gui.context) (id : string) (tabindexes : int Uuid.Map.t)
     : Node.t =
@@ -119,8 +118,7 @@ let graph_panel (ctx : Gui.context) (id : string) (tabindexes : int Uuid.Map.t)
 let actions_panel (ctx : Gui.context) (id : string) : Node.t =
   Gui.select_panel ~label:"Actions" ~multi:true ("actions" ^ id)
     (Graph_action.Set.elements ctx.editor.actions)
-    (fun graph_action ->
-      [ chars (Format.asprintf "%a" Graph_action.pp graph_action) ])
+    (fun graph_action -> [ chars (Graph_action.to_string graph_action) ])
     []
 
 let send_actions_panel (model : Model.t) (ctx : Gui.context) (id : string)

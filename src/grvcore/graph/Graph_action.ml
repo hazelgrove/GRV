@@ -1,12 +1,13 @@
-type t' = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp, show]
+type t' = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp]
 
 type t = t' Uuid.Wrap.t [@@deriving sexp]
 
-let pp (fmt : Format.formatter) (edge_action : t) : unit =
-  let edge = Uuid.Wrap.unmk edge_action.value.edge in
-  Format.fprintf fmt "%a %a → %s" Edge_state.pp edge_action.value.state
-    Cursor.pp edge.source
-    (Uuid.Id.show edge.target.id)
+let to_string (edge_action : t) : string =
+  Edge_state.to_string edge_action.value.state
+  ^ " "
+  ^ Cursor.to_string edge_action.value.edge.value.source
+  ^ " → "
+  ^ Uuid.Id.show edge_action.value.edge.value.target.id
 
 let apply (action : t) (graph : Graph.t) : Graph.t =
   let old_state = Edge.Map.find_opt action.value.edge graph in

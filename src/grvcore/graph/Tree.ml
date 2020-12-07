@@ -116,6 +116,7 @@ let decompose ({ live; multiparent; deleted } : context) :
  * Unit Tests
  ******************************************************************************)
 
+(* TODO: drop spurions "Lang.Constructr." *)
 let%test "mk 0" =
   let t = mk Vertex.root Edge.Set.empty |> fst in
   let want = Con (Vertex.root, IndexMap.empty) in
@@ -123,9 +124,7 @@ let%test "mk 0" =
 
 let%test "mk 1" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
   let t = mk Vertex.root (Edge.Set.singleton edge01) |> fst in
   let want =
     Con
@@ -138,12 +137,8 @@ let%test "mk 1" =
 let%test "mk 2" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
-  let edge02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target2
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
+  let edge02 : Edge.t = Edge.mk Cursor.root target2 in
   let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge02 ]) |> fst in
   let want =
     Con
@@ -156,11 +151,9 @@ let%test "mk 2" =
 let%test "mk 1.1" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
   let edge12 : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) target2
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_left } target2
   in
   let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge12 ]) |> fst in
   let want =
@@ -180,14 +173,12 @@ let%test "mk 1.2" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let target3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
   let edge12 : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) target2
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_left } target2
   in
   let edge13 : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_right) target3
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_right } target3
   in
   let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge12; edge13 ]) |> fst in
   let want =
@@ -210,14 +201,12 @@ let%test "mk 1.1.1" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let target2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let target3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
   let edge12 : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) target2
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_left } target2
   in
   let edge23 : Edge.t =
-    Edge.mk (Cursor.mk target2 Lang.Index.Exp_plus_right) target3
+    Edge.mk Cursor.{ vertex = target2; index = Exp_plus_right } target3
   in
   let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge12; edge23 ]) |> fst in
   let want =
@@ -240,11 +229,9 @@ let%test "mk 1.1.1" =
 
 let%test "mk sc" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
   let edge10 : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) Vertex.root
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_left } Vertex.root
   in
   let t = mk Vertex.root (Edge.Set.of_list [ edge01; edge10 ]) |> fst in
   let want =
@@ -262,14 +249,12 @@ let%test "mk sc" =
 
 let%test "mk mp" =
   let target1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) target1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root target1 in
   let edge10 : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_left) Vertex.root
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_left } Vertex.root
   in
   let edge10' : Edge.t =
-    Edge.mk (Cursor.mk target1 Lang.Index.Exp_plus_right) Vertex.root
+    Edge.mk Cursor.{ vertex = target1; index = Exp_plus_right } Vertex.root
   in
   let t =
     mk Vertex.root (Edge.Set.of_list [ edge01; edge10; edge10' ]) |> fst
@@ -295,9 +280,7 @@ let%test "decompose 0" =
 
 let%test "decompose 0->1" =
   let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root vertex1 in
   let graph : Graph.t = Edge.Map.(empty |> add edge01 Edge_state.Created) in
   let ctx = context graph in
   decompose ctx
@@ -313,9 +296,7 @@ let%test "decompose 0->1" =
 
 let%test "decompose 0 1" =
   let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root vertex1 in
   let graph : Graph.t = Edge.Map.(empty |> add edge01 Edge_state.Destroyed) in
   let ctx = context graph in
   decompose ctx
@@ -327,12 +308,8 @@ let%test "decompose 0 1" =
 let%test "decompose 0->2 1" =
   let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let vertex2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
-  in
-  let edge02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex2
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root vertex1 in
+  let edge02 : Edge.t = Edge.mk Cursor.root vertex2 in
   let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add edge01 Edge_state.Destroyed
@@ -352,14 +329,10 @@ let%test "decompose 0->2->3 1" =
   let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let vertex2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let vertex3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
-  in
-  let edge02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex2
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root vertex1 in
+  let edge02 : Edge.t = Edge.mk Cursor.root vertex2 in
   let edge23 : Edge.t =
-    Edge.mk (Cursor.mk vertex2 Lang.Index.Exp_times_left) vertex3
+    Edge.mk Cursor.{ vertex = vertex2; index = Exp_times_left } vertex3
   in
   let graph : Graph.t =
     Edge.Map.empty
@@ -386,17 +359,13 @@ let%test "decompose 0->2->3 1->3" =
   let vertex1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let vertex2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let vertex3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let edge01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex1
-  in
-  let edge02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) vertex2
-  in
+  let edge01 : Edge.t = Edge.mk Cursor.root vertex1 in
+  let edge02 : Edge.t = Edge.mk Cursor.root vertex2 in
   let edge23 : Edge.t =
-    Edge.mk (Cursor.mk vertex2 Lang.Index.Exp_times_left) vertex3
+    Edge.mk Cursor.{ vertex = vertex2; index = Exp_times_left } vertex3
   in
   let edge13 : Edge.t =
-    Edge.mk (Cursor.mk vertex1 Lang.Index.Exp_plus_left) vertex3
+    Edge.mk Cursor.{ vertex = vertex1; index = Exp_plus_left } vertex3
   in
   let graph : Graph.t =
     Edge.Map.empty
@@ -424,15 +393,13 @@ let%test "decompose 0->2<->3<-1" =
   let v1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let v2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let v3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let e01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v1
+  let e01 : Edge.t = Edge.mk Cursor.root v1 in
+  let e02 : Edge.t = Edge.mk Cursor.root v2 in
+  let e23 : Edge.t =
+    Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3
   in
-  let e02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v2
-  in
-  let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
-  let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
-  let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
+  let e13 : Edge.t = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
+  let e32 : Edge.t = Edge.mk Cursor.{ vertex = v3; index = Exp_app_arg } v2 in
   let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add e01 Edge_state.Destroyed
@@ -458,15 +425,13 @@ let%test "decompose 0 2<->3<-1" =
   let v1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let v2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let v3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let e01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v1
+  let e01 : Edge.t = Edge.mk Cursor.root v1 in
+  let e02 : Edge.t = Edge.mk Cursor.root v2 in
+  let e23 : Edge.t =
+    Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3
   in
-  let e02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v2
-  in
-  let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
-  let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
-  let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
+  let e13 : Edge.t = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
+  let e32 : Edge.t = Edge.mk Cursor.{ vertex = v3; index = Exp_app_arg } v2 in
   let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add e01 Edge_state.Destroyed
@@ -496,15 +461,13 @@ let%test "decompose 0 2<->3 1" =
   let v1 : Vertex.t = Vertex.mk Lang.Constructor.Exp_plus in
   let v2 : Vertex.t = Vertex.mk Lang.Constructor.Exp_times in
   let v3 : Vertex.t = Vertex.mk Lang.Constructor.Exp_app in
-  let e01 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v1
+  let e01 : Edge.t = Edge.mk Cursor.root v1 in
+  let e02 : Edge.t = Edge.mk Cursor.root v2 in
+  let e23 : Edge.t =
+    Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3
   in
-  let e02 : Edge.t =
-    Edge.mk (Cursor.mk Vertex.root Lang.Index.Root_root_root) v2
-  in
-  let e23 : Edge.t = Edge.mk (Cursor.mk v2 Lang.Index.Exp_times_left) v3 in
-  let e13 : Edge.t = Edge.mk (Cursor.mk v1 Lang.Index.Exp_plus_left) v3 in
-  let e32 : Edge.t = Edge.mk (Cursor.mk v3 Lang.Index.Exp_app_arg) v2 in
+  let e13 : Edge.t = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
+  let e32 : Edge.t = Edge.mk Cursor.{ vertex = v3; index = Exp_app_arg } v2 in
   let graph : Graph.t =
     Edge.Map.empty
     |> Edge.Map.add e01 Edge_state.Destroyed

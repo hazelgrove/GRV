@@ -50,9 +50,10 @@ let rec eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t Error.t =
   match vertex.value with
   | Typ_num -> return Num
   | Typ_arrow ->
-      let%bind t_arg = eval_typ_cursor graph (Cursor.mk vertex Typ_arrow_arg)
+      let%bind t_arg =
+        eval_typ_cursor graph Cursor.{ vertex; index = Typ_arrow_arg }
       and t_result =
-        eval_typ_cursor graph (Cursor.mk vertex Typ_arrow_result)
+        eval_typ_cursor graph Cursor.{ vertex; index = Typ_arrow_result }
       in
       return (Arrow (t_arg, t_result))
   | _ -> match_fail __LOC__ Lang.Sort.Typ vertex
@@ -104,17 +105,19 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
       | Some t -> return t )
   | Exp_lam ->
       let%bind typ =
-        eval_typ_cursor graph (Cursor.mk vertex Exp_lam_param_type)
+        eval_typ_cursor graph Cursor.{ vertex; index = Exp_lam_param_type }
       in
       let%bind env' =
-        ana_pat_cursor graph env (Cursor.mk vertex Exp_lam_param) typ
+        ana_pat_cursor graph env Cursor.{ vertex; index = Exp_lam_param } typ
       in
       let%bind body =
-        syn_exp_cursor graph env' (Cursor.mk vertex Exp_lam_body)
+        syn_exp_cursor graph env' Cursor.{ vertex; index = Exp_lam_body }
       in
       return (Arrow (typ, body))
   | Exp_app ->
-      let%bind func = syn_exp_cursor graph env (Cursor.mk vertex Exp_app_fun) in
+      let%bind func =
+        syn_exp_cursor graph env Cursor.{ vertex; index = Exp_app_fun }
+      in
       let%bind param_type, result_type =
         match func with
         | Unknown -> return (Unknown, Unknown)
@@ -124,14 +127,18 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
               (Type.show func)
       in
       let%bind () =
-        ana_exp_cursor graph env (Cursor.mk vertex Exp_app_arg) param_type
+        ana_exp_cursor graph env
+          Cursor.{ vertex; index = Exp_app_arg }
+          param_type
       in
       return result_type
   | Exp_num _ -> return Num
   | Exp_plus ->
       let%bind () =
-        ana_exp_cursor graph env (Cursor.mk vertex Exp_plus_left) Num
-      and () = ana_exp_cursor graph env (Cursor.mk vertex Exp_plus_right) Num in
+        ana_exp_cursor graph env Cursor.{ vertex; index = Exp_plus_left } Num
+      and () =
+        ana_exp_cursor graph env Cursor.{ vertex; index = Exp_plus_right } Num
+      in
       return Num
   | _ -> match_fail __LOC__ Lang.Sort.Exp vertex
 
@@ -148,7 +155,9 @@ and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
               (Type.show typ)
       in
       let%bind () =
-        ana_exp_cursor graph env (Cursor.mk vertex Exp_cons_head) content
+        ana_exp_cursor graph env
+          Cursor.{ vertex; index = Exp_cons_head }
+          content
       in
       return ()
   | _ ->
@@ -180,7 +189,8 @@ and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
 let syn_root_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
     Type.t Error.t =
   match vertex.value with
-  | Root_root -> syn_exp_cursor graph env (Cursor.mk vertex Root_root_root)
+  | Root_root ->
+      syn_exp_cursor graph env Cursor.{ vertex; index = Root_root_root }
   | _ -> match_fail __LOC__ Lang.Sort.Root vertex
 
 let syn_root_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :

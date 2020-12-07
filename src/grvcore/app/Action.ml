@@ -117,7 +117,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
               let create_new_children_edges =
                 Edge.Set.elements children
                 |> List.map (fun edge ->
-                       let source = Cursor.mk vertex index in
+                       let source = Cursor.{ vertex; index } in
                        let edge = Edge.mk source (Edge.target edge) in
                        Uuid.Wrap.mk Graph_action.{ state = Created; edge })
               in

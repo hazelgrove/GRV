@@ -19,7 +19,6 @@ let apply (action : t) (graph : Graph.t) : Graph.t =
       Edge.Map.add action.value.edge Edge_state.Destroyed graph
   | None, Created ->
       (* TODO: assert not already exists? *)
-
       (* TODO: short circuit if deleting a non-existant *)
       Edge.Map.add action.value.edge Edge_state.Created graph
 

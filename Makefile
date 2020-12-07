@@ -13,6 +13,9 @@ dev:
 	dune build --profile dev
 	dune build @doc
 
+test:
+	dune build @runtest -f
+
 release:
 	dune build --profile release
 

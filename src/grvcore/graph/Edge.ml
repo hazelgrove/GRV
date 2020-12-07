@@ -19,3 +19,6 @@ let partition_set (edges : Set.t) (pivot : Vertex.t) : Set.t * Set.t =
 
 let concat_sets (sets : Set.t list) : Set.t =
   List.map Set.elements sets |> List.concat |> Set.of_list
+
+let children_in_set (edges : Set.t) (vertex : Vertex.t) : Set.t =
+  Set.filter (fun edge -> edge.value.source.vertex = vertex) edges

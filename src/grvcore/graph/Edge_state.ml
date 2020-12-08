@@ -1,3 +1,3 @@
-type t = Created | Destroyed [@@deriving sexp]
+type t = Created | Deleted [@@deriving sexp]
 
-let to_string : t -> string = function Created -> "+" | Destroyed -> "-"
+let to_string : t -> string = function Created -> "+" | Deleted -> "-"

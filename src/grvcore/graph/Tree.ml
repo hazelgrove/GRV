@@ -265,7 +265,7 @@ let%test "decompose 0 1" =
   let v1 = Vertex.mk Exp_plus in
   let e01 = Edge.mk Cursor.root v1 in
   let got =
-    Edge.Map.(empty |> add e01 Edge_state.Destroyed |> context |> decompose)
+    Edge.Map.(empty |> add e01 Edge_state.Deleted |> context |> decompose)
   in
   let want =
     ( Con (Vertex.root, PositionMap.empty),
@@ -282,9 +282,8 @@ let%test "decompose 0->2 1" =
   let e02 = Edge.mk Cursor.root v2 in
   let got =
     Edge.Map.(
-      empty
-      |> add e01 Edge_state.Destroyed
-      |> add e02 Edge_state.Created |> context |> decompose)
+      empty |> add e01 Edge_state.Deleted |> add e02 Edge_state.Created
+      |> context |> decompose)
   in
   let want =
     ( Con
@@ -304,10 +303,8 @@ let%test "decompose 0->2->3 1" =
   let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v3 in
   let got =
     Edge.Map.(
-      empty
-      |> add e01 Edge_state.Destroyed
-      |> add e02 Edge_state.Created |> add e23 Edge_state.Created |> context
-      |> decompose)
+      empty |> add e01 Edge_state.Deleted |> add e02 Edge_state.Created
+      |> add e23 Edge_state.Created |> context |> decompose)
   in
   let want =
     ( Con
@@ -331,10 +328,9 @@ let%test "decompose 0->2->3 1->3" =
   let e13 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v3 in
   let got =
     Edge.Map.(
-      empty
-      |> add e01 Edge_state.Destroyed
-      |> add e02 Edge_state.Created |> add e23 Edge_state.Created
-      |> add e13 Edge_state.Created |> context |> decompose)
+      empty |> add e01 Edge_state.Deleted |> add e02 Edge_state.Created
+      |> add e23 Edge_state.Created |> add e13 Edge_state.Created |> context
+      |> decompose)
   in
   let want =
     ( Con
@@ -359,11 +355,9 @@ let%test "decompose 0->2<->3<-1" =
   let e32 = Edge.mk Cursor.{ vertex = v3; position = Exp_app_arg } v2 in
   let got =
     Edge.Map.(
-      empty
-      |> add e01 Edge_state.Destroyed
-      |> add e02 Edge_state.Created |> add e23 Edge_state.Created
-      |> add e13 Edge_state.Created |> add e32 Edge_state.Created |> context
-      |> decompose)
+      empty |> add e01 Edge_state.Deleted |> add e02 Edge_state.Created
+      |> add e23 Edge_state.Created |> add e13 Edge_state.Created
+      |> add e32 Edge_state.Created |> context |> decompose)
   in
   let want =
     ( Con (Vertex.root, PositionMap.singleton Root_root_root [ Ref v2 ]),
@@ -387,9 +381,7 @@ let%test "decompose 0 2<->3<-1" =
   let e32 = Edge.mk Cursor.{ vertex = v3; position = Exp_app_arg } v2 in
   let got =
     Edge.Map.(
-      empty
-      |> add e01 Edge_state.Destroyed
-      |> add e02 Edge_state.Destroyed
+      empty |> add e01 Edge_state.Deleted |> add e02 Edge_state.Deleted
       |> add e23 Edge_state.Created |> add e13 Edge_state.Created
       |> add e32 Edge_state.Created |> context |> decompose)
   in
@@ -418,11 +410,8 @@ let%test "decompose 0 2<->3 1" =
   let e32 = Edge.mk Cursor.{ vertex = v3; position = Exp_app_arg } v2 in
   let got =
     Edge.Map.(
-      empty
-      |> add e01 Edge_state.Destroyed
-      |> add e02 Edge_state.Destroyed
-      |> add e23 Edge_state.Created
-      |> add e13 Edge_state.Destroyed
+      empty |> add e01 Edge_state.Deleted |> add e02 Edge_state.Deleted
+      |> add e23 Edge_state.Created |> add e13 Edge_state.Deleted
       |> add e32 Edge_state.Created |> context |> decompose)
   in
   let want =

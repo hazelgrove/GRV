@@ -13,10 +13,10 @@ let apply (action : t) (graph : Graph.t) : Graph.t =
   let old_state = Edge.Map.find_opt action.value.edge graph in
   let new_state = action.value.state in
   match (old_state, new_state) with
-  | Some Destroyed, _ -> graph
+  | Some Deleted, _ -> graph
   | Some Created, Created -> graph
-  | (Some Created | None), Destroyed ->
-      Edge.Map.add action.value.edge Edge_state.Destroyed graph
+  | (Some Created | None), Deleted ->
+      Edge.Map.add action.value.edge Edge_state.Deleted graph
   | None, Created ->
       (* TODO: assert not already exists? *)
       (* TODO: short circuit if deleting a non-existant *)

@@ -129,7 +129,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
               let destroy_old_children_edges =
                 Edge.Set.elements children
                 |> List.map (fun edge ->
-                       Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge })
+                       Uuid.Wrap.mk Graph_action.{ state = Deleted; edge })
               in
               ( true,
                 create_parent_edge @ create_new_children_edges
@@ -139,7 +139,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
           Graph.cursor_children editor.graph editor.cursor
           |> Edge.Set.elements
           |> List.map (fun edge ->
-                 Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge }) )
+                 Uuid.Wrap.mk Graph_action.{ state = Deleted; edge }) )
     | Restore vertex ->
         let edge : Edge.t = Edge.mk editor.cursor vertex in
         (false, [ Uuid.Wrap.mk Graph_action.{ state = Created; edge } ])
@@ -149,8 +149,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
             Graph.edges editor.graph
             |> Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
           with
-          | Some edge ->
-              [ Uuid.Wrap.mk Graph_action.{ state = Destroyed; edge } ]
+          | Some edge -> [ Uuid.Wrap.mk Graph_action.{ state = Deleted; edge } ]
           | None -> [] ) )
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in

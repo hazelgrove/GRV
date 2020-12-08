@@ -1,14 +1,11 @@
 open Incr_dom
-module Deferred = Async_kernel.Deferred
-
-(* Sub-modules defined in other files *)
 module Model = Model
 module Action = Action
 module State = State
 
 let on_startup ~schedule_action:(_ : Action.t -> unit) (_ : Model.t) :
-    State.t Deferred.t =
-  Deferred.return State.State
+    State.t Async_kernel.Deferred.t =
+  Async_kernel.Deferred.return State.State
 
 let create (model : Model.t Incr.t) ~old_model:(_ : Model.t Incr.t)
     ~(inject : Action.t -> Vdom.Event.t) :

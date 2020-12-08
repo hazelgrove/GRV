@@ -1,9 +1,11 @@
-type t = { vertex : Vertex.t; index : Lang.Index.t } [@@deriving sexp]
+type t = { vertex : Vertex.t; position : Lang.Position.t } [@@deriving sexp]
 
 let to_string (cursor : t) : string =
-  Uuid.Id.to_string cursor.vertex.id ^ "." ^ Lang.Index.short_name cursor.index
+  Uuid.Id.to_string cursor.vertex.id
+  ^ "."
+  ^ Lang.Position.short_name cursor.position
 
-let root = { vertex = Vertex.root; index = Root_root_root }
+let root = { vertex = Vertex.root; position = Root_root_root }
 
 module OrderedType = struct
   type nonrec t = t

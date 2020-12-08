@@ -64,11 +64,15 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
   let cursor : Cursor.t Option.t =
     match move_action with
     | Left ->
-        let%map.Util.Option index = Lang.Index.left editor.cursor.index in
-        { cursor with index }
+        let%map.Util.Option position =
+          Lang.Position.left editor.cursor.position
+        in
+        { cursor with position }
     | Right ->
-        let%map.Util.Option index = Lang.Index.right editor.cursor.index in
-        { cursor with index }
+        let%map.Util.Option position =
+          Lang.Position.right editor.cursor.position
+        in
+        { cursor with position }
     | Up -> (
         match
           Graph.parent_edges editor.graph editor.cursor.vertex
@@ -80,8 +84,8 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
         match Edge.Set.elements (Graph.cursor_children editor.graph cursor) with
         | [ edge ] ->
             let vertex = edge.value.target in
-            let%map.Util.Option index = Lang.Index.down vertex.value in
-            { Cursor.vertex; index }
+            let%map.Util.Option position = Lang.Position.down vertex.value in
+            { Cursor.vertex; position }
             (* TODO: how to choose between ambiguous children *)
         | _ -> None )
     | Select cursor -> Some cursor
@@ -99,7 +103,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     | Create constructor -> (
         if
           not
-            ( Lang.Index.child_sort editor.cursor.index
+            ( Lang.Position.child_sort editor.cursor.position
             = Lang.Constructor.sort_of constructor )
         then (false, [])
         else
@@ -111,13 +115,13 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
               |> Uuid.Wrap.mk;
             ]
           in
-          match Lang.Index.default_index constructor with
+          match Lang.Position.default_position constructor with
           | None -> (false, create_parent_edge)
-          | Some index ->
+          | Some position ->
               let create_new_children_edges =
                 Edge.Set.elements children
                 |> List.map (fun (edge : Edge.t) ->
-                       let source = Cursor.{ vertex; index } in
+                       let source = Cursor.{ vertex; position } in
                        let edge = Edge.mk source edge.value.target in
                        Uuid.Wrap.mk Graph_action.{ state = Created; edge })
               in

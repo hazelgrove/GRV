@@ -36,7 +36,7 @@ let conflict_node (ctx : Gui.context) (parent : Cursor.t) (nodes : Node.t list)
   |> maybe_cursor_node ctx.editor parent
 
 let constructor_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
-    (child_nodes_map : Node.t list Tree.IndexMap.t) : Node.t =
+    (child_nodes_map : Node.t list Tree.PositionMap.t) : Node.t =
   let maybe_id_node =
     if ctx.editor.show_ids then
       [ Node.create "sub" [] [ Node.text (Uuid.Id.to_string vertex.id) ] ]
@@ -47,12 +47,12 @@ let constructor_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
       Node.span
         [ Gui.clicks_to ctx parent ]
         (Lang.show chars chars
-           (fun index ->
-             match Tree.IndexMap.find_opt index child_nodes_map with
-             | None | Some [] -> hole_node ctx { vertex; index }
+           (fun position ->
+             match Tree.PositionMap.find_opt position child_nodes_map with
+             | None | Some [] -> hole_node ctx { vertex; position }
              | Some [ child_node ] -> child_node
              | Some child_nodes ->
-                 conflict_node ctx { vertex; index } child_nodes)
+                 conflict_node ctx { vertex; position } child_nodes)
            vertex.value);
     ]
   in
@@ -76,10 +76,10 @@ and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
       ref_node ctx.editor Cursor.root (Uuid.Id.of_string "0")
   | Con (vertex, subtrees_map) -> (
       let child_nodes_map =
-        Tree.IndexMap.mapi
-          (fun index subtrees ->
+        Tree.PositionMap.mapi
+          (fun position subtrees ->
             List.map
-              (view_tree_constructor ctx { vertex; index } ~at_top
+              (view_tree_constructor ctx { vertex; position } ~at_top
                  ~with_parens:
                    (not (vertex = Vertex.root || vertex.value = Exp_lam)))
               subtrees)
@@ -277,9 +277,9 @@ let view_editor (model : Model.t) (ctx : Gui.context)
 let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Node.t =
   let editors = Uuid.Map.bindings model.editors |> List.map snd in
   let editor_ids = List.map (fun (editor : Editor.t) -> editor.id) editors in
-  let indexes = List.init (List.length editors) (fun i -> i + 1) in
+  let positions = List.init (List.length editors) (fun i -> i + 1) in
   let tabindexes =
-    List.combine editor_ids indexes |> List.to_seq |> Uuid.Map.of_seq
+    List.combine editor_ids positions |> List.to_seq |> Uuid.Map.of_seq
   in
   Node.div
     [ Attr.create "tabindex" "-1" ]

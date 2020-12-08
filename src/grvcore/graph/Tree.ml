@@ -1,18 +1,18 @@
-module IndexMap = Map.Make (struct
-  type t = Lang.Index.t
+module PositionMap = Map.Make (struct
+  type t = Lang.Position.t
 
   let compare = compare
 end)
 
-type t = Ref of Vertex.t | Con of Vertex.t * t list IndexMap.t
+type t = Ref of Vertex.t | Con of Vertex.t * t list PositionMap.t
 
 (* let rec to_string : t -> string = function
   | Ref vertex -> "#" ^ Uuid.Id.to_string vertex.id
   | Con (vertex, children) ->
-      IndexMap.bindings children
-      |> List.map (fun (index, ts) ->
+      PositionMap.bindings children
+      |> List.map (fun (position, ts) ->
              List.map to_string ts |> String.concat ", "
-             |> Format.sprintf "%s -> [%s]" (Lang.Index.short_name index))
+             |> Format.sprintf "%s -> [%s]" (Lang.Position.short_name position))
       |> String.concat "; "
       |> Format.sprintf "Con(%s, {%s})" (Uuid.Id.to_string vertex.id) *)
 
@@ -23,12 +23,12 @@ let rec mk ?(seen : Vertex.Set.t = Vertex.Set.empty) (source : Vertex.t)
     let seen = Vertex.Set.add source seen in
     let these, others = Edge.partition_set descendants source in
     let children, others =
-      (IndexMap.empty, others)
+      (PositionMap.empty, others)
       |> Edge.Set.fold
            (fun edge (children, others) ->
              assert (edge.value.source.vertex = source);
              let tree, others' = mk ~seen edge.value.target others in
-             ( IndexMap.update edge.value.source.index
+             ( PositionMap.update edge.value.source.position
                  (function
                    | None -> Some [ tree ] | Some trees -> Some (tree :: trees))
                  children,
@@ -106,7 +106,7 @@ let decompose ({ live; multiparent; deleted } : context) :
 (* TODO: drop spurions "Lang.Constructr." *)
 let%test "mk 0" =
   let got = mk Vertex.root Edge.Set.empty |> fst in
-  let want = Con (Vertex.root, IndexMap.empty) in
+  let want = Con (Vertex.root, PositionMap.empty) in
   got = want
 
 let%test "mk 1" =
@@ -116,7 +116,7 @@ let%test "mk 1" =
   let want =
     Con
       ( Vertex.root,
-        IndexMap.singleton Root_root_root [ Con (v1, IndexMap.empty) ] )
+        PositionMap.singleton Root_root_root [ Con (v1, PositionMap.empty) ] )
   in
   got = want
 
@@ -129,8 +129,8 @@ let%test "mk 2" =
   let want =
     Con
       ( Vertex.root,
-        IndexMap.singleton Root_root_root
-          [ Con (v2, IndexMap.empty); Con (v1, IndexMap.empty) ] )
+        PositionMap.singleton Root_root_root
+          [ Con (v2, PositionMap.empty); Con (v1, PositionMap.empty) ] )
   in
   got = want
 
@@ -138,15 +138,17 @@ let%test "mk 1.1" =
   let v1 = Vertex.mk Exp_plus in
   let v2 = Vertex.mk Exp_times in
   let e01 = Edge.mk Cursor.root v1 in
-  let e02 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v2 in
+  let e02 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v2 in
   let got = mk Vertex.root (Edge.Set.of_list [ e01; e02 ]) |> fst in
   let want =
     Con
       ( Vertex.root,
-        IndexMap.singleton Root_root_root
+        PositionMap.singleton Root_root_root
           [
             Con
-              (v1, IndexMap.singleton Exp_plus_left [ Con (v2, IndexMap.empty) ]);
+              ( v1,
+                PositionMap.singleton Exp_plus_left
+                  [ Con (v2, PositionMap.empty) ] );
           ] )
   in
   got = want
@@ -156,19 +158,20 @@ let%test "mk 1.2" =
   let v2 = Vertex.mk Exp_times in
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
-  let e12 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v2 in
-  let e13 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_right } v3 in
+  let e12 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v2 in
+  let e13 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_right } v3 in
   let got = mk Vertex.root (Edge.Set.of_list [ e01; e12; e13 ]) |> fst in
   let want =
     Con
       ( Vertex.root,
-        IndexMap.singleton Root_root_root
+        PositionMap.singleton Root_root_root
           [
             Con
               ( v1,
-                IndexMap.empty
-                |> IndexMap.add Exp_plus_left [ Con (v2, IndexMap.empty) ]
-                |> IndexMap.add Exp_plus_right [ Con (v3, IndexMap.empty) ] );
+                PositionMap.empty
+                |> PositionMap.add Exp_plus_left [ Con (v2, PositionMap.empty) ]
+                |> PositionMap.add Exp_plus_right
+                     [ Con (v3, PositionMap.empty) ] );
           ] )
   in
   got = want
@@ -178,13 +181,13 @@ let%test "mk 1.1.1" =
   let v2 = Vertex.mk Exp_times in
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
-  let e12 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v2 in
-  let e23 = Edge.mk Cursor.{ vertex = v2; index = Exp_plus_right } v3 in
+  let e12 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v2 in
+  let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_plus_right } v3 in
   let got = mk Vertex.root (Edge.Set.of_list [ e01; e12; e23 ]) |> fst in
   let want =
     Con
       ( Vertex.root,
-        IndexMap.(
+        PositionMap.(
           singleton Root_root_root
             [
               Con
@@ -199,12 +202,14 @@ let%test "mk 1.1.1" =
 let%test "mk sc" =
   let v1 = Vertex.mk Exp_plus in
   let e01 = Edge.mk Cursor.root v1 in
-  let e10 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } Vertex.root in
+  let e10 =
+    Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } Vertex.root
+  in
   let got = mk Vertex.root (Edge.Set.of_list [ e01; e10 ]) |> fst in
   let want =
     Con
       ( Vertex.root,
-        IndexMap.(
+        PositionMap.(
           singleton Root_root_root
             [ Con (v1, empty |> add Exp_plus_left [ Ref Vertex.root ]) ]) )
   in
@@ -213,15 +218,17 @@ let%test "mk sc" =
 let%test "mk mp" =
   let v1 = Vertex.mk Exp_plus in
   let e01 = Edge.mk Cursor.root v1 in
-  let e10 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } Vertex.root in
+  let e10 =
+    Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } Vertex.root
+  in
   let e10' =
-    Edge.mk Cursor.{ vertex = v1; index = Exp_plus_right } Vertex.root
+    Edge.mk Cursor.{ vertex = v1; position = Exp_plus_right } Vertex.root
   in
   let got = mk Vertex.root (Edge.Set.of_list [ e01; e10; e10' ]) |> fst in
   let want =
     Con
       ( Vertex.root,
-        IndexMap.(
+        PositionMap.(
           singleton Root_root_root
             [
               Con
@@ -235,7 +242,7 @@ let%test "mk mp" =
 
 let%test "decompose 0" =
   let got = Graph.empty |> context |> decompose in
-  let want = (Con (Vertex.root, IndexMap.empty), [], [], []) in
+  let want = (Con (Vertex.root, PositionMap.empty), [], [], []) in
   got = want
 
 let%test "decompose 0->1" =
@@ -246,7 +253,8 @@ let%test "decompose 0->1" =
   in
   let want =
     ( Con
-        (Vertex.root, IndexMap.(empty |> add Root_root_root [ Con (v1, empty) ])),
+        ( Vertex.root,
+          PositionMap.(empty |> add Root_root_root [ Con (v1, empty) ]) ),
       [],
       [],
       [] )
@@ -260,7 +268,10 @@ let%test "decompose 0 1" =
     Edge.Map.(empty |> add e01 Edge_state.Destroyed |> context |> decompose)
   in
   let want =
-    (Con (Vertex.root, IndexMap.empty), [ Con (v1, IndexMap.empty) ], [], [])
+    ( Con (Vertex.root, PositionMap.empty),
+      [ Con (v1, PositionMap.empty) ],
+      [],
+      [] )
   in
   got = want
 
@@ -276,8 +287,9 @@ let%test "decompose 0->2 1" =
       |> add e02 Edge_state.Created |> context |> decompose)
   in
   let want =
-    ( Con (Vertex.root, IndexMap.(singleton Root_root_root [ Con (v2, empty) ])),
-      [ Con (v1, IndexMap.empty) ],
+    ( Con
+        (Vertex.root, PositionMap.(singleton Root_root_root [ Con (v2, empty) ])),
+      [ Con (v1, PositionMap.empty) ],
       [],
       [] )
   in
@@ -289,7 +301,7 @@ let%test "decompose 0->2->3 1" =
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
   let e02 = Edge.mk Cursor.root v2 in
-  let e23 = Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3 in
+  let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v3 in
   let got =
     Edge.Map.(
       empty
@@ -300,10 +312,10 @@ let%test "decompose 0->2->3 1" =
   let want =
     ( Con
         ( Vertex.root,
-          IndexMap.(
+          PositionMap.(
             singleton Root_root_root
               [ Con (v2, singleton Exp_times_left [ Con (v3, empty) ]) ]) ),
-      [ Con (v1, IndexMap.empty) ],
+      [ Con (v1, PositionMap.empty) ],
       [],
       [] )
   in
@@ -315,8 +327,8 @@ let%test "decompose 0->2->3 1->3" =
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
   let e02 = Edge.mk Cursor.root v2 in
-  let e23 = Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3 in
-  let e13 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
+  let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v3 in
+  let e13 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v3 in
   let got =
     Edge.Map.(
       empty
@@ -327,11 +339,11 @@ let%test "decompose 0->2->3 1->3" =
   let want =
     ( Con
         ( Vertex.root,
-          IndexMap.(
+          PositionMap.(
             singleton Root_root_root
               [ Con (v2, singleton Exp_times_left [ Ref v3 ]) ]) ),
-      [ Con (v1, IndexMap.singleton Exp_plus_left [ Ref v3 ]) ],
-      [ Con (v3, IndexMap.empty) ],
+      [ Con (v1, PositionMap.singleton Exp_plus_left [ Ref v3 ]) ],
+      [ Con (v3, PositionMap.empty) ],
       [] )
   in
   got = want
@@ -342,9 +354,9 @@ let%test "decompose 0->2<->3<-1" =
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
   let e02 = Edge.mk Cursor.root v2 in
-  let e23 = Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3 in
-  let e13 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
-  let e32 = Edge.mk Cursor.{ vertex = v3; index = Exp_app_arg } v2 in
+  let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v3 in
+  let e13 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v3 in
+  let e32 = Edge.mk Cursor.{ vertex = v3; position = Exp_app_arg } v2 in
   let got =
     Edge.Map.(
       empty
@@ -354,11 +366,11 @@ let%test "decompose 0->2<->3<-1" =
       |> decompose)
   in
   let want =
-    ( Con (Vertex.root, IndexMap.singleton Root_root_root [ Ref v2 ]),
-      [ Con (v1, IndexMap.singleton Exp_plus_left [ Ref v3 ]) ],
+    ( Con (Vertex.root, PositionMap.singleton Root_root_root [ Ref v2 ]),
+      [ Con (v1, PositionMap.singleton Exp_plus_left [ Ref v3 ]) ],
       [
-        Con (v2, IndexMap.singleton Exp_times_left [ Ref v3 ]);
-        Con (v3, IndexMap.singleton Exp_app_arg [ Ref v2 ]);
+        Con (v2, PositionMap.singleton Exp_times_left [ Ref v3 ]);
+        Con (v3, PositionMap.singleton Exp_app_arg [ Ref v2 ]);
       ],
       [] )
   in
@@ -370,9 +382,9 @@ let%test "decompose 0 2<->3<-1" =
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
   let e02 = Edge.mk Cursor.root v2 in
-  let e23 = Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3 in
-  let e13 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
-  let e32 = Edge.mk Cursor.{ vertex = v3; index = Exp_app_arg } v2 in
+  let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v3 in
+  let e13 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v3 in
+  let e32 = Edge.mk Cursor.{ vertex = v3; position = Exp_app_arg } v2 in
   let got =
     Edge.Map.(
       empty
@@ -382,12 +394,12 @@ let%test "decompose 0 2<->3<-1" =
       |> add e32 Edge_state.Created |> context |> decompose)
   in
   let want =
-    ( Con (Vertex.root, IndexMap.empty),
-      [ Con (v1, IndexMap.singleton Exp_plus_left [ Ref v3 ]) ],
+    ( Con (Vertex.root, PositionMap.empty),
+      [ Con (v1, PositionMap.singleton Exp_plus_left [ Ref v3 ]) ],
       [
         Con
           ( v3,
-            IndexMap.(
+            PositionMap.(
               singleton Exp_app_arg
                 [ Con (v2, singleton Exp_times_left [ Ref v3 ]) ]) );
       ],
@@ -401,9 +413,9 @@ let%test "decompose 0 2<->3 1" =
   let v3 = Vertex.mk Exp_app in
   let e01 = Edge.mk Cursor.root v1 in
   let e02 = Edge.mk Cursor.root v2 in
-  let e23 = Edge.mk Cursor.{ vertex = v2; index = Exp_times_left } v3 in
-  let e13 = Edge.mk Cursor.{ vertex = v1; index = Exp_plus_left } v3 in
-  let e32 = Edge.mk Cursor.{ vertex = v3; index = Exp_app_arg } v2 in
+  let e23 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v3 in
+  let e13 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v3 in
+  let e32 = Edge.mk Cursor.{ vertex = v3; position = Exp_app_arg } v2 in
   let got =
     Edge.Map.(
       empty
@@ -414,15 +426,19 @@ let%test "decompose 0 2<->3 1" =
       |> add e32 Edge_state.Created |> context |> decompose)
   in
   let want =
-    ( Con (Vertex.root, IndexMap.empty),
-      [ Con (v1, IndexMap.empty) ],
+    ( Con (Vertex.root, PositionMap.empty),
+      [ Con (v1, PositionMap.empty) ],
       [],
       [
         Con
           ( v2,
-            IndexMap.singleton Lang.Index.Exp_times_left
-              [ Con (v3, IndexMap.singleton Lang.Index.Exp_app_arg [ Ref v2 ]) ]
-          );
+            PositionMap.singleton Lang.Position.Exp_times_left
+              [
+                Con
+                  ( v3,
+                    PositionMap.singleton Lang.Position.Exp_app_arg [ Ref v2 ]
+                  );
+              ] );
       ] )
   in
   got = want

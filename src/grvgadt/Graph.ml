@@ -77,7 +77,7 @@ type ('ctor, 'sort) sort_of_ctor =
   | Typ_var : (typ_var, typ) sort_of_ctor
 
 (* Connecting constructors to the sorts of their children *)
-(* NOTE: this also serves as the `index` of child edges *)
+(* NOTE: this also serves as the `position` of child edges *)
 type ('ctor, 'sort) sort_of_child =
   | Root_root_root : (root_root, root) sort_of_child
   (* id_id has no children *)
@@ -107,7 +107,7 @@ type 'target_sort edge =
   | Edge : {
       id : Uuid.t;
       source : 'source_ctor ctor_vertex;
-      index : ('source_ctor, 'target_sort) sort_of_child;
+      position : ('source_ctor, 'target_sort) sort_of_child;
       target : 'target_sort sort_vertex;
     }
       -> 'target_sort edge
@@ -133,7 +133,7 @@ existential for the parent's constructor.  Instead, use a pattern match on
 let vertexes_from :
       'ctor 'sort. 'ctor ctor_vertex -> ('ctor, 'sort) sort_of_child ->
       'sort sort_vertex list =
- fun vertex index -> List.map target (edges_from vertex index)
+ fun vertex position -> List.map target (edges_from vertex position)
 
 (* Example of traversal *)
 let rec check_exp (x : exp sort_vertex) : unit =
@@ -163,7 +163,7 @@ type 'ctor vertex_info =
 
 (*
 
-type index = int;;
+type position = int;;
 
 type vertex_name = {
   id: Uuid.t,
@@ -181,7 +181,7 @@ and edge_name = {
   id: Uuid.t,
   src: vertex,
   dst: vertex,
-  index: index,
+  position: position,
 }
 
 and edge = {

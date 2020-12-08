@@ -104,13 +104,17 @@ let button_text_input ?(classes : string list = []) ?(disabled : bool option)
 let sorted_text_input ?(classes : string list = [])
     ~(on_change : string -> Action.t' option) (ctx : context) (id : string)
     (sort : Lang.Sort.t) (tabindexes : int Uuid.Map.t) : Node.t =
-  let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
+  let disabled =
+    not (Lang.Position.child_sort ctx.editor.cursor.position = sort)
+  in
   text_input ctx id tabindexes ~classes ~disabled ~on_change
 
 let sorted_button ?(classes : string list = [])
     ~(on_click : unit -> Action.t' option) (ctx : context) (label : string)
     (sort : Lang.Sort.t) (tabindexes : int Uuid.Map.t) : Node.t =
-  let disabled = not (Lang.Index.child_sort ctx.editor.cursor.index = sort) in
+  let disabled =
+    not (Lang.Position.child_sort ctx.editor.cursor.position = sort)
+  in
   button ctx label tabindexes ~classes ~disabled ~on_click
 
 let action_button (ctx : context) (label : string) (sort : Lang.Sort.t)

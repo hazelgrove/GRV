@@ -9,13 +9,13 @@ let vertex_color (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
   else if Edge.Set.exists source_is_cursor parents then Color.purple
   else Color.white
 
-let draw_index (index : Lang.Index.t) : string =
-  let name = Lang.Index.short_name index in
+let draw_position (position : Lang.Position.t) : string =
+  let name = Lang.Position.short_name position in
   Format.sprintf "<%s> %s" name name
 
 let draw_vertex_children (vertex : Vertex.t) : string =
-  Lang.Index.child_indexes vertex.value
-  |> List.map draw_index |> String.concat "|"
+  Lang.Position.child_positions vertex.value
+  |> List.map draw_position |> String.concat "|"
 
 let draw_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
     string =
@@ -33,8 +33,8 @@ let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
   let source_id = Uuid.Id.to_string edge.value.source.vertex.id in
   let target_id = Uuid.Id.to_string edge.value.target.id in
   let edge_id = Uuid.Id.to_string edge.id in
-  let index = Lang.Index.show edge.value.source.index in
-  let field = Lang.Index.short_name edge.value.source.index in
+  let position = Lang.Position.show edge.value.source.position in
+  let field = Lang.Position.short_name edge.value.source.position in
   let color =
     let num_conflicts =
       Edge.Set.(
@@ -50,9 +50,9 @@ let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
     else Color.orange
   in
   Format.sprintf
-    {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s"]|}
-    source_id field target_id color edge_id edge_id source_id index target_id
-    edge_id source_id index target_id
+    {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nposition: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nposition: %s\ntarget: %s"]|}
+    source_id field target_id color edge_id edge_id source_id position target_id
+    edge_id source_id position target_id
 
 let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
     string list * string list =
@@ -65,7 +65,7 @@ let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
       [
         Format.sprintf "n%s:%s -> hole"
           (Uuid.Id.to_string cursor.vertex.id)
-          (Lang.Index.short_name cursor.index);
+          (Lang.Position.short_name cursor.position);
       ] )
   else ([], [])
 

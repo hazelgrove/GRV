@@ -21,7 +21,7 @@ let maybe_cursor_node (editor : Editor.t) (parent : Cursor.t) (node : Node.t) :
   if parent = editor.cursor then cursor_node node else node
 
 let ref_node (editor : Editor.t) (parent : Cursor.t) (id : Uuid.Id.t) : Node.t =
-  Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.show id) ]
+  Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.to_string id) ]
   |> maybe_cursor_node editor parent
 
 let hole_node (ctx : Gui.context) (parent : Cursor.t) : Node.t =
@@ -39,7 +39,7 @@ let constructor_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
     (child_nodes_map : Node.t list Tree.IndexMap.t) : Node.t =
   let maybe_id_node =
     if ctx.editor.show_ids then
-      [ Node.create "sub" [] [ Node.text (Uuid.Id.show vertex.id) ] ]
+      [ Node.create "sub" [] [ Node.text (Uuid.Id.to_string vertex.id) ] ]
     else []
   in
   let nodes =
@@ -72,8 +72,8 @@ and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
   let parent = Option.value parent_opt ~default:Cursor.root in
   ( match tree with
   | Ref v -> ref_node ctx.editor parent v.id
-  | Con (v, _) when v.id = Uuid.Id.read "0" && not at_top ->
-      ref_node ctx.editor Cursor.root (Uuid.Id.read "0")
+  | Con (v, _) when v.id = Uuid.Id.of_string "0" && not at_top ->
+      ref_node ctx.editor Cursor.root (Uuid.Id.of_string "0")
   | Con (vertex, subtrees_map) -> (
       let child_nodes_map =
         Tree.IndexMap.mapi
@@ -106,7 +106,7 @@ let graph_panel (ctx : Gui.context) (id : string) (tabindexes : int Uuid.Map.t)
           Gui.button ctx "Drop Edge" tabindexes ~on_click:(fun () ->
               match Js.prompt "edge_id" with
               | "" -> None
-              | str -> Some (Edit (DropEdge (Uuid.Id.read str))));
+              | str -> Some (Edit (DropEdge (Uuid.Id.of_string str))));
           Gui.none_button ctx "Show Source" tabindexes ~on_click:(fun () ->
               Format.printf "%s\n%!"
                 (Graphviz.draw_graph ctx.editor.graph ctx.editor.cursor));
@@ -126,7 +126,7 @@ let send_actions_panel (model : Model.t) (ctx : Gui.context) (id : string)
   Gui.select_panel ~label:"Send to Editors" ~multi:true ~classes:[ "Editors" ]
     ("editors" ^ id)
     (List.rev_map fst (Uuid.Map.bindings model.editors))
-    (fun editor_id -> [ Node.text (Uuid.Id.show editor_id) ])
+    (fun editor_id -> [ Node.text (Uuid.Id.to_string editor_id) ])
     [
       Gui.button ctx "Send (ctrl-s)" tabindexes ~on_click:(fun () ->
           Gui.send model ctx.editor);
@@ -187,7 +187,7 @@ let simple_cycles_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) :
 
 let view_editor (model : Model.t) (ctx : Gui.context)
     (tabindexes : int Uuid.Map.t) : Node.t =
-  let id : string = Uuid.Id.show ctx.editor.id in
+  let id : string = Uuid.Id.to_string ctx.editor.id in
   let tree_ctx : Tree.context = Tree.context ctx.editor.graph in
   let r, d, mp, sc = Tree.decompose tree_ctx in
   Graphviz.draw ctx.editor;

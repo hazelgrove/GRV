@@ -24,7 +24,7 @@ let focus_input (id : string) : string =
 
 let draw_viz (id : Uuid.Id.t) (dot_src : string) : unit =
   eval_to_unit
-  @@ Printf.sprintf "drawViz('graph%s', '%s')" (Uuid.Id.show id) dot_src
+  @@ Printf.sprintf "drawViz('graph%s', '%s')" (Uuid.Id.to_string id) dot_src
 
 let get_selection (id : string) : bool list =
   Array.to_list @@ to_array @@ Unsafe.eval_string ("getSelection('" ^ id ^ "')")

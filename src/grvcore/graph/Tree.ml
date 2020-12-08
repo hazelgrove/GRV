@@ -7,14 +7,14 @@ end)
 type t = Ref of Vertex.t | Con of Vertex.t * t list IndexMap.t
 
 (* let rec to_string : t -> string = function
-  | Ref vertex -> "#" ^ Uuid.Id.show vertex.id
+  | Ref vertex -> "#" ^ Uuid.Id.to_string vertex.id
   | Con (vertex, children) ->
       IndexMap.bindings children
       |> List.map (fun (index, ts) ->
              List.map to_string ts |> String.concat ", "
              |> Format.sprintf "%s -> [%s]" (Lang.Index.short_name index))
       |> String.concat "; "
-      |> Format.sprintf "Con(%s, {%s})" (Uuid.Id.show vertex.id) *)
+      |> Format.sprintf "Con(%s, {%s})" (Uuid.Id.to_string vertex.id) *)
 
 let rec mk ?(seen : Vertex.Set.t = Vertex.Set.empty) (source : Vertex.t)
     (descendants : Edge.Set.t) : t * Edge.Set.t =

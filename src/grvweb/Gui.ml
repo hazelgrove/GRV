@@ -14,7 +14,7 @@ let selected (selection : bool list) (elements : 'a list) : 'a list =
   List.combine selection elements |> List.filter fst |> List.map snd
 
 let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
-  match Js.get_selection ("actions" ^ Uuid.Id.show editor.id) with
+  match Js.get_selection ("actions" ^ Uuid.Id.to_string editor.id) with
   | [] -> None
   | selection ->
       let actions : Graph_action.t list =
@@ -23,10 +23,10 @@ let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
       let editor_ids : Uuid.Id.t list =
         Uuid.Map.bindings model.editors
         |> List.rev_map snd
-        |> selected (Js.get_selection ("editors" ^ Uuid.Id.show editor.id))
+        |> selected (Js.get_selection ("editors" ^ Uuid.Id.to_string editor.id))
         |> List.map (fun (editor : Editor.t) -> editor.id)
       in
-      Js.fill_selection ("actions" ^ Uuid.Id.show editor.id);
+      Js.fill_selection ("actions" ^ Uuid.Id.to_string editor.id);
       Some (Comm (Send (actions, editor_ids)))
 
 let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :
@@ -34,11 +34,11 @@ let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :
   let%map.Util.Option selection : Vertex.t option =
     if String.equal vertex_id "" then
       let selection : bool list =
-        Js.get_selection ("deleted" ^ Uuid.Id.show editor.id)
+        Js.get_selection ("deleted" ^ Uuid.Id.to_string editor.id)
       in
       let vertexes : Vertex.t list = Vertex.Set.elements deleted in
       List.nth_opt (selected selection vertexes) 0
-    else Graph.vertex editor.graph (Uuid.Id.read vertex_id)
+    else Graph.vertex editor.graph (Uuid.Id.of_string vertex_id)
   in
   Action.Edit (Restore selection)
 
@@ -161,7 +161,7 @@ let teleport (ctx : context) (id : string) : unit -> Action.t' option =
   match Js.prompt "edge_id or vertex_id" with
   | "" -> None
   | str -> (
-      let teleport_id = Uuid.Id.read str in
+      let teleport_id = Uuid.Id.of_string str in
       Js.focus ("editor" ^ id);
       match
         Edge.Set.find_first_opt

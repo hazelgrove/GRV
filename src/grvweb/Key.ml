@@ -45,7 +45,7 @@ let shift (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
 
 let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
     Action.t' Option.t =
-  let id = Uuid.Id.show editor.id in
+  let id = Uuid.Id.to_string editor.id in
   match Dom_html.Keyboard_code.of_event event with
   | KeyN -> (
       match Js.prompt "num_id" with
@@ -95,6 +95,6 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
   match handle event with
   | Some action ->
       Js.claim_event event;
-      Js.focus ("editor" ^ Uuid.Id.show editor.id);
+      Js.focus ("editor" ^ Uuid.Id.to_string editor.id);
       inject { editor_id = editor.id; action }
   | None -> Vdom.Event.Ignore

@@ -8,17 +8,13 @@ module Id : sig
   (* Allows the allocation of `Id.t` that should be the same on all systems.  I.e., they are well known. *)
   val well_known : int -> t
 
-  val show : t -> string
+  val to_string : t -> string
 
-  val read : string -> t
-
-  val pp : Format.formatter -> t -> unit
+  val of_string : string -> t
 end = struct
   open Sexplib0.Sexp_conv
 
   type t = int [@@deriving sexp]
-
-  let pp (fmt : Format.formatter) (id : t) : unit = Format.fprintf fmt "%d" id
 
   let compare = Int.compare
 
@@ -32,9 +28,9 @@ end = struct
     let () = assert (int <= 0) in
     int
 
-  let show = Int.to_string
+  let to_string = Int.to_string
 
-  let read = int_of_string
+  let of_string = int_of_string
 end
 
 module Map = Map.Make (Id)

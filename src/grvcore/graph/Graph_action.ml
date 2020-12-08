@@ -7,7 +7,7 @@ let to_string (edge_action : t) : string =
   ^ " "
   ^ Cursor.to_string edge_action.value.edge.value.source
   ^ " → "
-  ^ Uuid.Id.show edge_action.value.edge.value.target.id
+  ^ Uuid.Id.to_string edge_action.value.edge.value.target.id
 
 let apply (action : t) (graph : Graph.t) : Graph.t =
   let old_state = Edge.Map.find_opt action.value.edge graph in

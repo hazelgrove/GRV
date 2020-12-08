@@ -19,7 +19,7 @@ let draw_vertex_children (vertex : Vertex.t) : string =
 
 let draw_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
     string =
-  let id = Uuid.Id.show vertex.id in
+  let id = Uuid.Id.to_string vertex.id in
   Format.sprintf
     {|n%s [label="{%s: %s|{%s}}", style=filled, fillcolor=%s, color=%s]|} id id
     (Lang.Constructor.graphviz_label vertex.value)
@@ -30,9 +30,9 @@ let draw_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
       else orange)
 
 let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
-  let source_id = Uuid.Id.show edge.value.source.vertex.id in
-  let target_id = Uuid.Id.show edge.value.target.id in
-  let edge_id = Uuid.Id.show edge.id in
+  let source_id = Uuid.Id.to_string edge.value.source.vertex.id in
+  let target_id = Uuid.Id.to_string edge.value.target.id in
+  let edge_id = Uuid.Id.to_string edge.id in
   let index = Lang.Index.show edge.value.source.index in
   let field = Lang.Index.short_name edge.value.source.index in
   let color =
@@ -64,7 +64,7 @@ let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
       ],
       [
         Format.sprintf "n%s:%s -> hole"
-          (Uuid.Id.show cursor.vertex.id)
+          (Uuid.Id.to_string cursor.vertex.id)
           (Lang.Index.short_name cursor.index);
       ] )
   else ([], [])

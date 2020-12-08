@@ -30,16 +30,16 @@ let get_selection (id : string) : bool list =
   Array.to_list @@ to_array @@ Unsafe.eval_string ("getSelection('" ^ id ^ "')")
 
 let clear_selection (id : string) : unit =
-  eval_to_unit ("clearSelection('" ^ id ^ "')")
+  eval_to_unit @@ "clearSelection('" ^ id ^ "')"
 
 let fill_selection (id : string) : unit =
-  eval_to_unit ("fillSelection('" ^ id ^ "')")
+  eval_to_unit @@ "fillSelection('" ^ id ^ "')"
 
 let toggle_item (id : string) (i : int) : unit =
-  eval_to_unit ("toggleItem('" ^ id ^ "', " ^ Int.to_string i ^ ")")
+  eval_to_unit @@ "toggleItem('" ^ id ^ "', " ^ Int.to_string i ^ ")"
 
 let select_item (id : string) (i : int) : unit =
-  eval_to_unit ("selectItem('" ^ id ^ "', " ^ Int.to_string i ^ ")")
+  eval_to_unit @@ "selectItem('" ^ id ^ "', " ^ Int.to_string i ^ ")"
 
 let prompt (message : string) : string =
-  eval_to_string ("window.prompt('" ^ message ^ "')")
+  eval_to_string @@ "window.prompt('" ^ message ^ "')"

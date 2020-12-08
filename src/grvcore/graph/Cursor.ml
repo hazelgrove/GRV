@@ -1,5 +1,4 @@
-type t = { vertex : Vertex.t; index : Lang.Index.t }
-[@@deriving ord, sexp, show]
+type t = { vertex : Vertex.t; index : Lang.Index.t } [@@deriving sexp]
 
 let to_string (cursor : t) : string =
   Uuid.Id.show cursor.vertex.id ^ "." ^ Lang.Index.short_name cursor.index

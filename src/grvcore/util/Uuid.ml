@@ -52,14 +52,6 @@ module Wrap = struct
 
   let well_known (int : int) (a : 'a) : 'a t =
     { id = Id.well_known int; value = a }
-
-  let bind (u : 'a t) (f : Id.t * 'a -> 'b t) : 'b t = f (u.id, u.value)
-
-  let return = mk
-
-  let pp (pp' : Format.formatter -> 'a -> unit) (fmt : Format.formatter)
-      (u : 'a t) : unit =
-    Format.fprintf fmt "%s=%a" (Id.show u.id) pp' u.value
 end
 
 (* TODO: *)

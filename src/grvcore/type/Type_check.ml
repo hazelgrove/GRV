@@ -37,9 +37,11 @@ let match_fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
     failwith
       (Printf.sprintf "%s: Missing case for %s in %s" loc
          (Lang.Constructor.show vertex.value)
-         (Vertex.show vertex))
+         (Uuid.Id.show vertex.id))
   else
-    failwith (Printf.sprintf "%s: Non-Typ vertex %s" loc (Vertex.show vertex))
+    failwith
+      (Printf.sprintf "%s: Non-Typ vertex %s" loc
+         (Lang.Constructor.show vertex.value))
 
 (**************)
 (**** Type ****)

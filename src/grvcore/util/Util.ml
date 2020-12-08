@@ -5,8 +5,6 @@ module List = struct
     | x :: xs' -> x :: delim :: intersperse delim xs'
 end
 
-(* TODO: move all generic sexp parsing / printing functions here *)
-(* TODO: put all type-specific sexp functions in their types' modules *)
 module Sexp = struct
   let print (sexp : Sexplib0.Sexp.t) : unit =
     Sexplib0.Sexp.to_string_hum sexp |> print_endline
@@ -16,28 +14,6 @@ module Sexp = struct
     Sexplib.Std.sexp_of_list
       (fun (k, v) -> Sexplib.Sexp.List [ sexp_of_key k; sexp_of_value v ])
       bindings
-end
-
-module String = struct
-  module OrderedType = struct
-    type nonrec t = string
-
-    let compare = String.compare
-  end
-
-  module Map = Map.Make (OrderedType)
-  module Set = Set.Make (OrderedType)
-end
-
-module Int = struct
-  module OrderedType = struct
-    type nonrec t = int
-
-    let compare = Int.compare
-  end
-
-  module Map = Map.Make (OrderedType)
-  module Set = Set.Make (OrderedType)
 end
 
 module Option = struct

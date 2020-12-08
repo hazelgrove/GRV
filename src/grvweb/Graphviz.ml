@@ -1,107 +1,93 @@
-let red_color = {|"#FF5C56"|}
-
-let orange_color = {|"#FFB643"|}
-
-let green_color = {|"#A4FF77"|}
-
-let blue_color = {|"#87E2FF"|}
-
-let purple_color = {|"#D7BBD9"|}
-
-let vertex_color (vertex : Vertex.t) (graph : Graph.t) (cursor : Cursor.t) :
+let vertex_color (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
     string =
-  if vertex = Vertex.root then "black"
-  else
-    let parents = Graph.parent_edges graph vertex in
-    if Edge.Set.is_empty parents then "white"
-    else if
-      Edge.Set.exists
-        (fun edge -> edge.value.source = cursor && edge.value.target = vertex)
-        parents
-    then purple_color
-    else "white"
+  let parents = Graph.parent_edges graph vertex in
+  let source_is_cursor (edge : Edge.t) =
+    edge.value.source = cursor && edge.value.target = vertex
+  in
+  if vertex = Vertex.root then Color.black
+  else if Edge.Set.is_empty parents then Color.white
+  else if Edge.Set.exists source_is_cursor parents then Color.purple
+  else Color.white
+
+let draw_index (index : Lang.Index.t) : string =
+  let name = Lang.Index.short_name index in
+  Format.sprintf "<%s> %s" name name
+
+let draw_vertex_children (vertex : Vertex.t) : string =
+  Lang.Index.child_indexes vertex.value
+  |> List.map draw_index |> String.concat "|"
+
+let draw_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
+    string =
+  let id = Uuid.Id.show vertex.id in
+  Format.sprintf
+    {|n%s [label="{%s: %s|{%s}}", style=filled, fillcolor=%s, color=%s]|} id id
+    (Lang.Constructor.graphviz_label vertex.value)
+    (draw_vertex_children vertex)
+    (vertex_color graph cursor vertex)
+    Color.(
+      if Graph.parent_edges graph vertex |> Edge.Set.cardinal < 2 then black
+      else orange)
+
+let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
+  let source_id = Uuid.Id.show edge.value.source.vertex.id in
+  let target_id = Uuid.Id.show edge.value.target.id in
+  let edge_id = Uuid.Id.show edge.id in
+  let index = Lang.Index.show edge.value.source.index in
+  let field = Lang.Index.short_name edge.value.source.index in
+  let color =
+    let num_conflicts =
+      Edge.Set.(
+        remove edge live
+        |> filter (fun (e : Edge.t) -> e.value.source = edge.value.source)
+        |> cardinal)
+    in
+    let num_parents =
+      Edge.Set.cardinal (Graph.parent_edges graph edge.value.target)
+    in
+    if num_conflicts = 0 && num_parents = 1 then Color.black
+    else if num_conflicts > 0 then Color.red
+    else Color.orange
+  in
+  Format.sprintf
+    {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s"]|}
+    source_id field target_id color edge_id edge_id source_id index target_id
+    edge_id source_id index target_id
+
+let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
+    string list * string list =
+  if Edge.Set.is_empty (Graph.cursor_children graph cursor) then
+    ( [
+        Format.sprintf
+          {|hole [label="",shape=circle,style=filled,fillcolor=%s]|}
+          Color.purple;
+      ],
+      [
+        Format.sprintf "n%s:%s -> hole"
+          (Uuid.Id.show cursor.vertex.id)
+          (Lang.Index.short_name cursor.index);
+      ] )
+  else ([], [])
 
 let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
   let nodes =
-    List.map
-      (fun (vertex : Vertex.t) ->
-        let id = Uuid.Id.show vertex.id in
-        let constructor = Uuid.Wrap.unmk vertex in
-        let label = Lang.Constructor.graphviz_label constructor in
-        let children =
-          String.concat "|"
-            (List.map
-               (fun i ->
-                 let name = Lang.Index.short_name i in
-                 Printf.sprintf "<%s> %s" name name)
-               (Lang.Index.child_indexes constructor))
-        in
-        let fillcolor = vertex_color vertex graph cursor in
-        let color =
-          let num_parents =
-            Edge.Set.cardinal (Graph.parent_edges graph vertex)
-          in
-          if num_parents < 2 then "black" else orange_color
-        in
-        Printf.sprintf
-          {|n%s [label="{%s: %s|{%s}}",style=filled,fillcolor=%s,color=%s]|} id
-          id label children fillcolor color)
-      (Vertex.Set.elements (Graph.vertexes graph))
+    Graph.vertexes graph |> Vertex.Set.elements
+    |> List.map (draw_vertex graph cursor)
   in
-  let edges : string list =
-    let live_edges = Graph.live_edges graph in
-    Edge.Set.fold
-      (fun edge strs ->
-        let source_id = Uuid.Id.show edge.value.source.vertex.id in
-        let target_id = Uuid.Id.show edge.value.target.id in
-        let edge_id = Uuid.Id.show edge.id in
-        let index =
-          Format.asprintf "%a" Lang.Index.pp edge.value.source.index
-        in
-        let color =
-          let num_conflicts =
-            Edge.Set.(
-              cardinal
-                (filter
-                   (fun (e : Edge.t) -> e.value.source = edge.value.source)
-                   (remove edge live_edges)))
-          in
-          let num_parents =
-            Edge.Set.cardinal (Graph.parent_edges graph edge.value.target)
-          in
-          if num_conflicts = 0 && num_parents = 1 then "black"
-          else if num_conflicts > 0 then red_color
-          else orange_color
-        in
-        let field = Lang.Index.short_name edge.value.source.index in
-        Printf.sprintf
-          {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nindex: %s\ntarget: %s"]|}
-          source_id field target_id color edge_id edge_id source_id index
-          target_id edge_id source_id index target_id
-        :: strs)
-      live_edges []
+  let edges =
+    let live = Graph.live_edges graph in
+    live |> Edge.Set.elements |> List.map (draw_edge graph live)
   in
-  let hole, hole_edge =
-    let children = Graph.cursor_children graph cursor in
-    match Edge.Set.is_empty children with
-    | true ->
-        let field = Lang.Index.short_name cursor.index in
-        let open Printf in
-        ( [
-            sprintf {|hole [label="",shape=circle,style=filled,fillcolor=%s]|}
-              purple_color;
-          ],
-          [ sprintf "n%s:%s -> hole" (Uuid.Id.show cursor.vertex.id) field ] )
-    | false -> ([], [])
-  in
+  let hole_node, hole_edge = maybe_draw_cursor_hole graph cursor in
   {|digraph G {
    node [shape=Mrecord,fontsize=11,ranksep=0];
    edge [arrowhead=vee,fontsize=11,weight=2];
    rankdir = LR;
    {rank=min; n0 [shape=point]};
    |}
-  ^ String.concat ";\n" (nodes @ hole @ edges @ hole_edge)
+  ^ String.concat ";\n" (nodes @ hole_node @ edges @ hole_edge)
   ^ "}"
 
 let draw (editor : Editor.t) : unit =
-  Js.draw_viz editor.id (String.escaped @@ draw_graph editor.graph editor.cursor)
+  draw_graph editor.graph editor.cursor
+  |> String.escaped |> Js.draw_viz editor.id

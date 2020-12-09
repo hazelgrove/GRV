@@ -61,7 +61,9 @@ let rec eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t Error.t =
   | _ -> match_fail __LOC__ Lang.Sort.Typ vertex
 
 and eval_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t Error.t =
-  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let edges =
+    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+  in
   let go (edge : Edge.t) = eval_typ_vertex graph edge.value.target in
   let%bind ts = Error.sequence (List.map go edges) in
   return (maybe_unknown ts)
@@ -83,7 +85,9 @@ let rec ana_pat_vertex (_graph : Graph.t) (env : type_env) (vertex : Vertex.t)
 
 and ana_pat_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : type_env Error.t =
-  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let edges =
+    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+  in
   List.fold_left
     (fun env (edge : Edge.t) ->
       let%bind env = env in
@@ -172,14 +176,18 @@ and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
 
 and syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =
-  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let edges =
+    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+  in
   let go (edge : Edge.t) = syn_exp_vertex graph env edge.value.target in
   let%bind ts = Error.sequence (List.map go edges) in
   return (maybe_unknown ts)
 
 and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : unit Error.t =
-  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let edges =
+    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+  in
   let%bind () =
     List.fold_left
       (fun previous_result (edge : Edge.t) ->
@@ -199,7 +207,9 @@ let syn_root_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
 
 let syn_root_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =
-  let edges = Edge.Set.elements (Graph.cursor_children graph cursor) in
+  let edges =
+    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+  in
   let go (edge : Edge.t) = syn_root_vertex graph env edge.value.target in
   let%bind ts = Error.sequence (List.map go edges) in
   return (maybe_unknown ts)

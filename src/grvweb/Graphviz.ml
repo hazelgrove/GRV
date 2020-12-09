@@ -56,7 +56,8 @@ let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
 
 let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
     string list * string list =
-  if Edge.Set.is_empty (Graph.cursor_children graph cursor) then
+  if Edge.Set.is_empty (Graph.child_edges graph cursor.vertex cursor.position)
+  then
     ( [
         Format.sprintf
           {|hole [label="",shape=circle,style=filled,fillcolor=%s]|}

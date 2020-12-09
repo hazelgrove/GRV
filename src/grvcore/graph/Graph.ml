@@ -23,11 +23,14 @@ let live_edges (graph : t) : Edge.Set.t =
   |> List.filter Edge_state.(function _, Created -> true | _ -> false)
   |> List.map fst |> Edge.Set.of_list
 
-let cursor_children (graph : t) (cursor : Cursor.t) : Edge.Set.t =
-  live_edges graph |> Edge.Set.filter (fun edge -> edge.value.source = cursor)
-
 let parent_edges (graph : t) (vertex : Vertex.t) : Edge.Set.t =
   live_edges graph |> Edge.Set.filter (fun edge -> edge.value.target = vertex)
+
+let child_edges (graph : t) (vertex : Vertex.t) (position : Lang.Position.t) :
+    Edge.Set.t =
+  live_edges graph
+  |> Edge.Set.filter (fun edge ->
+         edge.value.source = Cursor.{ vertex; position })
 
 let parent_vertexes (graph : t) (vertex : Vertex.t) : Vertex.Set.t =
   Vertex.Set.empty

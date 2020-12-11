@@ -17,7 +17,7 @@ module Set = Set.Make (OrderedType)
 let partition_set (edges : Set.t) (pivot : Vertex.t) : Set.t * Set.t =
   Set.partition (fun (e : t) -> e.value.source.vertex = pivot) edges
 
-let concat_sets (sets : Set.t list) : Set.t =
+let union_sets (sets : Set.t list) : Set.t =
   List.map Set.elements sets |> List.concat |> Set.of_list
 
 let children_in_set (edges : Set.t) (vertex : Vertex.t) : Set.t =

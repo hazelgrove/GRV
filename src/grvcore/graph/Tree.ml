@@ -49,7 +49,7 @@ let rec reachable (unseen : Edge.Set.t) (seen : Vertex.Set.t)
              edge.value.target
              |> reachable unseen (Vertex.Set.add vertex seen)
              |> snd)
-      |> Edge.concat_sets
+      |> Edge.union_sets
     in
     let edge_set = Edge.Set.union children descendants in
     let t = mk ~seen:(Vertex.Set.remove vertex seen) vertex edge_set |> fst in
@@ -70,7 +70,7 @@ let context (graph : Graph.t) : context =
 
 let consolidate (results : (t * Edge.Set.t) list) : t list * Edge.Set.t =
   let trees, edge_sets = List.split results in
-  (trees, Edge.concat_sets edge_sets)
+  (trees, Edge.union_sets edge_sets)
 
 let decompose ({ live; multiparent; deleted } : context) :
     t * t list * t list * t list =
@@ -94,7 +94,7 @@ let decompose ({ live; multiparent; deleted } : context) :
            simple_cycles remaining (result :: acc))
   in
   let (sc, _sc_edges) : t list * Edge.Set.t =
-    let seen = Edge.concat_sets [ r_edges; d_edges; mp_edges ] in
+    let seen = Edge.union_sets [ r_edges; d_edges; mp_edges ] in
     simple_cycles (Edge.Set.diff live seen) [] |> consolidate
   in
   (r, d, mp, sc)

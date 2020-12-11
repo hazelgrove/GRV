@@ -116,8 +116,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
           let create_parent_edge =
             [
               Graph_action.
-                { state = Created; edge = Edge.mk editor.cursor vertex }
-              |> Uuid.Wrap.mk;
+                { state = Created; edge = Edge.mk editor.cursor vertex };
             ]
           in
           match Lang.Position.default_position constructor with
@@ -128,13 +127,12 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
                 |> List.map (fun (edge : Edge.t) ->
                        let source = Cursor.{ vertex; position } in
                        let edge = Edge.mk source edge.value.target in
-                       Uuid.Wrap.mk Graph_action.{ state = Created; edge })
+                       Graph_action.{ state = Created; edge })
               in
 
               let destroy_old_children_edges =
                 Edge.Set.elements children
-                |> List.map (fun edge ->
-                       Uuid.Wrap.mk Graph_action.{ state = Deleted; edge })
+                |> List.map (fun edge -> Graph_action.{ state = Deleted; edge })
               in
               ( true,
                 create_parent_edge @ create_new_children_edges
@@ -144,18 +142,17 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
           Graph.child_edges editor.graph editor.cursor.vertex
             editor.cursor.position
           |> Edge.Set.elements
-          |> List.map (fun edge ->
-                 Uuid.Wrap.mk Graph_action.{ state = Deleted; edge }) )
+          |> List.map (fun edge -> Graph_action.{ state = Deleted; edge }) )
     | Restore vertex ->
         let edge : Edge.t = Edge.mk editor.cursor vertex in
-        (false, [ Uuid.Wrap.mk Graph_action.{ state = Created; edge } ])
+        (false, [ Graph_action.{ state = Created; edge } ])
     | DropEdge edge_id -> (
         ( false,
           match
             Graph.edges editor.graph
             |> Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
           with
-          | Some edge -> [ Uuid.Wrap.mk Graph_action.{ state = Deleted; edge } ]
+          | Some edge -> [ Graph_action.{ state = Deleted; edge } ]
           | None -> [] ) )
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in

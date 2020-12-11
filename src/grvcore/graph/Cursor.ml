@@ -6,12 +6,3 @@ let to_string (cursor : t) : string =
     (Lang.Position.short_name cursor.position)
 
 let root : t = { vertex = Vertex.root; position = Root_root_root }
-
-module OrderedType = struct
-  type nonrec t = t
-
-  let compare = compare
-end
-
-module Map = Map.Make (OrderedType)
-module Set = Set.Make (OrderedType)

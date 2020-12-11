@@ -1,11 +1,10 @@
 type t = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp]
 
 let to_string (edge_action : t) : string =
-  Edge_state.to_string edge_action.state
-  ^ " "
-  ^ Cursor.to_string edge_action.edge.value.source
-  ^ " → "
-  ^ Uuid.Id.to_string edge_action.edge.value.target.id
+  Format.sprintf "%s %s → %s"
+    (Edge_state.to_string edge_action.state)
+    (Cursor.to_string edge_action.edge.value.source)
+    (Uuid.Id.to_string edge_action.edge.value.target.id)
 
 let apply (action : t) (graph : Graph.t) : Graph.t =
   let old_state = Edge.Map.find_opt action.edge graph in

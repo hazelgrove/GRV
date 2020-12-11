@@ -41,7 +41,7 @@ let rec reachable (unseen : Edge.Set.t) (seen : Vertex.Set.t)
     (vertex : Vertex.t) : t * Edge.Set.t =
   if Vertex.Set.mem vertex seen then (Ref vertex, Edge.Set.empty)
   else
-    let children = Edge.children_in_set unseen vertex in
+    let children = Edge.partition_set unseen vertex |> fst in
     let descendants : Edge.Set.t =
       Edge.Set.elements children
       |> List.map (fun (edge : Edge.t) ->

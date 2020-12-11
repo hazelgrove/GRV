@@ -1,17 +1,4 @@
-module Id : sig
-  type t [@@deriving sexp]
-
-  val compare : t -> t -> int
-
-  val next : unit -> t
-
-  (* Allows the allocation of `Id.t` that should be the same on all systems.  I.e., they are well known. *)
-  val well_known : int -> t
-
-  val to_string : t -> string
-
-  val of_string : string -> t
-end = struct
+module Id = struct
   open Sexplib0.Sexp_conv
 
   type t = int [@@deriving sexp]

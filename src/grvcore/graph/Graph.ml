@@ -2,6 +2,19 @@ type t = Edge_state.t Edge.Map.t
 
 let empty : t = Edge.Map.empty
 
+let apply_action (graph : t) (action : Graph_action.t) : t =
+  let old_state = Edge.Map.find_opt action.edge graph in
+  let new_state = action.state in
+  match (old_state, new_state) with
+  | Some Deleted, _ -> graph
+  | Some Created, Created -> graph
+  | (Some Created | None), Deleted ->
+      Edge.Map.add action.edge Edge_state.Deleted graph
+  | None, Created ->
+      (* TODO: assert not already exists? *)
+      (* TODO: short circuit if deleting a non-existant *)
+      Edge.Map.add action.edge Edge_state.Created graph
+
 (* Edge Queries *)
 
 let edges (graph : t) : Edge.Set.t =
@@ -20,6 +33,8 @@ let child_edges (graph : t) (vertex : Vertex.t) (position : Lang.Position.t) :
   live_edges graph
   |> Edge.Set.filter (fun edge ->
          edge.value.source = Cursor.{ vertex; position })
+
+(* Vertex Queries *)
 
 let (vertexes, live_vertexes) : (t -> Vertex.Set.t) * (t -> Vertex.Set.t) =
   let impl (edge_source : t -> Edge.Set.t) : t -> Vertex.Set.t =

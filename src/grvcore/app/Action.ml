@@ -31,7 +31,7 @@ type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
 
 let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
     Editor.t =
-  let graph = Graph_action.apply graph_action editor.graph in
+  let graph = Graph.apply_action editor.graph graph_action in
   let known_actions = Graph_action.Set.add graph_action editor.known_actions in
   let actions = Graph_action.Set.add graph_action editor.actions in
   { editor with graph; known_actions; actions }

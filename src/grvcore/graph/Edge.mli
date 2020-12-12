@@ -5,7 +5,7 @@ type t' = { source : Cursor.t; target : Vertex.t } [@@deriving sexp]
 
 (** Edges carry a unique identifier that allow structurally equivalent instances
     to be distinguished and ordered. *)
-type t = t' Uuid.Wrap.t [@@deriving sexp]
+type t = t' Uuid.wrap [@@deriving sexp]
 
 (** {1 Construction} *)
 

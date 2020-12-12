@@ -1,14 +1,14 @@
 type t' = { source : Cursor.t; target : Vertex.t } [@@deriving sexp]
 
-type t = t' Uuid.Wrap.t [@@deriving sexp]
+type t = t' Uuid.wrap [@@deriving sexp]
 
 let mk (source : Cursor.t) (target : Vertex.t) : t =
-  Uuid.Wrap.mk { source; target }
+  Uuid.wrap { source; target }
 
 module OrderedType = struct
   type nonrec t = t
 
-  let compare = Uuid.Wrap.compare
+  let compare = Uuid.compare
 end
 
 module Map = Map.Make (OrderedType)

@@ -1,13 +1,13 @@
-type t = Lang.Constructor.t Uuid.Wrap.t [@@deriving sexp]
+type t = Lang.Constructor.t Uuid.wrap [@@deriving sexp]
 
-let mk : Lang.Constructor.t -> t = Uuid.Wrap.mk
+let mk : Lang.Constructor.t -> t = Uuid.wrap
 
-let root : t = Uuid.Wrap.well_known 0 Lang.Constructor.Root_root
+let root : t = Uuid.well_known 0 Lang.Constructor.Root_root
 
 module OrderedType = struct
   type nonrec t = t
 
-  let compare = Uuid.Wrap.compare
+  let compare = Uuid.compare
 end
 
 module Map = Map.Make (OrderedType)

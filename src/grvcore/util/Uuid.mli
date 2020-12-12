@@ -19,14 +19,12 @@ module Map : Map.S with type key = Id.t
 
 module Set : Set.S with type elt = Id.t
 
-module Wrap : sig
-  type 'a t = { id : Id.t; value : 'a } [@@deriving sexp]
+type 'a wrap = { id : Id.t; value : 'a } [@@deriving sexp]
 
-  val compare : 'a t -> 'a t -> int
+val compare : 'a wrap -> 'a wrap -> int
 
-  val mk : 'a -> 'a t
+val wrap : 'a -> 'a wrap
 
-  val unmk : 'a t -> 'a
+val unwrap : 'a wrap -> 'a
 
-  val well_known : int -> 'a -> 'a t
-end
+val well_known : int -> 'a -> 'a wrap

@@ -23,26 +23,23 @@ end
 module Map = Map.Make (Id)
 module Set = Set.Make (Id)
 
-(* TODO: use `private` types for Wrap.t *)
-module Wrap = struct
-  type 'a t = { id : Id.t; value : 'a } [@@deriving sexp]
+(* TODO: use `private` types for wrap *)
+type 'a wrap = { id : Id.t; value : 'a } [@@deriving sexp]
 
-  let compare (u1 : 'a t) (u2 : 'a t) : int = Id.compare u1.id u2.id
+let compare (u1 : 'a wrap) (u2 : 'a wrap) : int = Id.compare u1.id u2.id
 
-  let mk (a : 'a) : 'a t = { id = Id.next (); value = a }
+let wrap (a : 'a) : 'a wrap = { id = Id.next (); value = a }
 
-  let unmk (u : 'a t) : 'a = u.value
+let unwrap (u : 'a wrap) : 'a = u.value
 
-  let well_known (int : int) (a : 'a) : 'a t =
-    { id = Id.well_known int; value = a }
-end
+let well_known (int : int) (a : 'a) : 'a wrap =
+  { id = Id.well_known int; value = a }
 
-(* TODO: *)
-module Embedded = struct
+(* module Embedded = struct
   (* TODO: module defining how to extract an ID *)
   (* module GetId = struct
        type nonrec t = t
        let id (i : t) = i.id
      end
      module OrderedType = Uuid.OrderedType(GetId) *)
-end
+end *)

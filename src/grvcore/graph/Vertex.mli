@@ -2,7 +2,7 @@
 
 (** Vertices carry a unique identifier that allow structurally equivalent
     instances to be distinguished and ordered. *)
-type t = Lang.Constructor.t Uuid.Wrap.t [@@deriving sexp]
+type t = Lang.Constructor.t Uuid.wrap [@@deriving sexp]
 
 val mk : Lang.Constructor.t -> t
 (** [mk k] returns an instance of constructor [k]. *)

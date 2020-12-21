@@ -8,6 +8,17 @@ type t = Edge_state.t Edge.Map.t
 val empty : t
 (** The empty graph. *)
 
+val decompose :
+  t ->
+  Vertex.Set.t
+  * Vertex.Set.t
+  * Vertex.Set.t
+  * Edge.t list Vertex.Map.t
+  * Edge.t list Vertex.Map.t
+(** [decompose g] partitions the live vertices of [g] into three sets
+    (multiparented, single-parented, deleted), and two edge lookup tables
+    (parents, children). *)
+
 val apply_action : t -> Graph_action.t -> t
 (** [apply_action g a] returns a graph containing the same edges and edge states
     as [g], except for [e] where [e] is the edge referenced by [a], which

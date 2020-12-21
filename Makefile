@@ -12,9 +12,11 @@ dev:
 	dune build @src/fmt --auto-promote || true
 	dune build --profile dev
 	dune build @doc
+	@echo
 
-test:
+test: dev
 	dune build @runtest -f
+	@echo
 
 release:
 	dune build --profile release
@@ -49,5 +51,5 @@ repl:
 clean:
 	dune clean
 
-.PHONY: all deps dev release echo-html-dir echo-html echo-doc \
+.PHONY: all deps dev test release echo-html-dir echo-html echo-doc \
 	win-chrome win-firefox repl clean

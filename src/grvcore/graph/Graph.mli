@@ -8,13 +8,19 @@ type t = Edge_state.t Edge.Map.t
 val empty : t
 (** The empty graph. *)
 
-val decompose :
-  t ->
-  Vertex.Set.t
-  * Vertex.Set.t
-  * Vertex.Set.t
-  * Edge.t list Vertex.Map.t
-  * Edge.t list Vertex.Map.t
+(** {1 Graph Decomposition} *)
+
+(** A partitioning of the vertices of a graph by in-degree, along with O(log n)
+    lookup tables for adjacent edges. *)
+type decomp = {
+  multiparented : Vertex.Set.t;
+  uniparented : Vertex.Set.t;
+  deleted : Vertex.Set.t;
+  parents : Edge.t list Vertex.Map.t;
+  children : Edge.t list Vertex.Map.t;
+}
+
+val decompose : t -> decomp
 (** [decompose g] partitions the live vertices of [g] into three sets
     (multiparented, single-parented, deleted), and two edge lookup tables
     (parents, children). *)

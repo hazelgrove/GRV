@@ -82,17 +82,18 @@ let vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
 
 (* Graph Decomposition *)
 
-(* TODO: switch to record syntax for return values *)
+type decomp = {
+  multiparented : Vertex.Set.t;
+  uniparented : Vertex.Set.t;
+  deleted : Vertex.Set.t;
+  parents : Edge.t list Vertex.Map.t;
+  children : Edge.t list Vertex.Map.t;
+}
 
-let decompose (graph : t) :
-    Vertex.Set.t
-    * Vertex.Set.t
-    * Vertex.Set.t
-    * Edge.t list Vertex.Map.t
-    * Edge.t list Vertex.Map.t =
+let decompose (graph : t) : decomp =
   let live = live_edges graph in
-  (* NOTE: degree-zero vertices return None *)
-  let degree_map =
+  (* NOTE: degree-zero vertices are implicitly mapped to None *)
+  let degrees =
     Vertex.Map.empty
     |> Edge.Set.fold
          (fun edge map ->
@@ -102,7 +103,7 @@ let decompose (graph : t) :
                 | Some _ -> Some 2))
          live
   in
-  (* NOTE: orphaned vertices return None *)
+  (* NOTE: orphaned vertices are implicitly mapped to None *)
   let parents =
     Vertex.Map.empty
     |> Edge.Set.fold
@@ -112,7 +113,7 @@ let decompose (graph : t) :
              | Some edges -> Some (edge :: edges)))
          live
   in
-  (* NOTE: vertices with no children return None *)
+  (* NOTE: vertices with no children are implicitly mapped to None *)
   let children =
     Vertex.Map.empty
     |> Edge.Set.fold
@@ -122,46 +123,55 @@ let decompose (graph : t) :
              | Some edges -> Some (edge :: edges)))
          live
   in
-  let multiparented, uniparented, deleted =
-    (Vertex.Set.empty, Vertex.Set.empty, Vertex.Set.empty)
-    |> Edge.Set.fold
-         (fun edge (multiparented, uniparented, deleted) ->
-           match Vertex.Map.find_opt edge.value.target degree_map with
-           | Some 2 ->
-               ( Vertex.Set.add edge.value.target multiparented,
-                 uniparented,
-                 deleted )
-           | Some 1 ->
-               ( multiparented,
-                 Vertex.Set.add edge.value.target uniparented,
-                 deleted )
-           | None ->
-               ( multiparented,
-                 uniparented,
-                 if edge.value.target = Vertex.root then deleted
-                 else Vertex.Set.add edge.value.target deleted )
-           | _ -> assert false)
-         live
-    |> Edge.Set.fold
-         (fun edge (multiparented, uniparented, deleted) ->
-           match Vertex.Map.find_opt edge.value.source.vertex degree_map with
-           | Some 2 ->
-               ( Vertex.Set.add edge.value.source.vertex multiparented,
-                 uniparented,
-                 deleted )
-           | Some 1 ->
-               ( multiparented,
-                 Vertex.Set.add edge.value.source.vertex uniparented,
-                 deleted )
-           | None ->
-               ( multiparented,
-                 uniparented,
-                 if edge.value.source.vertex = Vertex.root then deleted
-                 else Vertex.Set.add edge.value.source.vertex deleted )
-           | _ -> assert false)
-         live
-  in
-  (multiparented, uniparented, deleted, parents, children)
+  {
+    multiparented = Vertex.Set.empty;
+    uniparented = Vertex.Set.empty;
+    deleted = Vertex.Set.empty;
+    parents;
+    children;
+  }
+  |> Edge.Set.fold
+       (fun edge decomp ->
+         match Vertex.Map.find_opt edge.value.target degrees with
+         | Some 2 ->
+             let multiparented =
+               Vertex.Set.add edge.value.target decomp.multiparented
+             in
+             { decomp with multiparented }
+         | Some 1 ->
+             let uniparented =
+               Vertex.Set.add edge.value.target decomp.uniparented
+             in
+             { decomp with uniparented }
+         | None ->
+             let deleted =
+               if edge.value.target = Vertex.root then decomp.deleted
+               else Vertex.Set.add edge.value.target decomp.deleted
+             in
+             { decomp with deleted }
+         | _ -> assert false)
+       live
+  |> Edge.Set.fold
+       (fun edge decomp ->
+         match Vertex.Map.find_opt edge.value.source.vertex degrees with
+         | Some 2 ->
+             let multiparented =
+               Vertex.Set.add edge.value.source.vertex decomp.multiparented
+             in
+             { decomp with multiparented }
+         | Some 1 ->
+             let uniparented =
+               Vertex.Set.add edge.value.source.vertex decomp.uniparented
+             in
+             { decomp with uniparented }
+         | None ->
+             let deleted =
+               if edge.value.source.vertex = Vertex.root then decomp.deleted
+               else Vertex.Set.add edge.value.source.vertex decomp.deleted
+             in
+             { decomp with deleted }
+         | _ -> assert false)
+       live
 
 (* S-Expression Conversions *)
 
@@ -198,14 +208,8 @@ let report_map (prefix : string) (iter_prefix : string)
       print_string ")")
     map
 
-let check_decompose (graph : t)
-    (want :
-      Vertex.Set.t
-      * Vertex.Set.t
-      * Vertex.Set.t
-      * Edge.t list Vertex.Map.t
-      * Edge.t list Vertex.Map.t) : bool =
-  let ((multiparented, uniparented, deleted, parents, children) as got) =
+let check_decompose (graph : t) (want : decomp) : bool =
+  let ({ multiparented; uniparented; deleted; parents; children } as got) =
     decompose graph
   in
   if print_results && not (got = want) then (
@@ -217,11 +221,13 @@ let check_decompose (graph : t)
   got = want
 
 let%test "decompose empty graph" =
-  ( Vertex.Set.empty,
-    Vertex.Set.empty,
-    Vertex.Set.empty,
-    Vertex.Map.empty,
-    Vertex.Map.empty )
+  {
+    multiparented = Vertex.Set.empty;
+    uniparented = Vertex.Set.empty;
+    deleted = Vertex.Set.empty;
+    parents = Vertex.Map.empty;
+    children = Vertex.Map.empty;
+  }
   |> check_decompose empty
 
 let%test "decompose deleted" =
@@ -233,7 +239,7 @@ let%test "decompose deleted" =
   let uniparented = Vertex.Set.(empty |> add v2) in
   let parents = Vertex.Map.(empty |> add v2 [ e12 ]) in
   let children = Vertex.Map.(empty |> add v1 [ e12 ]) in
-  (Vertex.Set.empty, uniparented, deleted, parents, children)
+  { multiparented = Vertex.Set.empty; uniparented; deleted; parents; children }
   |> check_decompose graph
 
 let%test "decompose uniparented" =
@@ -245,7 +251,13 @@ let%test "decompose uniparented" =
   let uniparented = Vertex.Set.(empty |> add e1.value.target) in
   let parents = Vertex.Map.(empty |> add e1.value.target [ e1 ]) in
   let children = Vertex.Map.(empty |> add e1.value.source.vertex [ e1 ]) in
-  (Vertex.Set.empty, uniparented, Vertex.Set.empty, parents, children)
+  {
+    multiparented = Vertex.Set.empty;
+    uniparented;
+    deleted = Vertex.Set.empty;
+    parents;
+    children;
+  }
   |> check_decompose graph
 
 let%test "decompose multiparented" =
@@ -264,5 +276,11 @@ let%test "decompose multiparented" =
   in
   let parents = Vertex.Map.(empty |> add v1 [ e1'; e1 ]) in
   let children = Vertex.Map.(empty |> add Vertex.root [ e1'; e1 ]) in
-  (multiparented, Vertex.Set.empty, Vertex.Set.empty, parents, children)
+  {
+    multiparented;
+    uniparented = Vertex.Set.empty;
+    deleted = Vertex.Set.empty;
+    parents;
+    children;
+  }
   |> check_decompose graph

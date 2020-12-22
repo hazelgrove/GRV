@@ -82,6 +82,8 @@ let vertex (graph : t) (vertex_id : Uuid.Id.t) : Vertex.t option =
 
 (* Graph Decomposition *)
 
+(* TODO: switch to record syntax for return values *)
+
 let decompose (graph : t) :
     Vertex.Set.t
     * Vertex.Set.t
@@ -89,7 +91,8 @@ let decompose (graph : t) :
     * Edge.t list Vertex.Map.t
     * Edge.t list Vertex.Map.t =
   let live = live_edges graph in
-  let degree =
+  (* NOTE: degree-zero vertices return None *)
+  let degree_map =
     Vertex.Map.empty
     |> Edge.Set.fold
          (fun edge map ->
@@ -99,6 +102,7 @@ let decompose (graph : t) :
                 | Some _ -> Some 2))
          live
   in
+  (* NOTE: orphaned vertices return None *)
   let parents =
     Vertex.Map.empty
     |> Edge.Set.fold
@@ -108,6 +112,7 @@ let decompose (graph : t) :
              | Some edges -> Some (edge :: edges)))
          live
   in
+  (* NOTE: vertices with no children return None *)
   let children =
     Vertex.Map.empty
     |> Edge.Set.fold
@@ -121,7 +126,7 @@ let decompose (graph : t) :
     (Vertex.Set.empty, Vertex.Set.empty, Vertex.Set.empty)
     |> Edge.Set.fold
          (fun edge (multiparented, uniparented, deleted) ->
-           match Vertex.Map.find_opt edge.value.target degree with
+           match Vertex.Map.find_opt edge.value.target degree_map with
            | Some 2 ->
                ( Vertex.Set.add edge.value.target multiparented,
                  uniparented,
@@ -139,7 +144,7 @@ let decompose (graph : t) :
          live
     |> Edge.Set.fold
          (fun edge (multiparented, uniparented, deleted) ->
-           match Vertex.Map.find_opt edge.value.source.vertex degree with
+           match Vertex.Map.find_opt edge.value.source.vertex degree_map with
            | Some 2 ->
                ( Vertex.Set.add edge.value.source.vertex multiparented,
                  uniparented,
@@ -175,6 +180,24 @@ let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
 
 let print_results = true
 
+let report_set (prefix : string) (set : Vertex.Set.t) : unit =
+  print_string ("\n" ^ prefix ^ ":");
+  Vertex.Set.iter
+    (fun vertex -> print_string (" " ^ Uuid.Id.to_string vertex.id))
+    set
+
+let report_map (prefix : string) (iter_prefix : string)
+    (iter_id : Edge.t -> Uuid.Id.t) (map : Edge.t list Vertex.Map.t) : unit =
+  print_string ("\n" ^ prefix ^ ":");
+  Vertex.Map.iter
+    (fun vertex edges ->
+      print_string (" (" ^ Uuid.Id.to_string vertex.id ^ " " ^ iter_prefix);
+      edges
+      |> List.iter (fun edge ->
+             print_string (" " ^ Uuid.Id.to_string (iter_id edge)));
+      print_string ")")
+    map
+
 let check_decompose (graph : t)
     (want :
       Vertex.Set.t
@@ -186,39 +209,11 @@ let check_decompose (graph : t)
     decompose graph
   in
   if print_results && not (got = want) then (
-    print_string "\nMP:";
-    Vertex.Set.iter
-      (fun vertex -> print_string (" " ^ Uuid.Id.to_string vertex.id))
-      multiparented;
-    print_string "\nUP:";
-    Vertex.Set.iter
-      (fun vertex -> print_string (" " ^ Uuid.Id.to_string vertex.id))
-      uniparented;
-    print_string "\nD:";
-    Vertex.Set.iter
-      (fun vertex -> print_string (" " ^ Uuid.Id.to_string vertex.id))
-      deleted;
-    print_string "\nP:";
-    Vertex.Map.iter
-      (fun vertex edges ->
-        print_string (" (" ^ Uuid.Id.to_string vertex.id ^ " <-");
-        List.iter
-          (fun (edge : Edge.t) ->
-            print_string (" " ^ Uuid.Id.to_string edge.value.source.vertex.id))
-          edges;
-        print_string ")")
-      parents;
-    print_string "\nC:";
-    Vertex.Map.iter
-      (fun vertex edges ->
-        print_string (" (" ^ Uuid.Id.to_string vertex.id ^ " ->");
-        List.iter
-          (fun (edge : Edge.t) ->
-            print_string (" " ^ Uuid.Id.to_string edge.value.target.id))
-          edges;
-        print_string ")")
-      children;
-    print_string "\n" );
+    report_set "MP" multiparented;
+    report_set "SP" uniparented;
+    report_set "D" deleted;
+    report_map "P" "<-" (fun edge -> edge.value.source.vertex.id) parents;
+    report_map "C" "->" (fun edge -> edge.value.target.id) children );
   got = want
 
 let%test "decompose empty graph" =

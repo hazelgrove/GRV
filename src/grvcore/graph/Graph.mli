@@ -10,14 +10,18 @@ val empty : t
 
 (** {1 Graph Decomposition} *)
 
-(** A partitioning of the vertices of a graph by in-degree, along with O(log n)
-    lookup tables for adjacent edges. *)
+(** A collection of related vertices and edges. *)
+type subgraph = { roots : Vertex.Set.t; edges : Edge.Set.t }
+
+(** A partitioning of the graph, along with O(log n) lookup tables for adjacent
+    edges. *)
 type decomp = {
-  multiparented : Vertex.Set.t;
-  uniparented : Vertex.Set.t;
-  deleted : Vertex.Set.t;
-  parents : Edge.t list Vertex.Map.t;
-  children : Edge.t list Vertex.Map.t;
+  multiparented : subgraph;
+  deleted : subgraph;
+  reachable : Edge.Set.t;
+  cyclic : subgraph;
+  parents : Edge.Set.t Vertex.Map.t;
+  children : Edge.Set.t Vertex.Map.t;
 }
 
 val decompose : t -> decomp

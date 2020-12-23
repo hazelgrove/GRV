@@ -25,3 +25,9 @@ val partition_set : Set.t -> Vertex.t -> Set.t * Set.t
 
 val union_sets : Set.t list -> Set.t
 (** Unions a list of sets. *)
+
+(** {1 String Conversions} *)
+
+val to_string : t -> string
+
+val set_to_string : Set.t -> string

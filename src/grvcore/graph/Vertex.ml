@@ -13,6 +13,16 @@ end
 module Map = Map.Make (OrderedType)
 module Set = Set.Make (OrderedType)
 
+(* String Conversions *)
+
+let to_string (vertex : t) : string = Uuid.Id.to_string vertex.id
+
+let set_to_string (vertexes : Set.t) : string =
+  "{"
+  ^ ( Set.fold (fun vertex strs -> to_string vertex :: strs) vertexes []
+    |> List.rev |> String.concat ", " )
+  ^ "}"
+
 (*******************************************************************************
  * Unit Tests
  ******************************************************************************)

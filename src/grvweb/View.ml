@@ -2,7 +2,7 @@ module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
 
-(* Vdom Node Construtors *)
+(* Vdom Node Constructors *)
 
 let chars (str : string) : Node.t =
   Node.span [ Attr.class_ "chars" ] [ Node.text str ]
@@ -10,7 +10,7 @@ let chars (str : string) : Node.t =
 let errs (str : string) : Node.t =
   Node.span [ Attr.class_ "errs" ] [ Node.text str ]
 
-let parenthesize (node : Node.t) : Node.t =
+let parenthesized (node : Node.t) : Node.t =
   Node.span [] [ chars "("; node; chars ")" ]
 
 let cursor_node (node : Node.t) : Node.t =
@@ -20,77 +20,71 @@ let maybe_cursor_node (editor : Editor.t) (parent : Cursor.t) (node : Node.t) :
     Node.t =
   if parent = editor.cursor then cursor_node node else node
 
-let ref_node (editor : Editor.t) (parent : Cursor.t) (id : Uuid.Id.t) : Node.t =
-  Node.span [ Attr.class_ "vertex" ] [ Node.text ("#" ^ Uuid.Id.to_string id) ]
-  |> maybe_cursor_node editor parent
+let ref_node (ctx : Gui.context) (parent : Cursor.t) (id : Uuid.Id.t) : Node.t =
+  Node.span
+    [ Attr.class_ "vertex"; Gui.clicks_to ctx parent ]
+    [ Node.text ("#" ^ Uuid.Id.to_string id) ]
+  |> maybe_cursor_node ctx.editor parent
 
 let hole_node (ctx : Gui.context) (parent : Cursor.t) : Node.t =
   Node.span [ Attr.class_ "hole"; Gui.clicks_to ctx parent ] [ chars "□" ]
   |> maybe_cursor_node ctx.editor parent
 
-let conflict_node (ctx : Gui.context) (parent : Cursor.t) (nodes : Node.t list)
-    : Node.t =
+let rec tree_node ?(parent : Cursor.t = Cursor.root) ?(at_top : bool = true)
+    ?(show_top_cursor : bool = false) (ctx : Gui.context) : Tree.t -> Node.t =
+  function
+  | Ref vertex -> ref_node ctx parent vertex.id
+  | Vertex (vertex, children) ->
+      vertex_node ctx parent vertex children at_top show_top_cursor
+
+and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
+    (children : Tree.children Position_map.t) (at_top : bool)
+    (show_top_cursor : bool) : Node.t =
+  let node =
+    Node.span
+      [ Gui.clicks_to ctx parent ]
+      (Lang.show chars chars
+         (fun position ->
+           match Position_map.get position children with
+           | [] -> hole_node ctx { vertex; position }
+           | [ { tree; _ } ] ->
+               let at_top = vertex.value = Exp_lam in
+               tree_node ctx tree ~at_top ~parent:{ vertex; position }
+           | child_specs ->
+               conflict_node ctx Cursor.{ vertex; position } child_specs)
+         vertex.value)
+  in
+  let decorated_node =
+    if ctx.editor.show_ids && not (vertex = Vertex.root) then
+      Node.span [ Attr.class_ "vertex" ]
+        [
+          Node.create "sub" [] [ Node.text (Uuid.Id.to_string vertex.id ^ "(") ];
+          node;
+          Node.create "sub" [] [ Node.text ")" ];
+        ]
+    else Node.span [ Attr.class_ "vertex" ] [ node ]
+  in
+  let parenthesized_node =
+    if at_top || parent.position = Root_root_root then decorated_node
+    else parenthesized decorated_node
+  in
+  if (not at_top) || show_top_cursor then
+    maybe_cursor_node ctx.editor parent parenthesized_node
+  else parenthesized_node
+
+and conflict_node (ctx : Gui.context) (parent : Cursor.t)
+    (child_specs : Tree.children) : Node.t =
+  let nodes =
+    List.map
+      (fun (child : Tree.child) -> tree_node ctx child.tree ~parent)
+      child_specs
+  in
   Node.span
     [ Attr.class_ "conflict"; Gui.clicks_to ctx parent ]
     ([ errs "{ " ] @ Util.List.intersperse (errs " | ") nodes @ [ errs " }" ])
   |> maybe_cursor_node ctx.editor parent
 
-let constructor_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
-    (child_nodes_map : Node.t list Tree.PositionMap.t) : Node.t =
-  let maybe_id_node =
-    if ctx.editor.show_ids then
-      [ Node.create "sub" [] [ Node.text (Uuid.Id.to_string vertex.id) ] ]
-    else []
-  in
-  let nodes =
-    [
-      Node.span
-        [ Gui.clicks_to ctx parent ]
-        (Lang.show chars chars
-           (fun position ->
-             match Tree.PositionMap.find_opt position child_nodes_map with
-             | None | Some [] -> hole_node ctx { vertex; position }
-             | Some [ child_node ] -> child_node
-             | Some child_nodes ->
-                 conflict_node ctx { vertex; position } child_nodes)
-           vertex.value);
-    ]
-  in
-  Node.span [ Attr.class_ "vertex" ] (maybe_id_node @ nodes)
-
 (* Panels *)
-
-let rec view_tree_constructor ?(at_top : bool = false)
-    ?(with_parens : bool = true) (ctx : Gui.context) (parent : Cursor.t)
-    (tree : Tree.t) : Node.t =
-  view_tree ctx (Some parent) tree ~at_top ~with_parens
-  |> maybe_cursor_node ctx.editor parent
-
-and view_tree ?(at_top : bool = false) ?(with_parens : bool = true)
-    (ctx : Gui.context) (parent_opt : Cursor.t option) (tree : Tree.t) : Node.t
-    =
-  let parent = Option.value parent_opt ~default:Cursor.root in
-  ( match tree with
-  | Ref v -> ref_node ctx.editor parent v.id
-  | Con (v, _) when v.id = Uuid.Id.of_string "0" && not at_top ->
-      ref_node ctx.editor Cursor.root (Uuid.Id.of_string "0")
-  | Con (vertex, subtrees_map) -> (
-      let child_nodes_map =
-        Tree.PositionMap.mapi
-          (fun position subtrees ->
-            List.map
-              (view_tree_constructor ctx { vertex; position } ~at_top
-                 ~with_parens:
-                   (not (vertex = Vertex.root || vertex.value = Exp_lam)))
-              subtrees)
-          subtrees_map
-      in
-      let node = constructor_node ctx parent vertex child_nodes_map in
-      match vertex.value with
-      | Exp_app | Exp_plus | Exp_times ->
-          if with_parens then parenthesize node else node
-      | _ -> node ) )
-  |> maybe_cursor_node ctx.editor parent
 
 let cursor_panel (ctx : Gui.context) : Node.t =
   Gui.panel ~label:"Cursor" [ chars (Cursor.to_string ctx.editor.cursor) ]
@@ -136,51 +130,55 @@ let send_actions_panel (model : Model.t) (ctx : Gui.context) (id : string)
           Js.clear_selection ("editors" ^ id));
     ]
 
-let multiparented_panel (ctx : Gui.context) (id : string) (mp : Tree.t list) :
-    Node.t =
+let multiparented_panel (ctx : Gui.context) (id : string) (mp : Tree.t list)
+    (children : Edge.Set.t Vertex.Map.t) : Node.t =
   (* TODO: fix buggy cursor inside Multiparented box *)
   Gui.select_panel ~label:"Multiparented" ~multi:false ("multiparent" ^ id) mp
     (fun tree ->
-      let vertex =
-        match tree with
-        | Ref vertex -> (
-            match Graph.vertex ctx.editor.graph vertex.id with
-            | None -> failwith __LOC__
-            | Some v -> v )
-        | Con (vertex, _) -> vertex
-      in
-      view_tree ctx None tree ~at_top:true ~with_parens:false
+      let vertex = match tree with Ref v | Vertex (v, _) -> v in
+      tree_node ctx tree
       :: ( Graph.parent_vertexes ctx.editor.graph vertex
          |> Vertex.Set.elements
-         |> List.map (fun vertex ->
-                Tree.reachable
-                  (Graph.live_edges ctx.editor.graph)
-                  (Graph.multiparented ctx.editor.graph)
-                  vertex
-                |> fst
-                |> view_tree ctx None ~at_top:true ~with_parens:false) ))
+         |> List.map (fun parent_vertex ->
+                Decomposition.traverse_vertex parent_vertex children
+                  ~seen:(Vertex.Set.singleton vertex)
+                |> (function tree, _, _ -> tree)
+                |> tree_node ctx) ))
     []
 
 let deleted_panel (ctx : Gui.context) (id : string)
-    (tabindexes : int Uuid.Map.t) (deleted : Vertex.Set.t) (d : Tree.t list) :
-    Node.t =
-  Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id) d
-    (fun tree -> [ view_tree ctx None tree ~at_top:true ~with_parens:false ])
+    (tabindexes : int Uuid.Map.t) (deleted : Tree.t list) : Node.t =
+  let d =
+    List.map Tree.(function Vertex (v, _) | Ref v -> v) deleted
+    |> Vertex.Set.of_list
+  in
+  Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id) deleted
+    (function
+      | (Vertex (vertex, _) | Ref vertex) as tree ->
+          [
+            tree_node ctx tree
+              ~parent:
+                {
+                  vertex;
+                  position =
+                    Option.get (Lang.Position.default_position vertex.value);
+                };
+          ])
     [
       ( Js.set_input ("restore" ^ id) "";
         Gui.panel
           [
             Gui.button ctx "Restore" tabindexes ~on_click:(fun () ->
-                Gui.restore ctx.editor deleted (Js.get_input ("restore" ^ id)));
+                Gui.restore ctx.editor d (Js.get_input ("restore" ^ id)));
             Gui.text_input ctx ("restore" ^ id) tabindexes
-              ~on_change:(fun str -> Gui.restore ctx.editor deleted str);
+              ~on_change:(fun str -> Gui.restore ctx.editor d str);
           ] );
     ]
 
-let simple_cycles_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) :
-    Node.t =
-  Gui.select_panel ~label:"Simple Cycles" ~multi:false ("cycles" ^ id) sc
-    (fun tree -> [ view_tree ctx None tree ~with_parens:false ])
+let wreaths_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) : Node.t
+    =
+  Gui.select_panel ~label:"Wreaths" ~multi:false ("wreaths" ^ id) sc
+    (fun tree -> [ tree_node ctx tree ])
     []
 
 (* Views *)
@@ -188,8 +186,7 @@ let simple_cycles_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) :
 let view_editor (model : Model.t) (ctx : Gui.context)
     (tabindexes : int Uuid.Map.t) : Node.t =
   let id : string = Uuid.Id.to_string ctx.editor.id in
-  let tree_ctx : Tree.context = Tree.context ctx.editor.graph in
-  let r, d, mp, sc = Tree.decompose tree_ctx in
+  let decomp, children = Decomposition.decompose ctx.editor.graph in
   Graphviz.draw ctx.editor;
   Node.div
     [
@@ -202,7 +199,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
     ]
     [
       (* MAIN CODE VIEW *)
-      view_tree ctx None r ~at_top:true ~with_parens:false;
+      tree_node ctx decomp.reachable ~show_top_cursor:true;
       (* -------------- *)
       Gui.break;
       cursor_panel ctx;
@@ -212,9 +209,9 @@ let view_editor (model : Model.t) (ctx : Gui.context)
         [
           actions_panel ctx id;
           send_actions_panel model ctx id tabindexes;
-          multiparented_panel ctx id mp;
-          deleted_panel ctx id tabindexes tree_ctx.deleted d;
-          simple_cycles_panel ctx id sc;
+          multiparented_panel ctx id decomp.multiparented children;
+          deleted_panel ctx id tabindexes decomp.deleted;
+          wreaths_panel ctx id decomp.wreaths;
         ];
       Gui.panel ~label:"Patterns and Expressions"
         [

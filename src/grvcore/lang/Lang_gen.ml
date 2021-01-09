@@ -68,13 +68,12 @@ and exp =
           down = Some "body";
           show =
             [
-              String "(λ";
+              String "λ";
               Position "param";
               String ":";
               Position "param_type";
               String ".";
               Position "body";
-              String ")";
             ];
         };
         {

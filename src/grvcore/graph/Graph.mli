@@ -1,4 +1,4 @@
-(** Simple hypergraphs with a total ordering on vertices and edges. *)
+(** Simple multigraphs with a total ordering on vertices and edges. *)
 
 (** A graph maps each edge it contains to the current state of the edge in the
     graph. Edges that have not yet been {{!Edge_state.Created} [Created]} or
@@ -8,26 +8,9 @@ type t = Edge_state.t Edge.Map.t
 val empty : t
 (** The empty graph. *)
 
-(** {1 Graph Decomposition} *)
+val add : Edge.t -> Edge_state.t -> t -> t
 
-(** A collection of related vertices and edges. *)
-type subgraph = { roots : Vertex.Set.t; edges : Edge.Set.t }
-
-(** A partitioning of the graph, along with O(log n) lookup tables for adjacent
-    edges. *)
-type decomp = {
-  multiparented : subgraph;
-  deleted : subgraph;
-  reachable : Edge.Set.t;
-  cyclic : subgraph;
-  parents : Edge.Set.t Vertex.Map.t;
-  children : Edge.Set.t Vertex.Map.t;
-}
-
-val decompose : t -> decomp
-(** [decompose g] partitions the live vertices of [g] into three sets
-    (multiparented, single-parented, deleted), and two edge lookup tables
-    (parents, children). *)
+(** {1 Graph Actions} *)
 
 val apply_action : t -> Graph_action.t -> t
 (** [apply_action g a] returns a graph containing the same edges and edge states

@@ -161,7 +161,9 @@ let deleted_panel (ctx : Gui.context) (id : string)
                 {
                   vertex;
                   position =
-                    Option.get (Lang.Position.default_position vertex.value);
+                    Option.value
+                      (Lang.Position.default_position vertex.value)
+                      ~default:Lang.Position.Root_root_root;
                 };
           ])
     [

@@ -176,9 +176,9 @@ let deleted_panel (ctx : Gui.context) (id : string)
           ] );
     ]
 
-let wreaths_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) : Node.t
-    =
-  Gui.select_panel ~label:"Wreaths" ~multi:false ("wreaths" ^ id) sc
+let unicycles_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) :
+    Node.t =
+  Gui.select_panel ~label:"Unicycles" ~multi:false ("unicycles" ^ id) sc
     (fun tree -> [ tree_node ctx tree ])
     []
 
@@ -212,7 +212,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
           send_actions_panel model ctx id tabindexes;
           multiparented_panel ctx id decomp.multiparented children;
           deleted_panel ctx id tabindexes decomp.deleted;
-          wreaths_panel ctx id decomp.wreaths;
+          unicycles_panel ctx id decomp.wreaths;
         ];
       Gui.panel ~label:"Patterns and Expressions"
         [

@@ -24,29 +24,29 @@ let ref_node (ctx : Gui.context) (parent : Cursor.t) (id : Uuid.Id.t) : Node.t =
   Node.span
     [ Attr.class_ "vertex"; Gui.clicks_to ctx parent ]
     [ Node.text ("#" ^ Uuid.Id.to_string id) ]
-  |> maybe_cursor_node ctx.editor parent
 
 let hole_node (ctx : Gui.context) (parent : Cursor.t) : Node.t =
   Node.span [ Attr.class_ "hole"; Gui.clicks_to ctx parent ] [ chars "□" ]
-  |> maybe_cursor_node ctx.editor parent
 
 let rec tree_node ?(parent : Cursor.t = Cursor.root) ?(at_top : bool = true)
-    ?(show_top_cursor : bool = false) (ctx : Gui.context) : Tree.t -> Node.t =
-  function
+    (ctx : Gui.context) (tree : Tree.t) : Node.t =
+  ( match tree with
   | Ref vertex -> ref_node ctx parent vertex.id
-  | Vertex (vertex, children) ->
-      vertex_node ctx parent vertex children at_top show_top_cursor
+  | Vertex (vertex, children) -> vertex_node ctx parent vertex children at_top
+  )
+  |> maybe_cursor_node ctx.editor parent
 
 and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
-    (children : Tree.children Position_map.t) (at_top : bool)
-    (show_top_cursor : bool) : Node.t =
+    (children : Tree.children Position_map.t) (at_top : bool) : Node.t =
   let node =
     Node.span
       [ Gui.clicks_to ctx parent ]
       (Lang.show chars chars
          (fun position ->
            match Position_map.get position children with
-           | [] -> hole_node ctx { vertex; position }
+           | [] ->
+               hole_node ctx { vertex; position }
+               |> maybe_cursor_node ctx.editor { vertex; position }
            | [ { tree; _ } ] ->
                let at_top = vertex.value = Exp_lam in
                tree_node ctx tree ~at_top ~parent:{ vertex; position }
@@ -64,13 +64,12 @@ and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
         ]
     else Node.span [ Attr.class_ "vertex" ] [ node ]
   in
-  let parenthesized_node =
-    if at_top || parent.position = Root_root_root then decorated_node
-    else parenthesized decorated_node
-  in
-  if (not at_top) || show_top_cursor then
-    maybe_cursor_node ctx.editor parent parenthesized_node
-  else parenthesized_node
+  if at_top || parent.position = Root_root_root then decorated_node
+  else
+    match vertex.value with
+    | Exp_lam | Exp_app | Exp_plus | Exp_times | Typ_arrow ->
+        parenthesized decorated_node
+    | _ -> decorated_node
 
 and conflict_node (ctx : Gui.context) (parent : Cursor.t)
     (child_specs : Tree.children) : Node.t =
@@ -201,7 +200,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
     ]
     [
       (* MAIN CODE VIEW *)
-      tree_node ctx decomp.reachable ~show_top_cursor:true;
+      tree_node ctx decomp.reachable;
       (* -------------- *)
       Gui.break;
       cursor_panel ctx;

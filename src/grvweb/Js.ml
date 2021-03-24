@@ -10,7 +10,8 @@ let eval_to_unit (js : string) : unit =
   let _ = Unsafe.eval_string js in
   ()
 
-let focus (id : string) : unit = eval_to_unit ("refocus('" ^ id ^ "')")
+let focus (id : string) : unit =
+  eval_to_unit ("setTimeout(function(){refocus('" ^ id ^ "')}, 0)")
 
 let get_input (id : string) : string =
   eval_to_string @@ "getInput('" ^ id ^ "')"
@@ -42,4 +43,4 @@ let select_item (id : string) (i : int) : unit =
   eval_to_unit @@ "selectItem('" ^ id ^ "', " ^ Int.to_string i ^ ")"
 
 let prompt (message : string) : string =
-  eval_to_string @@ "window.prompt('" ^ message ^ "')"
+  eval_to_string @@ "window.prompt('" ^ message ^ "') || ''"

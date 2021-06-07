@@ -1,7 +1,7 @@
 (** Edge creation and deletion messages. *)
 
-(** A message to set an edge to an edge state. *)
 type t = { edge : Edge.t; state : Edge_state.t } [@@deriving sexp]
+(** A message to set an edge to an edge state. *)
 
 (** {1 Collections} *)
 

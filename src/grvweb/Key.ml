@@ -5,13 +5,13 @@ let moveLR (editor : Editor.t) (tabindexes : int Uuid.Map.t)
     (event : Dom_html.keyboardEvent Js.t) (delta : int) : unit =
   Js.claim_event event;
   Js.focus
-    ( "editor"
+    ("editor"
     ^ Int.to_string
-        ( match Uuid.Map.find_opt editor.id tabindexes with
+        (match Uuid.Map.find_opt editor.id tabindexes with
         | Some tabindex ->
             if tabindex = snd (Uuid.Map.max_binding tabindexes) then 1
             else tabindex + delta
-        | None -> 1 ) )
+        | None -> 1))
 
 let ctrl (model : Model.t) (editor : Editor.t) (tabindexes : int Uuid.Map.t)
     (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
@@ -21,7 +21,7 @@ let ctrl (model : Model.t) (editor : Editor.t) (tabindexes : int Uuid.Map.t)
       | None ->
           Js.claim_event event;
           None
-      | result -> result )
+      | result -> result)
   | key -> (
       match key with
       | ArrowRight ->
@@ -30,7 +30,7 @@ let ctrl (model : Model.t) (editor : Editor.t) (tabindexes : int Uuid.Map.t)
       | ArrowLeft ->
           moveLR editor tabindexes event (-1);
           None
-      | _ -> None )
+      | _ -> None)
 
 let shift (event : Dom_html.keyboardEvent Js.t) : Action.t' Option.t =
   let%bind.Util.Option jstr : Js.js_string Js.t Option.t =
@@ -54,7 +54,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
           None
       | str ->
           Js.focus ("editor" ^ id);
-          Some (Action.Edit (Create (Exp_num (int_of_string str)))) )
+          Some (Action.Edit (Create (Exp_num (int_of_string str)))))
   | KeyP -> (
       match Js.prompt "pat_id" with
       | "" ->
@@ -62,7 +62,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
           None
       | str ->
           Js.focus ("editor" ^ id);
-          Some (Edit (Create (Pat_var str))) )
+          Some (Edit (Create (Pat_var str))))
   | KeyV -> (
       match Js.prompt "var_id" with
       | "" ->
@@ -70,7 +70,7 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
           None
       | str ->
           Js.focus ("editor" ^ id);
-          Some (Edit (Create (Exp_var str))) )
+          Some (Edit (Create (Exp_var str))))
   | Space -> Some (Edit (Create Exp_app))
   | Backslash -> Some (Edit (Create Exp_lam))
   | Delete ->
@@ -90,7 +90,7 @@ let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
     | false, false -> base editor
     | true, false -> shift
     | false, true -> ctrl model editor tabindexes
-    | _, _ -> fun _ -> (None : Action.t' Option.t)
+    | _, _ -> fun _ : Action.t' Option.t -> None
   in
   match handle event with
   | Some action ->

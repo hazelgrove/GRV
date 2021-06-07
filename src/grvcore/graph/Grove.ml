@@ -155,7 +155,7 @@ let decompose (graph : Graph.t) : t * Edge.Set.t Vertex.Map.t =
 (* Unit Tests *)
 
 let%test_module "Graph.decompose" =
-  ( module struct
+  (module struct
     let print_results = true
 
     let report_tree (prefix : string) (tree : Tree.t) : unit =
@@ -173,18 +173,18 @@ let%test_module "Graph.decompose" =
       let want = { multiparented; deleted; reachable; wreaths } in
       got = want
       ||
-      ( if print_results then (
-          print_string "\n\n--\nGOT:";
-          report_trees "MP" got.multiparented;
-          report_trees "D" got.deleted;
-          report_tree "R" got.reachable;
-          report_trees "SC" got.wreaths;
-          print_string "\n\nWANT:";
-          report_trees "MP" multiparented;
-          report_trees "D" deleted;
-          report_tree "R" reachable;
-          report_trees "SC" wreaths );
-        false )
+      (if print_results then (
+         print_string "\n\n--\nGOT:";
+         report_trees "MP" got.multiparented;
+         report_trees "D" got.deleted;
+         report_tree "R" got.reachable;
+         report_trees "SC" got.wreaths;
+         print_string "\n\nWANT:";
+         report_trees "MP" multiparented;
+         report_trees "D" deleted;
+         report_tree "R" reachable;
+         report_trees "SC" wreaths);
+       false)
 
     let v0 = Vertex.root
 
@@ -203,7 +203,7 @@ let%test_module "Graph.decompose" =
     let%test "empty graph" = check_decompose Graph.empty
 
     let%test_module "one vertex" =
-      ( module struct
+      (module struct
         (* well-sorted multiparented and wreaths are impossible *)
 
         let%test "deleted" =
@@ -217,10 +217,10 @@ let%test_module "Graph.decompose" =
             ~reachable:
               (Tree.vertex v0
                  [ (Root_root_root, [ (e01.id, Tree.vertex v1 []) ]) ])
-      end )
+      end)
 
     let%test_module "two vertexes" =
-      ( module struct
+      (module struct
         let%test "multiparented" =
           check_decompose
             Graph.(
@@ -288,5 +288,5 @@ let%test_module "Graph.decompose" =
                       ] );
                   ];
               ]
-      end )
-  end )
+      end)
+  end)

@@ -6,8 +6,8 @@ type t = Vertex of Vertex.t * children Position_map.t | Ref of Vertex.t
 
 and children = child list
 
-(** A child is a tree paired with its parent edge id. *)
 and child = { edge_id : Uuid.Id.t; tree : t }
+(** A child is a tree paired with its parent edge id. *)
 
 (** {1 Constructors} *)
 

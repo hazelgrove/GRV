@@ -397,9 +397,9 @@ let () =
   let default_position : string =
     let mk_constructor s c : string =
       f "\n    | %s_%s%s -> %s" s c.name (arg_pat c.args)
-        ( match c.default with
+        (match c.default with
         | None -> "None"
-        | Some d -> f "Some %s_%s_%s" s c.name d )
+        | Some d -> f "Some %s_%s_%s" s c.name d)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)
@@ -410,9 +410,9 @@ let () =
   let down : string =
     let mk_constructor s c : string =
       f "\n    | %s_%s%s -> %s" s c.name (arg_pat c.args)
-        ( match c.down with
+        (match c.down with
         | None -> "None"
-        | Some d -> f "Some %s_%s_%s" s c.name d )
+        | Some d -> f "Some %s_%s_%s" s c.name d)
     in
     let mk_sort ((lazy (s, cs)) : sort) : string =
       f "\n    (**** %s ****)%s" s (cat (mk_constructor s) cs)

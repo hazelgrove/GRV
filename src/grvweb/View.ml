@@ -30,10 +30,9 @@ let hole_node (ctx : Gui.context) (parent : Cursor.t) : Node.t =
 
 let rec tree_node ?(parent : Cursor.t = Cursor.root) ?(at_top : bool = true)
     (ctx : Gui.context) (tree : Tree.t) : Node.t =
-  ( match tree with
+  (match tree with
   | Ref vertex -> ref_node ctx parent vertex.id
-  | Vertex (vertex, children) -> vertex_node ctx parent vertex children at_top
-  )
+  | Vertex (vertex, children) -> vertex_node ctx parent vertex children at_top)
   |> maybe_cursor_node ctx.editor parent
 
 and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
@@ -136,13 +135,14 @@ let multiparented_panel (ctx : Gui.context) (id : string) (mp : Tree.t list)
     (fun tree ->
       let vertex = match tree with Ref v | Vertex (v, _) -> v in
       tree_node ctx tree
-      :: ( Graph.parent_vertexes ctx.editor.graph vertex
-         |> Vertex.Set.elements
-         |> List.map (fun parent_vertex ->
-                Grove.traverse_vertex parent_vertex children
-                  ~seen:(Vertex.Set.singleton vertex)
-                |> (function tree, _, _ -> tree)
-                |> tree_node ctx) ))
+      ::
+      (Graph.parent_vertexes ctx.editor.graph vertex
+      |> Vertex.Set.elements
+      |> List.map (fun parent_vertex ->
+             Grove.traverse_vertex parent_vertex children
+               ~seen:(Vertex.Set.singleton vertex)
+             |> (function tree, _, _ -> tree)
+             |> tree_node ctx)))
     []
 
 let deleted_panel (ctx : Gui.context) (id : string)
@@ -166,14 +166,14 @@ let deleted_panel (ctx : Gui.context) (id : string)
                 };
           ])
     [
-      ( Js.set_input ("restore" ^ id) "";
-        Gui.panel
-          [
-            Gui.button ctx "Restore" tabindexes ~on_click:(fun () ->
-                Gui.restore ctx.editor d (Js.get_input ("restore" ^ id)));
-            Gui.text_input ctx ("restore" ^ id) tabindexes
-              ~on_change:(fun str -> Gui.restore ctx.editor d str);
-          ] );
+      (Js.set_input ("restore" ^ id) "";
+       Gui.panel
+         [
+           Gui.button ctx "Restore" tabindexes ~on_click:(fun () ->
+               Gui.restore ctx.editor d (Js.get_input ("restore" ^ id)));
+           Gui.text_input ctx ("restore" ^ id) tabindexes ~on_change:(fun str ->
+               Gui.restore ctx.editor d str);
+         ]);
     ]
 
 let unicycles_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) :

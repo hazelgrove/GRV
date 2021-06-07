@@ -1,12 +1,12 @@
 (** Graph decomposition *)
 
-(** A graph can be partitioned into four disjoint sets of [Tree.t]s *)
 type t = {
   multiparented : Tree.t list;
   deleted : Tree.t list;
   reachable : Tree.t;
   wreaths : Tree.t list;
 }
+(** A graph can be partitioned into four disjoint sets of [Tree.t]s *)
 
 val traverse_vertex :
   ?seen:Vertex.Set.t ->

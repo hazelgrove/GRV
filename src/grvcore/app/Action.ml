@@ -79,7 +79,7 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
           |> Edge.Set.elements
         with
         | [ edge ] -> Some edge.value.source
-        | _ -> None )
+        | _ -> None)
     | Down -> (
         match
           Graph.child_edges editor.graph cursor.vertex cursor.position
@@ -90,7 +90,7 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
             let%map.Util.Option position = Lang.Position.down vertex.value in
             { Cursor.vertex; position }
             (* TODO: how to choose between ambiguous children *)
-        | _ -> None )
+        | _ -> None)
     | Select cursor -> Some cursor
   in
   let%map.Util.Option cursor = cursor in
@@ -108,8 +108,8 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     | Create constructor -> (
         if
           not
-            ( Lang.Position.child_sort editor.cursor.position
-            = Lang.Constructor.sort_of constructor )
+            (Lang.Position.child_sort editor.cursor.position
+            = Lang.Constructor.sort_of constructor)
         then (false, [])
         else
           let vertex = Vertex.mk constructor in
@@ -136,7 +136,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
               in
               ( true,
                 create_parent_edge @ create_new_children_edges
-                @ destroy_old_children_edges ) )
+                @ destroy_old_children_edges ))
     | Destroy ->
         ( false,
           Graph.child_edges editor.graph editor.cursor.vertex
@@ -153,7 +153,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
             |> Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
           with
           | Some edge -> [ Graph_action.{ state = Deleted; edge } ]
-          | None -> [] ) )
+          | None -> [] ))
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in
   let editors = Uuid.Map.add editor_id editor model.editors in
@@ -201,7 +201,7 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
           Some { model with actions = Some [] }
       | Some _ ->
           Printf.printf "(already recording)\n";
-          None )
+          None)
   | Report ->
       let%bind.Util.Option actions = model.actions in
       report_actions actions;
@@ -214,7 +214,7 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
       | Some actions ->
           report_actions actions;
           Printf.printf "Stopped!\n";
-          Some { model with actions = None } )
+          Some { model with actions = None })
   | Replay str ->
       Sexplib.Sexp.of_string str |> Model.graph_action_sequence_of_sexp
       |> replay_actions model
@@ -243,9 +243,9 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
 let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   Option.value
-    ( match action.action with
+    (match action.action with
     | Move move_action -> apply_move model action.editor_id move_action
     | Edit edit_action -> apply_edit model action.editor_id edit_action
     | Comm comm_action -> apply_comm model action.editor_id comm_action
-    | Env env_action -> apply_env model env_action )
+    | Env env_action -> apply_env model env_action)
     ~default:model

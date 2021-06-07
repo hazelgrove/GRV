@@ -31,6 +31,6 @@ let to_string (edge : t) : string =
 
 let set_to_string (edges : Set.t) : string =
   "{"
-  ^ ( Set.fold (fun edge strs -> to_string edge :: strs) edges []
-    |> List.rev |> String.concat ", " )
+  ^ (Set.fold (fun edge strs -> to_string edge :: strs) edges []
+    |> List.rev |> String.concat ", ")
   ^ "}"

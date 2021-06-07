@@ -1,9 +1,9 @@
 (** Simple multigraphs with a total ordering on vertices and edges. *)
 
+type t = Edge_state.t Edge.Map.t
 (** A graph maps each edge it contains to the current state of the edge in the
     graph. Edges that have not yet been {{!Edge_state.Created} [Created]} or
     {{!Edge_state.Deleted} [Deleted]} are implicitly mapped to ⊥. *)
-type t = Edge_state.t Edge.Map.t
 
 val empty : t
 (** The empty graph. *)

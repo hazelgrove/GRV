@@ -108,7 +108,7 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
   | Exp_var string -> (
       match Env.find_opt string env with
       | None -> error __LOC__ vertex "unbound variable: %s" string
-      | Some t -> return t )
+      | Some t -> return t)
   | Exp_lam ->
       let%bind typ =
         eval_typ_cursor graph Cursor.{ vertex; position = Exp_lam_param_type }

@@ -62,21 +62,21 @@ let text_input ?(classes : string list = []) ?(disabled : bool = false)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Js.set_input id "";
   Node.input
-    ( base_attrs (Some id) ~classes ~disabled
+    (base_attrs (Some id) ~classes ~disabled
     @ [
         Attr.on_change (fun _ (value : string) ->
             match value with
             | "" -> Vdom.Event.Ignore
             | str -> apply_action ctx (on_change str) tabindexes);
-      ] )
+      ])
     []
 
 let button ?(classes : string list = []) ?(disabled : bool = false)
     ~(on_click : unit -> Action.t' option) (ctx : context) (label : string)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Node.button
-    ( base_attrs None ~classes ~disabled
-    @ [ Attr.on_click (fun _ -> apply_action ctx (on_click ()) tabindexes) ] )
+    (base_attrs None ~classes ~disabled
+    @ [ Attr.on_click (fun _ -> apply_action ctx (on_click ()) tabindexes) ])
     [ Node.text label ]
 
 let none_button ~(on_click : unit -> unit) (ctx : context) (label : string)
@@ -136,12 +136,12 @@ let select ?(classes : string list = []) ?(multi : bool = true)
   in
   let select_item (i : int) (item : 'a) : Node.t =
     Node.div
-      ( base_attrs None ~classes ~disabled:false
+      (base_attrs None ~classes ~disabled:false
       @ [
           Attr.on_click (fun _ ->
               if multi then Js.toggle_item id i else Js.select_item id i;
               Vdom.Event.Ignore);
-        ] )
+        ])
       (view_item item)
   in
   let classes, heading =
@@ -153,12 +153,12 @@ let select ?(classes : string list = []) ?(multi : bool = true)
   in
   Node.div
     [ Attr.classes (classes @ [ "select" ]) ]
-    ( heading
+    (heading
     @ [
         Node.div
           [ Attr.id id; Attr.class_ "selectItems" ]
           (List.mapi select_item items);
-      ] )
+      ])
 
 let teleport (ctx : context) (id : string) : unit -> Action.t' option =
  fun () ->
@@ -185,7 +185,7 @@ let teleport (ctx : context) (id : string) : unit -> Action.t' option =
                 Edge.Set.choose_opt (Graph.parent_edges ctx.editor.graph vertex)
               with
               | Some edge -> Some (Move (Select edge.value.source))
-              | None -> None ) ) )
+              | None -> None)))
 
 let break : Node.t = Node.div [ Attr.class_ "break" ] []
 

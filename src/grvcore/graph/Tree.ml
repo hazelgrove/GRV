@@ -27,7 +27,7 @@ let rec to_string : t -> string = function
         |> List.map (fun (position, tree_children) ->
                Format.sprintf "%s -> %s"
                  (Lang.Position.short_name position)
-                 ( match List.length tree_children with
+                 (match List.length tree_children with
                  | 0 -> "□"
                  | 1 ->
                      let child = List.hd tree_children in
@@ -38,11 +38,11 @@ let rec to_string : t -> string = function
                      in
                      "{"
                      ^ (List.map to_string childs |> String.concat " | ")
-                     ^ "}" ))
+                     ^ "}"))
         |> String.concat "; "
       in
       let id = Uuid.Id.to_string vertex.id in
       match children with
       | "" -> Format.sprintf "Vertex(%s)" id
-      | _ -> Format.sprintf "Vertex(%s, %s)" id children )
+      | _ -> Format.sprintf "Vertex(%s, %s)" id children)
   | Ref vertex -> "#" ^ Uuid.Id.to_string vertex.id

@@ -113,8 +113,8 @@ type 'target_sort edge =
       -> 'target_sort edge
 
 let edges_from :
-      'ctor 'sort. 'ctor ctor_vertex -> ('ctor, 'sort) sort_of_child ->
-      'sort edge list =
+      'ctor 'sort.
+      'ctor ctor_vertex -> ('ctor, 'sort) sort_of_child -> 'sort edge list =
  fun _ -> failwith __LOC__
 
 let edges_to : 'ctor 'sort. 'sort sort_vertex -> 'sort edge list =
@@ -131,7 +131,9 @@ existential for the parent's constructor.  Instead, use a pattern match on
  fun _ -> failwith __LOC__ *)
 
 let vertexes_from :
-      'ctor 'sort. 'ctor ctor_vertex -> ('ctor, 'sort) sort_of_child ->
+      'ctor 'sort.
+      'ctor ctor_vertex ->
+      ('ctor, 'sort) sort_of_child ->
       'sort sort_vertex list =
  fun vertex position -> List.map target (edges_from vertex position)
 

@@ -1,11 +1,11 @@
 (** Simple, directed, positioned edges between vertices. *)
 
-(** An edge connects one vertex to another through an originating position. *)
 type t' = { source : Cursor.t; target : Vertex.t } [@@deriving sexp]
+(** An edge connects one vertex to another through an originating position. *)
 
+type t = t' Uuid.wrap [@@deriving sexp]
 (** Edges carry a unique identifier that allow structurally equivalent instances
     to be distinguished and ordered. *)
-type t = t' Uuid.wrap [@@deriving sexp]
 
 (** {1 Construction} *)
 

@@ -1,9 +1,10 @@
 module T = struct
-  type t = Var of Graph.t * string
+  type t = Var of string
 
   let compare = compare
+
+  let constructor : t -> GroveLang.constructor = function
+    | Var name -> PatVar name
 end
 
-module Conflict = Conflict.Make (T)
-
-type t = Pat of T.t | PatConflict of Conflict.t
+include Sort.Make (T)

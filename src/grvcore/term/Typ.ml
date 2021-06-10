@@ -2,8 +2,10 @@ module T = struct
   type t = Arrow of Graph.t * t * t | Num of Graph.t
 
   let compare = compare
+
+  let constructor : t -> GroveLang.constructor = function
+    | Arrow (_, _, _) -> TypArrow
+    | Num _ -> TypNum
 end
 
-module Conflict = Conflict.Make (T)
-
-type t = Typ of T.t | TypConflict of Conflict.t
+include Sort.Make (T)

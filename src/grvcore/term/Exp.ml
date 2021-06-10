@@ -1,12 +1,12 @@
 module T = struct
-  type t =
-    | Var of Graph.t
-    | Lam of Graph.t * Pat.t * Typ.t * t
-    | App of Graph.t
+  type t = Var of string | Lam of Pat.t * Typ.t * t | App of t * t
 
   let compare = compare
+
+  let constructor : t -> GroveLang.constructor = function
+    | Var name -> ExpVar name
+    | Lam (_, _, _) -> ExpLam
+    | App (_, _) -> ExpApp
 end
 
-module Conflict = Conflict.Make (T)
-
-type t = Exp of T.t | ExpConflict of Conflict.t
+include Sort.Make (T)

@@ -1,24 +1,24 @@
-let vertex_color (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
-    string =
-  let parents = Graph.parent_edges graph vertex in
-  let source_is_cursor (edge : Edge.t) =
+let vertex_color (graph : Old_Graph.t) (cursor : Cursor.t)
+    (vertex : Old_Vertex.t) : string =
+  let parents = Old_Graph.parent_edges graph vertex in
+  let source_is_cursor (edge : Old_Edge.t) =
     edge.value.source = cursor && edge.value.target = vertex
   in
-  if vertex = Vertex.root then Color.black
-  else if Edge.Set.is_empty parents then Color.white
-  else if Edge.Set.exists source_is_cursor parents then Color.purple
+  if vertex = Old_Vertex.root then Color.black
+  else if Old_Edge.Set.is_empty parents then Color.white
+  else if Old_Edge.Set.exists source_is_cursor parents then Color.purple
   else Color.white
 
 let draw_position (position : Lang.Position.t) : string =
   let name = Lang.Position.short_name position in
   Format.sprintf "<%s> %s" name name
 
-let draw_vertex_children (vertex : Vertex.t) : string =
+let draw_vertex_children (vertex : Old_Vertex.t) : string =
   Lang.Position.child_positions vertex.value
   |> List.map draw_position |> String.concat "|"
 
-let draw_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
-    string =
+let draw_vertex (graph : Old_Graph.t) (cursor : Cursor.t)
+    (vertex : Old_Vertex.t) : string =
   let id = Uuid.Id.to_string vertex.id in
   Format.sprintf
     {|n%s [label="{%s: %s|{%s}}", style=filled, fillcolor=%s, color=%s]|} id id
@@ -26,10 +26,12 @@ let draw_vertex (graph : Graph.t) (cursor : Cursor.t) (vertex : Vertex.t) :
     (draw_vertex_children vertex)
     (vertex_color graph cursor vertex)
     Color.(
-      if Graph.parent_edges graph vertex |> Edge.Set.cardinal < 2 then black
+      if Old_Graph.parent_edges graph vertex |> Old_Edge.Set.cardinal < 2 then
+        black
       else orange)
 
-let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
+let draw_edge (graph : Old_Graph.t) (live : Old_Edge.Set.t) (edge : Old_Edge.t)
+    : string =
   let source_id = Uuid.Id.to_string edge.value.source.vertex.id in
   let target_id = Uuid.Id.to_string edge.value.target.id in
   let edge_id = Uuid.Id.to_string edge.id in
@@ -37,13 +39,13 @@ let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
   let field = Lang.Position.short_name edge.value.source.position in
   let color =
     let num_conflicts =
-      Edge.Set.(
+      Old_Edge.Set.(
         remove edge live
-        |> filter (fun (e : Edge.t) -> e.value.source = edge.value.source)
+        |> filter (fun (e : Old_Edge.t) -> e.value.source = edge.value.source)
         |> cardinal)
     in
     let num_parents =
-      Edge.Set.cardinal (Graph.parent_edges graph edge.value.target)
+      Old_Edge.Set.cardinal (Old_Graph.parent_edges graph edge.value.target)
     in
     if num_conflicts = 0 && num_parents = 1 then Color.black
     else if num_conflicts > 0 then Color.red
@@ -54,9 +56,11 @@ let draw_edge (graph : Graph.t) (live : Edge.Set.t) (edge : Edge.t) : string =
     source_id field target_id color edge_id edge_id source_id position target_id
     edge_id source_id position target_id
 
-let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
+let maybe_draw_cursor_hole (graph : Old_Graph.t) (cursor : Cursor.t) :
     string list * string list =
-  if Edge.Set.is_empty (Graph.child_edges graph cursor.vertex cursor.position)
+  if
+    Old_Edge.Set.is_empty
+      (Old_Graph.child_edges graph cursor.vertex cursor.position)
   then
     ( [
         Format.sprintf
@@ -70,14 +74,14 @@ let maybe_draw_cursor_hole (graph : Graph.t) (cursor : Cursor.t) :
       ] )
   else ([], [])
 
-let draw_graph (graph : Graph.t) (cursor : Cursor.t) : string =
+let draw_graph (graph : Old_Graph.t) (cursor : Cursor.t) : string =
   let nodes =
-    Graph.vertexes graph |> Vertex.Set.elements
+    Old_Graph.vertexes graph |> Old_Vertex.Set.elements
     |> List.map (draw_vertex graph cursor)
   in
   let edges =
-    let live = Graph.live_edges graph in
-    live |> Edge.Set.elements |> List.map (draw_edge graph live)
+    let live = Old_Graph.live_edges graph in
+    live |> Old_Edge.Set.elements |> List.map (draw_edge graph live)
   in
   let hole_node, hole_edge = maybe_draw_cursor_hole graph cursor in
   {|digraph G {

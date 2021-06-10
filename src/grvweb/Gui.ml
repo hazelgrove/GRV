@@ -29,16 +29,16 @@ let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
       Js.fill_selection ("actions" ^ Uuid.Id.to_string editor.id);
       Some (Comm (Send (actions, editor_ids)))
 
-let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :
-    Action.t' Option.t =
-  let%map.Util.Option selection : Vertex.t option =
+let restore (editor : Editor.t) (deleted : Old_Vertex.Set.t)
+    (vertex_id : string) : Action.t' Option.t =
+  let%map.Util.Option selection : Old_Vertex.t option =
     if String.equal vertex_id "" then
       let selection : bool list =
         Js.get_selection ("deleted" ^ Uuid.Id.to_string editor.id)
       in
-      let vertexes : Vertex.t list = Vertex.Set.elements deleted in
+      let vertexes : Old_Vertex.t list = Old_Vertex.Set.elements deleted in
       List.nth_opt (selected selection vertexes) 0
-    else Graph.vertex editor.graph (Uuid.Id.of_string vertex_id)
+    else Old_Graph.vertex editor.graph (Uuid.Id.of_string vertex_id)
   in
   Action.Edit (Restore selection)
 
@@ -168,21 +168,22 @@ let teleport (ctx : context) (id : string) : unit -> Action.t' option =
       let teleport_id = Uuid.Id.of_string str in
       Js.focus ("editor" ^ id);
       match
-        Edge.Set.find_first_opt
+        Old_Edge.Set.find_first_opt
           (fun edge -> edge.id = teleport_id)
-          (Graph.edges ctx.editor.graph)
+          (Old_Graph.edges ctx.editor.graph)
       with
       | Some edge -> Some (Move (Select edge.value.source))
       | None -> (
           match
-            Vertex.Set.find_first_opt
+            Old_Vertex.Set.find_first_opt
               (fun vertex -> vertex.id = teleport_id)
-              (Graph.vertexes ctx.editor.graph)
+              (Old_Graph.vertexes ctx.editor.graph)
           with
           | None -> None
           | Some vertex -> (
               match
-                Edge.Set.choose_opt (Graph.parent_edges ctx.editor.graph vertex)
+                Old_Edge.Set.choose_opt
+                  (Old_Graph.parent_edges ctx.editor.graph vertex)
               with
               | Some edge -> Some (Move (Select edge.value.source))
               | None -> None)))

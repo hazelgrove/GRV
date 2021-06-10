@@ -1,8 +1,8 @@
-type error = { origin : string; vertex : Vertex.t; message : string }
+type error = { origin : string; vertex : Old_Vertex.t; message : string }
 
 type 'a t = Success of 'a | Error of error list
 
-let error (origin : string) (vertex : Vertex.t) :
+let error (origin : string) (vertex : Old_Vertex.t) :
     ('a, unit, string, 'b t) format4 -> 'a =
   Printf.ksprintf (fun message -> Error [ { origin; vertex; message } ])
 

@@ -3,7 +3,7 @@ type move = Left | Right | Up | Down | Select of Cursor.t [@@deriving sexp_of]
 type edit =
   | Create of Lang.Constructor.t
   | Destroy
-  | Restore of Vertex.t
+  | Restore of Old_Vertex.t
   | DropEdge of Uuid.Id.t
 [@@deriving sexp_of]
 
@@ -31,7 +31,7 @@ type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
 
 let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
     Editor.t =
-  let graph = Graph.apply_action editor.graph graph_action in
+  let graph = Old_Graph.apply_action editor.graph graph_action in
   let known_actions = Graph_action.Set.add graph_action editor.known_actions in
   let actions = Graph_action.Set.add graph_action editor.actions in
   { editor with graph; known_actions; actions }
@@ -75,15 +75,15 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
         { cursor with position }
     | Up -> (
         match
-          Graph.parent_edges editor.graph editor.cursor.vertex
-          |> Edge.Set.elements
+          Old_Graph.parent_edges editor.graph editor.cursor.vertex
+          |> Old_Edge.Set.elements
         with
         | [ edge ] -> Some edge.value.source
         | _ -> None)
     | Down -> (
         match
-          Graph.child_edges editor.graph cursor.vertex cursor.position
-          |> Edge.Set.elements
+          Old_Graph.child_edges editor.graph cursor.vertex cursor.position
+          |> Old_Edge.Set.elements
         with
         | [ edge ] ->
             let vertex = edge.value.target in
@@ -101,7 +101,8 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let children =
-    Graph.child_edges editor.graph editor.cursor.vertex editor.cursor.position
+    Old_Graph.child_edges editor.graph editor.cursor.vertex
+      editor.cursor.position
   in
   let move_in, graph_actions =
     match edit_action with
@@ -112,26 +113,26 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
             = Lang.Constructor.sort_of constructor)
         then (false, [])
         else
-          let vertex = Vertex.mk constructor in
+          let vertex = Old_Vertex.mk constructor in
           let create_parent_edge =
             [
               Graph_action.
-                { state = Created; edge = Edge.mk editor.cursor vertex };
+                { state = Created; edge = Old_Edge.mk editor.cursor vertex };
             ]
           in
           match Lang.Position.default_position constructor with
           | None -> (false, create_parent_edge)
           | Some position ->
               let create_new_children_edges =
-                Edge.Set.elements children
-                |> List.map (fun (edge : Edge.t) ->
+                Old_Edge.Set.elements children
+                |> List.map (fun (edge : Old_Edge.t) ->
                        let source = Cursor.{ vertex; position } in
-                       let edge = Edge.mk source edge.value.target in
+                       let edge = Old_Edge.mk source edge.value.target in
                        Graph_action.{ state = Created; edge })
               in
 
               let destroy_old_children_edges =
-                Edge.Set.elements children
+                Old_Edge.Set.elements children
                 |> List.map (fun edge -> Graph_action.{ state = Deleted; edge })
               in
               ( true,
@@ -139,18 +140,18 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
                 @ destroy_old_children_edges ))
     | Destroy ->
         ( false,
-          Graph.child_edges editor.graph editor.cursor.vertex
+          Old_Graph.child_edges editor.graph editor.cursor.vertex
             editor.cursor.position
-          |> Edge.Set.elements
+          |> Old_Edge.Set.elements
           |> List.map (fun edge -> Graph_action.{ state = Deleted; edge }) )
     | Restore vertex ->
-        let edge : Edge.t = Edge.mk editor.cursor vertex in
+        let edge : Old_Edge.t = Old_Edge.mk editor.cursor vertex in
         (false, [ Graph_action.{ state = Created; edge } ])
     | DropEdge edge_id -> (
         ( false,
           match
-            Graph.edges editor.graph
-            |> Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
+            Old_Graph.edges editor.graph
+            |> Old_Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
           with
           | Some edge -> [ Graph_action.{ state = Deleted; edge } ]
           | None -> [] ))

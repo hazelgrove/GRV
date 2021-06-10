@@ -1,4 +1,6 @@
-type t = Vertex of Vertex.t * children Position_map.t | Ref of Vertex.t
+type t =
+  | Vertex of Old_Vertex.t * children Position_map.t
+  | Ref of Old_Vertex.t
 
 and children = child list
 
@@ -16,7 +18,7 @@ let child_map :
         children child_specs)
     Position_map.empty
 
-let vertex (vertex : Vertex.t)
+let vertex (vertex : Old_Vertex.t)
     (children : (Lang.Position.t * (Uuid.Id.t * t) list) list) : t =
   Vertex (vertex, child_map children)
 

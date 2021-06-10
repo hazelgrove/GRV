@@ -1,6 +1,6 @@
 type t = {
   id : Uuid.Id.t;
-  graph : Graph.t;
+  graph : Old_Graph.t;
   cursor : Cursor.t;
   actions : Graph_action.Set.t;
   known_actions : Graph_action.Set.t;
@@ -11,7 +11,7 @@ let sexp_of_t (editor : t) : Sexplib.Sexp.t =
   Sexplib.Sexp.List
     [
       Uuid.Id.sexp_of_t editor.id;
-      Graph.sexp_of_t editor.graph;
+      Old_Graph.sexp_of_t editor.graph;
       Cursor.sexp_of_t editor.cursor;
       Sexplib.Std.sexp_of_list Graph_action.sexp_of_t
         (Graph_action.Set.elements editor.actions);
@@ -31,7 +31,7 @@ let t_of_sexp : Sexplib.Sexp.t -> t = function
         show_ids_sexp;
       ] ->
       let id = Uuid.Id.t_of_sexp id_sexp in
-      let graph = Graph.t_of_sexp graph_sexp in
+      let graph = Old_Graph.t_of_sexp graph_sexp in
       let cursor = Cursor.t_of_sexp cursor_sexp in
       let actions =
         Sexplib.Std.list_of_sexp Graph_action.t_of_sexp actions_sexp
@@ -61,7 +61,7 @@ let map_of_sexp (sexp : Sexplib.Sexp.t) : t Uuid.Map.t =
 let mk () : t =
   {
     id = Uuid.Id.next ();
-    graph = Graph.empty;
+    graph = Old_Graph.empty;
     cursor = Cursor.root;
     actions = Graph_action.Set.empty;
     known_actions = Graph_action.Set.empty;

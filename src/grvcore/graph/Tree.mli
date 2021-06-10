@@ -2,7 +2,9 @@
 
 (** A tree is either a vertex with a (possibly empty) set of [children] or a
     reference to one. *)
-type t = Vertex of Vertex.t * children Position_map.t | Ref of Vertex.t
+type t =
+  | Vertex of Old_Vertex.t * children Position_map.t
+  | Ref of Old_Vertex.t
 
 and children = child list
 
@@ -16,7 +18,7 @@ val child : Uuid.Id.t -> t -> child
 val child_map :
   (Lang.Position.t * (Uuid.Id.t * t) list) list -> children Position_map.t
 
-val vertex : Vertex.t -> (Lang.Position.t * (Uuid.Id.t * t) list) list -> t
+val vertex : Old_Vertex.t -> (Lang.Position.t * (Uuid.Id.t * t) list) list -> t
 
 (** {1 String Conversions} *)
 

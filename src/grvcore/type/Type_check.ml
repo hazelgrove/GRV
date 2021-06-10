@@ -10,7 +10,7 @@ type type_env = Type.t Env.t
 (* TODO: get types for everywhere via a Map *)
 (* TODO: show types at cursor, see Hazel's "Cursor Info" *)
 
-let consistent (origin : string) (vertex : Vertex.t) (expected : Type.t)
+let consistent (origin : string) (vertex : Old_Vertex.t) (expected : Type.t)
     (actual : Type.t) : unit Error.t =
   let rec go expected actual =
     match (expected, actual) with
@@ -32,7 +32,8 @@ let maybe_unknown (ts : t list) : t = match ts with [ t ] -> t | _ -> Unknown
 
 (* let rec consistent_cursor (graph : Grapht.t) (cursor1 : Cursor.t) (cursor2 : Cursor.t) *)
 
-let match_fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
+let match_fail (loc : string) (sort : Lang.Sort.t) (vertex : Old_Vertex.t) : 'a
+    =
   if Lang.Constructor.sort_of vertex.value = sort then
     failwith
       (Printf.sprintf "%s: Missing case for %s in %s" loc
@@ -48,7 +49,8 @@ let match_fail (loc : string) (sort : Lang.Sort.t) (vertex : Vertex.t) : 'a =
 (**************)
 
 (* TODO: change 'eval' to 'expand' (or other better name?) *)
-let rec eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t Error.t =
+let rec eval_typ_vertex (graph : Old_Graph.t) (vertex : Old_Vertex.t) :
+    Type.t Error.t =
   match vertex.value with
   | Typ_num -> return Num
   | Typ_arrow ->
@@ -60,11 +62,12 @@ let rec eval_typ_vertex (graph : Graph.t) (vertex : Vertex.t) : Type.t Error.t =
       return (Arrow (t_arg, t_result))
   | _ -> match_fail __LOC__ Lang.Sort.Typ vertex
 
-and eval_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t Error.t =
+and eval_typ_cursor (graph : Old_Graph.t) (cursor : Cursor.t) : Type.t Error.t =
   let edges =
-    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+    Old_Graph.child_edges graph cursor.vertex cursor.position
+    |> Old_Edge.Set.elements
   in
-  let go (edge : Edge.t) = eval_typ_vertex graph edge.value.target in
+  let go (edge : Old_Edge.t) = eval_typ_vertex graph edge.value.target in
   let%bind ts = Error.sequence (List.map go edges) in
   return (maybe_unknown ts)
 
@@ -77,19 +80,20 @@ and eval_typ_cursor (graph : Graph.t) (cursor : Cursor.t) : Type.t Error.t =
 (* Note that we add all bindings if there is a conflict. Also, we are not
    checking for shadowing between conflicting bindings. *)
 
-let rec ana_pat_vertex (_graph : Graph.t) (env : type_env) (vertex : Vertex.t)
-    (typ : Type.t) : type_env Error.t =
+let rec ana_pat_vertex (_graph : Old_Graph.t) (env : type_env)
+    (vertex : Old_Vertex.t) (typ : Type.t) : type_env Error.t =
   match vertex.value with
   | Pat_var string -> return (Env.add string typ env)
   | _ -> match_fail __LOC__ Lang.Sort.Pat vertex
 
-and ana_pat_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
+and ana_pat_cursor (graph : Old_Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : type_env Error.t =
   let edges =
-    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+    Old_Graph.child_edges graph cursor.vertex cursor.position
+    |> Old_Edge.Set.elements
   in
   List.fold_left
-    (fun env (edge : Edge.t) ->
+    (fun env (edge : Old_Edge.t) ->
       let%bind env = env in
       ana_pat_vertex graph env edge.value.target typ)
     (return env) edges
@@ -102,8 +106,8 @@ and ana_pat_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
 (* TODO: type map *)
 (* TODO: error map *)
 
-let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
-    Type.t Error.t =
+let rec syn_exp_vertex (graph : Old_Graph.t) (env : type_env)
+    (vertex : Old_Vertex.t) : Type.t Error.t =
   match vertex.value with
   | Exp_var string -> (
       match Env.find_opt string env with
@@ -150,8 +154,8 @@ let rec syn_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
       return Num
   | _ -> match_fail __LOC__ Lang.Sort.Exp vertex
 
-and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
-    (typ : Type.t) : unit Error.t =
+and ana_exp_vertex (graph : Old_Graph.t) (env : type_env)
+    (vertex : Old_Vertex.t) (typ : Type.t) : unit Error.t =
   match vertex.value with
   | Exp_cons ->
       let%bind content =
@@ -174,23 +178,25 @@ and ana_exp_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t)
       let%bind typ' = syn_exp_vertex graph env vertex in
       consistent __LOC__ vertex typ typ'
 
-and syn_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
+and syn_exp_cursor (graph : Old_Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =
   let edges =
-    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+    Old_Graph.child_edges graph cursor.vertex cursor.position
+    |> Old_Edge.Set.elements
   in
-  let go (edge : Edge.t) = syn_exp_vertex graph env edge.value.target in
+  let go (edge : Old_Edge.t) = syn_exp_vertex graph env edge.value.target in
   let%bind ts = Error.sequence (List.map go edges) in
   return (maybe_unknown ts)
 
-and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
+and ana_exp_cursor (graph : Old_Graph.t) (env : type_env) (cursor : Cursor.t)
     (typ : Type.t) : unit Error.t =
   let edges =
-    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+    Old_Graph.child_edges graph cursor.vertex cursor.position
+    |> Old_Edge.Set.elements
   in
   let%bind () =
     List.fold_left
-      (fun previous_result (edge : Edge.t) ->
+      (fun previous_result (edge : Old_Edge.t) ->
         let%bind () = previous_result
         and () = ana_exp_vertex graph env edge.value.target typ in
         return ())
@@ -198,19 +204,20 @@ and ana_exp_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t)
   in
   return ()
 
-let syn_root_vertex (graph : Graph.t) (env : type_env) (vertex : Vertex.t) :
-    Type.t Error.t =
+let syn_root_vertex (graph : Old_Graph.t) (env : type_env)
+    (vertex : Old_Vertex.t) : Type.t Error.t =
   match vertex.value with
   | Root_root ->
       syn_exp_cursor graph env Cursor.{ vertex; position = Root_root_root }
   | _ -> match_fail __LOC__ Lang.Sort.Root vertex
 
-let syn_root_cursor (graph : Graph.t) (env : type_env) (cursor : Cursor.t) :
+let syn_root_cursor (graph : Old_Graph.t) (env : type_env) (cursor : Cursor.t) :
     Type.t Error.t =
   let edges =
-    Graph.child_edges graph cursor.vertex cursor.position |> Edge.Set.elements
+    Old_Graph.child_edges graph cursor.vertex cursor.position
+    |> Old_Edge.Set.elements
   in
-  let go (edge : Edge.t) = syn_root_vertex graph env edge.value.target in
+  let go (edge : Old_Edge.t) = syn_root_vertex graph env edge.value.target in
   let%bind ts = Error.sequence (List.map go edges) in
   return (maybe_unknown ts)
 

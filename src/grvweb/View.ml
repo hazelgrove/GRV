@@ -35,7 +35,7 @@ let rec tree_node ?(parent : Cursor.t = Cursor.root) ?(at_top : bool = true)
   | Vertex (vertex, children) -> vertex_node ctx parent vertex children at_top)
   |> maybe_cursor_node ctx.editor parent
 
-and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
+and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Old_Vertex.t)
     (children : Tree.children Position_map.t) (at_top : bool) : Node.t =
   let node =
     Node.span
@@ -54,7 +54,7 @@ and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
          vertex.value)
   in
   let decorated_node =
-    if ctx.editor.show_ids && not (vertex = Vertex.root) then
+    if ctx.editor.show_ids && not (vertex = Old_Vertex.root) then
       Node.span [ Attr.class_ "vertex" ]
         [
           Node.create "sub" [] [ Node.text (Uuid.Id.to_string vertex.id ^ "(") ];
@@ -129,18 +129,18 @@ let send_actions_panel (model : Model.t) (ctx : Gui.context) (id : string)
     ]
 
 let multiparented_panel (ctx : Gui.context) (id : string) (mp : Tree.t list)
-    (children : Edge.Set.t Vertex.Map.t) : Node.t =
+    (children : Old_Edge.Set.t Old_Vertex.Map.t) : Node.t =
   (* TODO: fix buggy cursor inside Multiparented box *)
   Gui.select_panel ~label:"Multiparented" ~multi:false ("multiparent" ^ id) mp
     (fun tree ->
       let vertex = match tree with Ref v | Vertex (v, _) -> v in
       tree_node ctx tree
       ::
-      (Graph.parent_vertexes ctx.editor.graph vertex
-      |> Vertex.Set.elements
+      (Old_Graph.parent_vertexes ctx.editor.graph vertex
+      |> Old_Vertex.Set.elements
       |> List.map (fun parent_vertex ->
              Grove.traverse_vertex parent_vertex children
-               ~seen:(Vertex.Set.singleton vertex)
+               ~seen:(Old_Vertex.Set.singleton vertex)
              |> (function tree, _, _ -> tree)
              |> tree_node ctx)))
     []
@@ -149,7 +149,7 @@ let deleted_panel (ctx : Gui.context) (id : string)
     (tabindexes : int Uuid.Map.t) (deleted : Tree.t list) : Node.t =
   let d =
     List.map Tree.(function Vertex (v, _) | Ref v -> v) deleted
-    |> Vertex.Set.of_list
+    |> Old_Vertex.Set.of_list
   in
   Gui.select_panel ~label:"Deleted" ~multi:false ("deleted" ^ id) deleted
     (function

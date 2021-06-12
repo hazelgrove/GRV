@@ -18,3 +18,8 @@ let of_vertex (vertex : Vertex.t) (graph : Graph.t) : t option =
   in
   let+ invertex = Graph.invertex graph in
   { invertex; graph }
+
+let of_edge (edge : Edge.t) : t =
+  let invertex = edge.target in
+  let graph = Graph.singleton edge EdgeState.Plus in
+  { invertex; graph }

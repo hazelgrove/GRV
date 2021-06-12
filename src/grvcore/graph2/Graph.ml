@@ -1,10 +1,11 @@
 open OptionUtil.Syntax
+include Edge.Map
 
-type t = EdgeState.t Edge.Map.t
+type nonrec t = EdgeState.t t
 
 type binding = Edge.t * EdgeState.t
 
-let edges (graph : t) : Edge.Set.t = graph |> Edge.Map.keys
+let edges : t -> Edge.Set.t = Edge.Map.keys
 
 let invertex (graph : t) : Vertex.t option =
   let edges = edges graph in
@@ -14,17 +15,33 @@ let invertex (graph : t) : Vertex.t option =
   | true -> Some vertex
   | false -> None
 
-let singleton (edge : Edge.t) (state : EdgeState.t) : t =
-  Edge.Map.singleton edge state
+let filter : (Edge.t -> EdgeState.t -> bool) -> t -> t = filter
 
-let of_list (bindings : binding list) : t = Edge.Map.of_list bindings
-
-let filter (f : Edge.t -> EdgeState.t -> bool) (graph : t) : t =
-  Edge.Map.filter f graph
+let live_edges (graph : t) : Edge.Set.t =
+  graph |> filter (fun _ state -> state = Plus) |> edges
 
 let outedges (vertex : Vertex.t) (position : GroveLang.position) (graph : t) :
     Edge.Set.t =
-  graph
-  |> filter (fun edge state ->
-         edge.source = vertex && edge.position = position && state = Plus)
-  |> Edge.Map.keys
+  live_edges graph
+  |> Edge.Set.filter (fun edge ->
+         edge.source = vertex && edge.position = position)
+
+let parents (vertex : Vertex.t) (graph : t) : Vertex.Set.t =
+  let parent_edges =
+    live_edges graph |> Edge.Set.filter (fun edge -> edge.target = vertex)
+  in
+  Edge.Set.fold
+    (fun edge vertices -> Vertex.Set.add edge.source vertices)
+    parent_edges Vertex.Set.empty
+
+let rec ancestors ?(acc : Vertex.Set.t = Vertex.Set.empty) (vertex : Vertex.t)
+    (graph : t) : Vertex.Set.t =
+  let parents = parents vertex graph in
+  let parents = Vertex.Set.diff parents acc in
+  if Vertex.Set.is_empty parents then acc
+  else ancestors ~acc:(Vertex.Set.union acc parents) vertex graph
+
+let is_unicycle_root (vertex : Vertex.t) (graph : t) : bool =
+  match ancestors vertex graph |> Vertex.Set.min_elt_opt with
+  | None -> false
+  | Some unicycle_root -> vertex = unicycle_root

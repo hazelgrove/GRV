@@ -139,7 +139,7 @@ let multiparented_panel (ctx : Gui.context) (id : string) (mp : Tree.t list)
       (Old_Graph.parent_vertexes ctx.editor.graph vertex
       |> Old_Vertex.Set.elements
       |> List.map (fun parent_vertex ->
-             Grove.traverse_vertex parent_vertex children
+             Old_Grove.traverse_vertex parent_vertex children
                ~seen:(Old_Vertex.Set.singleton vertex)
              |> (function tree, _, _ -> tree)
              |> tree_node ctx)))
@@ -187,7 +187,7 @@ let unicycles_panel (ctx : Gui.context) (id : string) (sc : Tree.t list) :
 let view_editor (model : Model.t) (ctx : Gui.context)
     (tabindexes : int Uuid.Map.t) : Node.t =
   let id : string = Uuid.Id.to_string ctx.editor.id in
-  let decomp, children = Grove.decompose ctx.editor.graph in
+  let decomp, children = Old_Grove.decompose ctx.editor.graph in
   Graphviz.draw ctx.editor;
   Node.div
     [

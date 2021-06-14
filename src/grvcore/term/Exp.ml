@@ -33,6 +33,10 @@ end
 and C : sig
   type t
 
+  type elt = T.t
+
+  val add : elt -> t -> t
+
   val of_list : T.t list -> t
 
   val elements : t -> T.t list

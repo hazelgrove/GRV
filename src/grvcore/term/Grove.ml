@@ -9,7 +9,7 @@ type t = {
 type indegree = Zero | One | Many
 
 let decomp_edge (graph : Graph.t) (edge : Edge.t) : Term.t option =
-  match GroveLang.sort_of_constructor edge.target.constructor with
+  match GroveLang.sort_of edge.target.constructor with
   | Exp ->
       let+ e = Exp.decomp graph edge in
       Term.Exp e

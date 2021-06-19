@@ -10,3 +10,10 @@ let rec erase_cursor : t -> Typ.t = function
   | ZArrowT2 (ingraph, ty1, zty2) -> Arrow (ingraph, ty1, erase_cursor zty2)
   | ZConflict (zty, conflict) ->
       Typ.Conflict (Typ.C.add (erase_cursor zty) conflict)
+
+let rec apply_action (action : UserAction.t) (ztyp : t) (u_gen : Id.Gen.t) :
+    (GraphAction.t list * Id.Gen.t) option =
+  match ztyp with
+  | Cursor typ -> Typ.apply_action action typ u_gen
+  | ZArrowT1 (_, ztyp, _) | ZArrowT2 (_, _, ztyp) | ZConflict (ztyp, _) ->
+      apply_action action ztyp u_gen

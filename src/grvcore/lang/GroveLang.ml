@@ -12,10 +12,13 @@ type constructor =
   | TypArrow
   | TypNum
 
-let sort_of_constructor : constructor -> sort = function
+let sort_of : constructor -> sort = function
   | Root | ExpVar _ | ExpLam | ExpApp | ExpNum _ | ExpPlus | ExpTimes -> Exp
   | PatVar _ -> Pat
   | TypArrow | TypNum -> Typ
+
+let sorts_equal (k1 : constructor) (k2 : constructor) : bool =
+  sort_of k1 = sort_of k2
 
 type position =
   | Root
@@ -31,12 +34,6 @@ type position =
   | ArrowArg
   | ArrowResult
 
-let sort_of_position : position -> sort = function
-  | Root | LamParam | LamType | LamBody | AppFun | AppArg | PlusLeft | PlusRight
-  | TimesLeft | TimesRight ->
-      Exp
-  | ArrowArg | ArrowResult -> Typ
-
 let default_position : constructor -> position option = function
   | Root -> Some Root
   | ExpVar _ -> None
@@ -50,19 +47,23 @@ let default_position : constructor -> position option = function
   | TypNum -> None
 
 module Arity = Set.Make (struct
-  type t = position
+  type t = position * sort
 
   let compare = compare
 end)
 
 let arity : constructor -> Arity.t = function
-  | Root -> Arity.singleton Root
+  | Root -> Arity.singleton (Root, Exp)
   | ExpVar _ -> Arity.empty
-  | ExpLam -> Arity.of_list [ LamParam; LamType; LamBody ]
-  | ExpApp -> Arity.of_list [ AppFun; AppArg ]
-  | ExpPlus -> Arity.of_list [ PlusLeft; PlusRight ]
-  | ExpTimes -> Arity.of_list [ TimesLeft; TimesRight ]
+  | ExpLam -> Arity.of_list [ (LamParam, Pat); (LamType, Typ); (LamBody, Exp) ]
+  | ExpApp -> Arity.of_list [ (AppFun, Exp); (AppArg, Exp) ]
+  | ExpPlus -> Arity.of_list [ (PlusLeft, Exp); (PlusRight, Exp) ]
+  | ExpTimes -> Arity.of_list [ (TimesLeft, Exp); (TimesRight, Exp) ]
   | ExpNum _ -> Arity.empty
   | PatVar _ -> Arity.empty
-  | TypArrow -> Arity.of_list [ ArrowArg; ArrowResult ]
+  | TypArrow -> Arity.of_list [ (ArrowArg, Typ); (ArrowResult, Typ) ]
   | TypNum -> Arity.empty
+
+let is_valid_position (position : position) (inconstructor : constructor)
+    (constructor : constructor) : bool =
+  Arity.mem (position, sort_of inconstructor) (arity constructor)

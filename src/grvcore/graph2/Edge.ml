@@ -5,6 +5,11 @@ type t = {
   target : Vertex.t;
 }
 
+let mk (u_gen : Id.Gen.t) (source : Vertex.t) (position : GroveLang.position)
+    (target : Vertex.t) : t * Id.Gen.t =
+  let id, u_gen = Id.Gen.next u_gen in
+  ({ id; source; position; target }, u_gen)
+
 module OrderedType = struct
   type nonrec t = t
 

@@ -1,19 +1,24 @@
 type t = ZExp of ZExp.t | ZPat of ZPat.t | ZTyp of ZTyp.t
 
 let erase_cursor : t -> Term.t = function
-  | ZExp ze -> Exp (ZExp.erase_cursor ze)
-  | ZPat zp -> Pat (ZPat.erase_cursor zp)
-  | ZTyp zt -> Typ (ZTyp.erase_cursor zt)
+  | ZExp zexp -> Exp (ZExp.erase_cursor zexp)
+  | ZPat zpat -> Pat (ZPat.erase_cursor zpat)
+  | ZTyp zty -> Typ (ZTyp.erase_cursor zty)
+
+let apply_action (action : UserAction.t) (zterm : t) (u_gen : Id.Gen.t) :
+    (GraphAction.t list * Id.Gen.t) option =
+  match zterm with
+  | ZExp zexp -> ZExp.apply_action action zexp u_gen
+  | ZPat zpat -> ZPat.apply_action action zpat u_gen
+  | ZTyp zty -> ZTyp.apply_action action zty u_gen
 
 module Set = struct
-  include Set.Make (struct
-    type nonrec t = t
+  type nonrec t = Term.Set.t * t
 
-    let compare = compare
-  end)
+  let erase_cursor ((terms, zterm) : t) : Term.Set.t =
+    Term.Set.add (erase_cursor zterm) terms
 
-  let erase_cursor' (zterms : t) : Term.Set.t =
-    elements zterms |> List.map erase_cursor |> Term.Set.of_list
-
-  let erase_cursor = erase_cursor'
+  let apply_action (action : UserAction.t) (zterms : t) (u_gen : Id.Gen.t) :
+      (GraphAction.t list * Id.Gen.t) option =
+    apply_action action (snd zterms) u_gen
 end

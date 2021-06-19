@@ -19,7 +19,12 @@ let of_vertex (vertex : Vertex.t) (graph : Graph.t) : t option =
   let+ invertex = Graph.invertex graph in
   { invertex; graph }
 
-let of_edge (edge : Edge.t) : t =
-  let invertex = edge.target in
-  let graph = Graph.singleton edge EdgeState.Plus in
-  { invertex; graph }
+let edges (ingraph : t) : Edge.Set.t = Graph.edges ingraph.graph
+
+let sources (ingraph : t) : (Vertex.t * GroveLang.position) list =
+  edges ingraph |> Edge.Set.elements
+  |> List.map (fun (edge : Edge.t) -> (edge.source, edge.position))
+
+let delete (ingraph : t) : GraphAction.t list =
+  edges ingraph |> Edge.Set.elements
+  |> List.map (fun edge -> (EdgeState.Minus, edge))

@@ -11,7 +11,7 @@ module rec T : sig
     | Multiparent of Edge.t
     | Unicycle of Edge.t
     | Conflict of C.t
-    | Hole
+    | Hole of Vertex.t * GroveLang.position
 
   val compare : t -> t -> int
 end = struct
@@ -25,23 +25,12 @@ end = struct
     | Multiparent of Edge.t
     | Unicycle of Edge.t
     | Conflict of C.t
-    | Hole
+    | Hole of Vertex.t * GroveLang.position
 
   let compare = compare
 end
 
-and C : sig
-  type t
-
-  type elt = T.t
-
-  val add : elt -> t -> t
-
-  val of_list : T.t list -> t
-
-  val elements : t -> T.t list
-end =
-  Set.Make (T)
+and C : (Conflict.S with type elt = T.t) = Conflict.Make (T)
 
 include T
 
@@ -52,7 +41,7 @@ let constructor : t -> GroveLang.constructor option = function
   | Num (_, n) -> Some (ExpNum n)
   | Plus (_, _, _) -> Some ExpPlus
   | Times (_, _, _) -> Some ExpTimes
-  | Multiparent _ | Unicycle _ | Conflict _ | Hole -> None
+  | Multiparent _ | Unicycle _ | Conflict _ | Hole (_, _) -> None
 
 let ingraph : t -> Ingraph.t option = function
   | Var (ingraph, _)
@@ -62,8 +51,9 @@ let ingraph : t -> Ingraph.t option = function
   | Plus (ingraph, _, _)
   | Times (ingraph, _, _) ->
       Some ingraph
-  | Multiparent edge | Unicycle edge -> Some (Ingraph.of_edge edge)
-  | Conflict _ | Hole -> None
+  | Multiparent edge | Unicycle edge ->
+      Some (Ingraph.singleton edge EdgeState.Plus)
+  | Conflict _ | Hole (_, _) -> None
 
 let rec decomp (graph : Graph.t) (edge : Edge.t) : t option =
   match edge.target.constructor with
@@ -100,7 +90,7 @@ and decomp' (graph : Graph.t) (edge : Edge.t) (position : GroveLang.position) :
     t option =
   let outedges = Graph.outedges edge.target position graph in
   match Edge.Set.cardinal outedges with
-  | 0 -> Some Hole
+  | 0 -> Some (Hole (edge.target, position))
   | 1 -> (
       let* outedge = Edge.Set.choose_opt outedges in
       match Vertex.Set.cardinal (Graph.parents outedge.target graph) with
@@ -142,4 +132,117 @@ let rec recomp : t -> Graph.t = function
   | Conflict children ->
       C.elements children |> List.map recomp |> List.map Graph.bindings
       |> List.concat |> Graph.of_list
-  | Hole -> Graph.empty
+  | Hole (_, _) -> Graph.empty
+
+let construct (constructor : GroveLang.constructor) (exp : t) (u_gen : Id.Gen.t)
+    : (GraphAction.t list * Id.Gen.t) option =
+  match exp with
+  | Conflict _ -> None
+  | Hole (source, position) ->
+      if
+        not
+          (GroveLang.is_valid_position position source.constructor constructor)
+      then None
+      else
+        let target, u_gen = Vertex.mk u_gen constructor in
+        let ac, u_gen =
+          GraphAction.construct_edge u_gen source position target
+        in
+        Some ([ ac ], u_gen)
+  | Var (_, _)
+  | Lam (_, _, _, _)
+  | App (_, _, _)
+  | Num (_, _)
+  | Plus (_, _, _)
+  | Times (_, _, _)
+  | Multiparent _ | Unicycle _ -> (
+      let* ingraph = ingraph exp in
+      if not (GroveLang.sorts_equal constructor ingraph.invertex.constructor)
+      then None
+      else
+        match GroveLang.default_position constructor with
+        | Some position ->
+            if
+              not
+                (GroveLang.is_valid_position position
+                   ingraph.invertex.constructor constructor)
+            then None
+            else
+              let acc1 = Ingraph.delete ingraph in
+              let sources, positions = Ingraph.sources ingraph |> List.split in
+              let target, u_gen = Vertex.mk u_gen constructor in
+              let acc2, u_gen =
+                GraphAction.construct_edges u_gen sources positions target
+              in
+              let ac, u_gen =
+                GraphAction.construct_edge u_gen target position
+                  ingraph.invertex
+              in
+              Some (acc1 @ acc2 @ [ ac ], u_gen)
+        | None ->
+            let sources, positions = Ingraph.sources ingraph |> List.split in
+            let target, u_gen = Vertex.mk u_gen constructor in
+            Some (GraphAction.construct_edges u_gen sources positions target))
+
+let delete (exp : t) (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option
+    =
+  match exp with
+  | Conflict _ | Hole (_, _) -> None
+  | Var (_, _)
+  | Lam (_, _, _, _)
+  | App (_, _, _)
+  | Num (_, _)
+  | Plus (_, _, _)
+  | Times (_, _, _)
+  | Multiparent _ | Unicycle _ ->
+      let+ ingraph = ingraph exp in
+      let acc = Ingraph.delete ingraph in
+      (acc, u_gen)
+
+let reposition (source : Vertex.t) (position : GroveLang.position) (exp : t)
+    (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option =
+  match exp with
+  | Conflict _ | Hole (_, _) -> None
+  | Var (_, _)
+  | Lam (_, _, _, _)
+  | App (_, _, _)
+  | Num (_, _)
+  | Plus (_, _, _)
+  | Times (_, _, _)
+  | Multiparent _ | Unicycle _ ->
+      let* ingraph = ingraph exp in
+      if
+        not
+          (GroveLang.is_valid_position position ingraph.invertex.constructor
+             source.constructor)
+      then None
+      else
+        let acc = Ingraph.delete ingraph in
+        let ac, u_gen =
+          GraphAction.construct_edge u_gen source position ingraph.invertex
+        in
+        Some (acc @ [ ac ], u_gen)
+
+let apply_action (action : UserAction.t) (exp : t) (u_gen : Id.Gen.t) :
+    (GraphAction.t list * Id.Gen.t) option =
+  match exp with
+  | Conflict c ->
+      let handler =
+        match action with
+        | Construct constructor -> construct constructor
+        | Delete -> delete
+        | Reposition (vertex, position) -> reposition vertex position
+      in
+      C.construct_map handler c u_gen
+  | Hole (_, _)
+  | Var (_, _)
+  | Lam (_, _, _, _)
+  | App (_, _, _)
+  | Num (_, _)
+  | Plus (_, _, _)
+  | Times (_, _, _)
+  | Multiparent _ | Unicycle _ -> (
+      match action with
+      | Construct constructor -> construct constructor exp u_gen
+      | Delete -> delete exp u_gen
+      | Reposition (vertex, position) -> reposition vertex position exp u_gen)

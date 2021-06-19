@@ -25,3 +25,13 @@ let erase_cursor : t -> Grove.t = function
   | ZGroveTS3 { noparents; multiparents; zunicycles } ->
       let unicycles = ZTerm.Set.erase_cursor zunicycles in
       { noparents; multiparents; unicycles }
+
+let apply_action (action : UserAction.t) (zgrove : t) (u_gen : Id.Gen.t) :
+    (GraphAction.t list * Id.Gen.t) option =
+  match zgrove with
+  | ZGroveTS1 { znoparents; _ } ->
+      ZTerm.Set.apply_action action znoparents u_gen
+  | ZGroveTS2 { zmultiparents; _ } ->
+      ZTerm.Set.apply_action action zmultiparents u_gen
+  | ZGroveTS3 { zunicycles; _ } ->
+      ZTerm.Set.apply_action action zunicycles u_gen

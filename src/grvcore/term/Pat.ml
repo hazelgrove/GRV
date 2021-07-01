@@ -1,4 +1,5 @@
 open OptionUtil.Syntax
+open Sexplib0.Sexp_conv
 
 module rec T : sig
   type t =
@@ -7,6 +8,7 @@ module rec T : sig
     | Unicycle of Edge.t
     | Conflict of C.t
     | Hole of Vertex.t * GroveLang.position
+  [@@deriving sexp]
 
   val compare : t -> t -> int
 end = struct
@@ -16,6 +18,7 @@ end = struct
     | Unicycle of Edge.t
     | Conflict of C.t
     | Hole of Vertex.t * GroveLang.position
+  [@@deriving sexp]
 
   let compare = compare
 end
@@ -76,8 +79,9 @@ let rec recomp : t -> Graph.t = function
 let construct (constructor : GroveLang.constructor) (pat : t) (u_gen : Id.Gen.t)
     : (GraphAction.t list * Id.Gen.t) option =
   match pat with
-  | Conflict _ -> None
+  | Conflict _ -> None (* handled by apply_action *)
   | Hole (source, position) ->
+      (* Construct *)
       if
         not
           (GroveLang.is_valid_position position source.constructor constructor)
@@ -95,6 +99,7 @@ let construct (constructor : GroveLang.constructor) (pat : t) (u_gen : Id.Gen.t)
       else
         match GroveLang.default_position constructor with
         | Some position ->
+            (* ConstructWrap *)
             if
               not
                 (GroveLang.is_valid_position position
@@ -113,25 +118,28 @@ let construct (constructor : GroveLang.constructor) (pat : t) (u_gen : Id.Gen.t)
               in
               Some (acc1 @ acc2 @ [ ac ], u_gen)
         | None ->
+            (* ConstructConflict *)
             let sources, positions = Ingraph.sources ingraph |> List.split in
             let target, u_gen = Vertex.mk u_gen constructor in
             Some (GraphAction.construct_edges u_gen sources positions target))
 
-let delete (exp : t) (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option
+let delete (pat : t) (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option
     =
-  match exp with
-  | Conflict _ | Hole (_, _) -> None
+  match pat with
+  | Conflict _ (* handled by apply_action *) | Hole (_, _) -> None
   | Var (_, _) | Multiparent _ | Unicycle _ ->
-      let+ ingraph = ingraph exp in
+      (* Delete *)
+      let+ ingraph = ingraph pat in
       let acc = Ingraph.delete ingraph in
       (acc, u_gen)
 
-let reposition (source : Vertex.t) (position : GroveLang.position) (exp : t)
+let relocate (source : Vertex.t) (position : GroveLang.position) (pat : t)
     (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option =
-  match exp with
-  | Conflict _ | Hole (_, _) -> None
+  match pat with
+  | Conflict _ (* handled by apply_action *) | Hole (_, _) -> None
   | Var (_, _) | Multiparent _ | Unicycle _ ->
-      let* ingraph = ingraph exp in
+      (* Reposition *)
+      let* ingraph = ingraph pat in
       if
         not
           (GroveLang.is_valid_position position ingraph.invertex.constructor
@@ -144,19 +152,20 @@ let reposition (source : Vertex.t) (position : GroveLang.position) (exp : t)
         in
         Some (acc @ [ ac ], u_gen)
 
-let apply_action (action : UserAction.t) (exp : t) (u_gen : Id.Gen.t) :
+let edit (edit_action : UserAction.edit) (pat : t) (u_gen : Id.Gen.t) :
     (GraphAction.t list * Id.Gen.t) option =
-  match exp with
-  | Conflict c ->
+  match pat with
+  | Conflict conflict ->
+      (* Conflict *)
       let handler =
-        match action with
+        match edit_action with
         | Construct constructor -> construct constructor
         | Delete -> delete
-        | Reposition (vertex, position) -> reposition vertex position
+        | Relocate (vertex, position) -> relocate vertex position
       in
-      C.construct_map handler c u_gen
+      C.construct_map handler conflict u_gen
   | Hole (_, _) | Var (_, _) | Multiparent _ | Unicycle _ -> (
-      match action with
-      | Construct constructor -> construct constructor exp u_gen
-      | Delete -> delete exp u_gen
-      | Reposition (vertex, position) -> reposition vertex position exp u_gen)
+      match edit_action with
+      | Construct constructor -> construct constructor pat u_gen
+      | Delete -> delete pat u_gen
+      | Relocate (vertex, position) -> relocate vertex position pat u_gen)

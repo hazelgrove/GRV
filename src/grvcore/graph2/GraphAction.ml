@@ -1,4 +1,10 @@
-type t = EdgeState.t * Edge.t
+module OrderedType = struct
+  type t = EdgeState.t * Edge.t [@@deriving sexp]
+
+  let compare = compare
+end
+
+include OrderedType
 
 let construct_edge (u_gen : Id.Gen.t) (source : Vertex.t)
     (position : GroveLang.position) (target : Vertex.t) : t * Id.Gen.t =
@@ -16,3 +22,14 @@ let construct_edges (u_gen : Id.Gen.t) (sources : Vertex.t list)
       ([], u_gen) sources positions
   in
   (List.rev acc, u_gen)
+
+module Set = struct
+  open Sexplib
+  include Set.Make (OrderedType)
+
+  let sexp_of_t (set : t) : Sexp.t =
+    set |> elements |> Std.sexp_of_list OrderedType.sexp_of_t
+
+  let t_of_sexp (sexp : Sexp.t) : t =
+    sexp |> Std.list_of_sexp OrderedType.t_of_sexp |> of_list
+end

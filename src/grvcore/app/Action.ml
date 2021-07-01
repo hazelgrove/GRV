@@ -1,16 +1,5 @@
-type move = Left | Right | Up | Down | Select of Cursor.t [@@deriving sexp_of]
-
-type edit =
-  | Create of Lang.Constructor.t
-  | Destroy
-  | Restore of Old_Vertex.t
-  | DropEdge of Uuid.Id.t
-[@@deriving sexp_of]
-
+open OptionUtil.Syntax
 open Sexplib0.Sexp_conv
-
-(* TODO: Make `Send` be to a specific editor *)
-type comm = Send of Graph_action.t list * Uuid.Id.t list [@@deriving sexp_of]
 
 type env =
   | Record
@@ -19,45 +8,75 @@ type env =
   | Replay of string
   | Dump
   | Load of string
-  | Clone of Uuid.Id.t
-  | Drop of Uuid.Id.t
-  | ToggleIds of Uuid.Id.t
-[@@deriving sexp_of]
+  | Clone of Editor.id
+  | Drop of Editor.id
+  | ToggleIds of Editor.id
+[@@deriving sexp]
 
-type t' = Move of move | Edit of edit | Comm of comm | Env of env
-[@@deriving sexp_of]
+type t' =
+  | Move of UserAction.move
+  | Edit of UserAction.edit
+  | Send of GraphAction.t list * Editor.id list
+  | Env of env
+[@@deriving sexp]
 
-type t = { editor_id : Uuid.Id.t; action : t' } [@@deriving sexp_of]
+type t = { editor_id : Editor.id; action : t' } [@@deriving sexp]
 
-let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
+let apply (model : Model.t) (action : t) (_state : State.t)
+    ~schedule_action:(_ : t -> unit) : Model.t =
+  Option.value
+    (match action.action with
+    | Move move_action -> Model.update_editor (Editor.move move_action) model
+    | Edit edit_action -> Model.update_editor (Editor.edit edit_action) model
+    | Send (graph_actions, editor_ids) ->
+        let* editors = Model.get_editors editor_ids model in
+        Model.update_editors (Editor.send graph_actions) editors model)
+    ~default:model
+
+(* Option.value (let* editor = Id.Map.find_opt action.editor_id model.editors in
+   let update =
+     match action.action with
+     | Move move_action ->
+       let* editor = Editor.move move_action editor in
+       Model.update_editor
+     | Edit edit_action -> Editor.edit edit_action editor
+     | Send (graph_actions, editor_ids) ->
+       let* editors = List.map (fun editor_id -> Id.Map.find_opt editor_id model.editors) |> OptionUtil.of_list in
+       ()
+       (* let* editor = Id.Map.find_opt Editor.send send_action *)
+     | Env env_action -> apply_env env_action
+   in
+   Option.value (update model) ~default:model *)
+
+(* let apply_graph_action (graph_action : GraphAction.t) (editor : Editor.t) :
     Editor.t =
   let graph = Old_Graph.apply_action editor.graph graph_action in
   let known_actions = Graph_action.Set.add graph_action editor.known_actions in
   let actions = Graph_action.Set.add graph_action editor.actions in
-  { editor with graph; known_actions; actions }
+  { editor with graph; known_actions; actions } *)
 
-let record_actions (model : Model.t) (editor_id : Uuid.Id.t)
-    (graph_actions : Graph_action.t list) : Model.graph_action_sequence option =
-  let%map.Util.Option actions = model.actions in
+(* let record_actions (model : Model.t) (editor_id : Editor.id)
+    (graph_actions : GraphAction.t list) : Model.graph_actions option =
+  let+ actions = model.actions in
   let new_actions = List.map (fun x -> (editor_id, x)) graph_actions in
-  new_actions @ actions
+  new_actions @ actions *)
 
-let report_actions (actions : Model.graph_action_sequence) : unit =
-  Model.sexp_of_graph_action_sequence actions |> Util.Sexp.print
+(* let report_actions (actions : Model.graph_actions) : unit =
+  Model.sexp_of_graph_actions actions |> Util.Sexp.print *)
 
-let replay_actions (model : Model.t) (actions : Model.graph_action_sequence) :
+(* let replay_actions (model : Model.t) (actions : Model.graph_actions) :
     Model.t option =
   List.fold_left
-    (fun model (editor_id, graph_action) ->
-      let%bind.Util.Option model : Model.t option = model in
-      let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
+    (fun model_opt (editor_id, graph_action) ->
+      let* (model : Model.t option) = model_opt in
+      let* editor = Id.Map.find_opt editor_id model.editors in
       let editor = apply_graph_action graph_action editor in
       let editors = Uuid.Map.add editor_id editor model.editors in
       let actions = record_actions model editor_id [ graph_action ] in
       Some Model.{ editors; actions })
-    (Some model) actions
+    (Some model) actions *)
 
-let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
+(* let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
     Model.t Option.t =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let cursor : Cursor.t = editor.cursor in
@@ -95,9 +114,9 @@ let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
   in
   let%map.Util.Option cursor = cursor in
   let editors = Uuid.Map.add editor_id { editor with cursor } model.editors in
-  { model with editors }
+  { model with editors } *)
 
-let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
+(* let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     Model.t Option.t =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let children =
@@ -160,9 +179,9 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
   let editors = Uuid.Map.add editor_id editor model.editors in
   let actions = record_actions model editor.id graph_actions in
   let model = Model.{ editors; actions } in
-  if move_in then apply_move model editor_id Down else Some model
+  if move_in then apply_move model editor_id Down else Some model *)
 
-let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
+(* let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
   match comm_action with
   | Send (edit_actions, editor_ids) ->
@@ -191,9 +210,9 @@ let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
             { model with actions })
           model editors
       in
-      Model.remove_known_actions model
+      Model.remove_known_actions model *)
 
-let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
+(* let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
   match env_action with
   | Record -> (
       match model.actions with
@@ -239,14 +258,4 @@ let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
              (Option.map (fun editor ->
                   Editor.{ editor with show_ids = not editor.show_ids }))
       in
-      Some { model with editors }
-
-let apply (model : Model.t) (action : t) (_state : State.t)
-    ~schedule_action:(_ : t -> unit) : Model.t =
-  Option.value
-    (match action.action with
-    | Move move_action -> apply_move model action.editor_id move_action
-    | Edit edit_action -> apply_edit model action.editor_id edit_action
-    | Comm comm_action -> apply_comm model action.editor_id comm_action
-    | Env env_action -> apply_env model env_action)
-    ~default:model
+      Some { model with editors } *)

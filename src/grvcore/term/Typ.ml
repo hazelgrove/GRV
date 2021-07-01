@@ -8,6 +8,7 @@ module rec T : sig
     | Unicycle of Edge.t
     | Conflict of C.t
     | Hole of Vertex.t * GroveLang.position
+  [@@deriving sexp]
 
   val compare : t -> t -> int
 end = struct
@@ -18,6 +19,7 @@ end = struct
     | Unicycle of Edge.t
     | Conflict of C.t
     | Hole of Vertex.t * GroveLang.position
+  [@@deriving sexp]
 
   let compare = compare
 end
@@ -89,8 +91,9 @@ let rec recomp : t -> Graph.t = function
 let construct (constructor : GroveLang.constructor) (typ : t) (u_gen : Id.Gen.t)
     : (GraphAction.t list * Id.Gen.t) option =
   match typ with
-  | Conflict _ -> None
+  | Conflict _ -> None (* handled by apply_action *)
   | Hole (source, position) ->
+      (* Construct *)
       if
         not
           (GroveLang.is_valid_position position source.constructor constructor)
@@ -139,7 +142,7 @@ let delete (typ : t) (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option
       let acc = Ingraph.delete ingraph in
       (acc, u_gen)
 
-let reposition (source : Vertex.t) (position : GroveLang.position) (typ : t)
+let relocate (source : Vertex.t) (position : GroveLang.position) (typ : t)
     (u_gen : Id.Gen.t) : (GraphAction.t list * Id.Gen.t) option =
   match typ with
   | Conflict _ | Hole (_, _) -> None
@@ -157,19 +160,19 @@ let reposition (source : Vertex.t) (position : GroveLang.position) (typ : t)
         in
         Some (acc @ [ ac ], u_gen)
 
-let apply_action (action : UserAction.t) (typ : t) (u_gen : Id.Gen.t) :
+let edit (edit_action : UserAction.edit) (typ : t) (u_gen : Id.Gen.t) :
     (GraphAction.t list * Id.Gen.t) option =
   match typ with
   | Conflict c ->
       let handler =
-        match action with
+        match edit_action with
         | Construct constructor -> construct constructor
         | Delete -> delete
-        | Reposition (vertex, position) -> reposition vertex position
+        | Relocate (vertex, position) -> relocate vertex position
       in
       C.construct_map handler c u_gen
   | Hole (_, _) | Num _ | Arrow (_, _, _) | Multiparent _ | Unicycle _ -> (
-      match action with
+      match edit_action with
       | Construct constructor -> construct constructor typ u_gen
       | Delete -> delete typ u_gen
-      | Reposition (vertex, position) -> reposition vertex position typ u_gen)
+      | Relocate (vertex, position) -> relocate vertex position typ u_gen)

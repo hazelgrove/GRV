@@ -1,3 +1,5 @@
+open OptionUtil.Syntax
+
 type t =
   | Cursor of Exp.t
   | ZLamP of Ingraph.t * ZPat.t * Typ.t * Exp.t
@@ -10,6 +12,7 @@ type t =
   | ZTimesE1 of Ingraph.t * t * Exp.t
   | ZTimesE2 of Ingraph.t * Exp.t * t
   | ZConflict of t * Exp.C.t
+[@@deriving sexp]
 
 let rec erase_cursor : t -> Exp.t = function
   | Cursor e -> e
@@ -27,12 +30,10 @@ let rec erase_cursor : t -> Exp.t = function
   | ZConflict (ze, conflict) ->
       Exp.Conflict (Exp.C.add (erase_cursor ze) conflict)
 
-let rec apply_action (action : UserAction.t) (zexp : t) (u_gen : Id.Gen.t) :
-    (GraphAction.t list * Id.Gen.t) option =
-  match zexp with
-  | Cursor exp -> Exp.apply_action action exp u_gen
-  | ZLamP (_, zpat, _, _) -> ZPat.apply_action action zpat u_gen
-  | ZLamT (_, _, zty, _) -> ZTyp.apply_action action zty u_gen
+(* let rec follow_cursor : t -> Term.t = function
+  | Cursor exp -> Exp exp
+  | ZLamP (_, zpat, _, _) -> ZPat.follow_cursor zpat
+  | ZLamT (_, _, ztyp, _) -> ZTyp.follow_cursor ztyp
   | ZLamE (_, _, _, zexp)
   | ZAppE1 (_, zexp, _)
   | ZAppE2 (_, _, zexp)
@@ -41,4 +42,50 @@ let rec apply_action (action : UserAction.t) (zexp : t) (u_gen : Id.Gen.t) :
   | ZTimesE1 (_, zexp, _)
   | ZTimesE2 (_, _, zexp)
   | ZConflict (zexp, _) ->
-      apply_action action zexp u_gen
+      follow_cursor zexp *)
+
+let rec move (move_action : UserAction.move) (zexp : t) : t option =
+  match move_action with
+  | Up -> (
+      match zexp with
+      | Cursor _ -> None
+      | ZLamP (ingraph, Cursor pat, typ, exp)
+      | ZLamT (ingraph, pat, Cursor typ, exp)
+      | ZLamE (ingraph, pat, typ, Cursor exp) ->
+          Some (Cursor (Lam (ingraph, pat, typ, exp)))
+      | ZLamP (ingraph, zpat, typ, exp) ->
+          let+ zpat = ZPat.move move_action zpat in
+          ZLamP (ingraph, zpat, typ, exp)
+      | ZLamT (ingraph, pat, ztyp, exp) ->
+          let+ ztyp = ZTyp.move move_action ztyp in
+          ZLamT (ingraph, pat, ztyp, exp)
+      | ZLamE (ingraph, pat, typ, zexp) ->
+          let+ zexp = move move_action zexp in
+          ZLamE (ingraph, pat, typ, zexp)
+      | ZAppE1 (_, _, _) -> ( ??)
+      | ZAppE2 (_, _, _) -> ( ??)
+      | ZPlusE1 (_, _, _) -> ( ??)
+      | ZPlusE2 (_, _, _) -> ( ??)
+      | ZTimesE1 (_, _, _) -> ( ??)
+      | ZTimesE2 (_, _, _) -> ( ??)
+      | ZConflict (_, _) -> ( ??))
+  | Down -> ( ??)
+  | Left -> ( ??)
+  | Right -> ( ??)
+  | Select _ -> ( ??)
+
+let rec edit (edit_action : UserAction.edit) (zexp : t) (u_gen : Id.Gen.t) :
+    (GraphAction.t list * Id.Gen.t) option =
+  match zexp with
+  | Cursor exp -> Exp.edit edit_action exp u_gen
+  | ZLamP (_, zpat, _, _) -> ZPat.edit edit_action zpat u_gen
+  | ZLamT (_, _, zty, _) -> ZTyp.edit edit_action zty u_gen
+  | ZLamE (_, _, _, zexp)
+  | ZAppE1 (_, zexp, _)
+  | ZAppE2 (_, _, zexp)
+  | ZPlusE1 (_, zexp, _)
+  | ZPlusE2 (_, _, zexp)
+  | ZTimesE1 (_, zexp, _)
+  | ZTimesE2 (_, _, zexp)
+  | ZConflict (zexp, _) ->
+      edit edit_action zexp u_gen

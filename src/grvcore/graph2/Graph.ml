@@ -3,6 +3,10 @@ include Edge.Map
 
 type nonrec t = EdgeState.t t
 
+let sexp_of_t = Edge.Map.sexp_of_t EdgeState.sexp_of_t
+
+let t_of_sexp = Edge.Map.t_of_sexp EdgeState.t_of_sexp
+
 type binding = Edge.t * EdgeState.t
 
 let edges : t -> Edge.Set.t = Edge.Map.keys

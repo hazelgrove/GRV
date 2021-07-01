@@ -1,7 +1,7 @@
-open Old_Edge_state
+open EdgeState
 open Old_Edge.Map
 
-type t = Old_Edge_state.t Old_Edge.Map.t
+type t = EdgeState.t Old_Edge.Map.t
 
 let empty = Old_Edge.Map.empty
 
@@ -11,14 +11,13 @@ let apply_action (graph : t) (action : Graph_action.t) : t =
   let old_state = find_opt action.edge graph in
   let new_state = action.state in
   match (old_state, new_state) with
-  | Some Deleted, _ -> graph
-  | Some Created, Created -> graph
-  | (Some Created | None), Deleted ->
-      add action.edge Old_Edge_state.Deleted graph
-  | None, Created ->
+  | Some Minus, _ -> graph
+  | Some Plus, Plus -> graph
+  | (Some Plus | None), Minus -> add action.edge EdgeState.Minus graph
+  | None, Plus ->
       (* TODO: assert not already exists? *)
       (* TODO: short circuit if deleting a non-existant *)
-      add action.edge Old_Edge_state.Created graph
+      add action.edge EdgeState.Plus graph
 
 (* Edge Queries *)
 
@@ -27,7 +26,7 @@ let edges (graph : t) : Old_Edge.Set.t =
 
 let live_edges (graph : t) : Old_Edge.Set.t =
   bindings graph
-  |> List.filter (function _, Created -> true | _ -> false)
+  |> List.filter (function _, Plus -> true | _ -> false)
   |> List.map fst |> Old_Edge.Set.of_list
 
 let parent_edges (graph : t) (vertex : Old_Vertex.t) : Old_Edge.Set.t =
@@ -90,12 +89,12 @@ let vertex (graph : t) (vertex_id : Uuid.Id.t) : Old_Vertex.t option =
 (* S-Expression Conversions *)
 
 let sexp_of_t (graph : t) : Sexplib.Sexp.t =
-  Util.Sexp.of_map (bindings graph) Old_Edge.sexp_of_t Old_Edge_state.sexp_of_t
+  Util.Sexp.of_map (bindings graph) Old_Edge.sexp_of_t EdgeState.sexp_of_t
 
 let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
   sexp
   |> Sexplib.Std.list_of_sexp (function
        | List [ key_sexp; value_sexp ] ->
-           (Old_Edge.t_of_sexp key_sexp, Old_Edge_state.t_of_sexp value_sexp)
+           (Old_Edge.t_of_sexp key_sexp, EdgeState.t_of_sexp value_sexp)
        | _ -> failwith __LOC__)
   |> List.to_seq |> of_seq

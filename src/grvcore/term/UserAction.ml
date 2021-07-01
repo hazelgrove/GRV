@@ -1,4 +1,7 @@
-type t =
+type edit =
   | Construct of GroveLang.constructor
   | Delete
-  | Reposition of Vertex.t * GroveLang.position
+  | Relocate of Vertex.t * GroveLang.position
+[@@deriving sexp]
+
+type move = Left | Right | Up | Down | Select of Vertex.id [@@deriving sexp]

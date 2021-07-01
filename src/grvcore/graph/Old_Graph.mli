@@ -1,14 +1,14 @@
 (** Simple multigraphs with a total ordering on vertices and edges. *)
 
-type t = Old_Edge_state.t Old_Edge.Map.t
+type t = EdgeState.t Old_Edge.Map.t
 (** A graph maps each edge it contains to the current state of the edge in the
-    graph. Edges that have not yet been {{!Old_Edge_state.Created} [Created]} or
-    {{!Old_Edge_state.Deleted} [Deleted]} are implicitly mapped to ⊥. *)
+    graph. Edges that are not {{!EdgeState.Plus} [Plus]} or
+    {{!EdgeState.Minus} [Minus]} are implicitly mapped to ⊥. *)
 
 val empty : t
 (** The empty graph. *)
 
-val add : Old_Edge.t -> Old_Edge_state.t -> t -> t
+val add : Old_Edge.t -> EdgeState.t -> t -> t
 
 (** {1 Graph Actions} *)
 
@@ -20,11 +20,11 @@ val apply_action : t -> Graph_action.t -> t
 (** {1 Edge Queries} *)
 
 val edges : t -> Old_Edge.Set.t
-(** Returns the set of all {{!Old_Edge_state.Created} [Created]} or
-    {{!Old_Edge_state.Deleted} [Deleted]} edges of the given graph. *)
+(** Returns the set of all {{!EdgeState.Plus} [Plus]} and
+    {{!EdgeState.Minus} [Minus]} edges of the given graph. *)
 
 val live_edges : t -> Old_Edge.Set.t
-(** Returns the set of all {{!Old_Edge_state.Created} [Created]} edges of the given
+(** Returns the set of all {{!EdgeState.Plus} [Plus]} edges of the given
     graph. *)
 
 val parent_edges : t -> Old_Vertex.t -> Old_Edge.Set.t

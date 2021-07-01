@@ -1,6 +1,6 @@
 open OptionUtil.Syntax
 
-type t = { invertex : Vertex.t; graph : Graph.t }
+type t = { invertex : Vertex.t; graph : Graph.t } [@@deriving sexp]
 
 let singleton (edge : Edge.t) (state : EdgeState.t) : t =
   let invertex = edge.target in

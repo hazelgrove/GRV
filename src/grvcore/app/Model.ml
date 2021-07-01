@@ -1,61 +1,69 @@
+open OptionUtil.Syntax
 open Sexplib0.Sexp_conv
 
-type graph_action_sequence = (Uuid.Id.t * Graph_action.t) list [@@deriving sexp]
-
 type t = {
-  editors : Editor.t Uuid.Map.t;
-  actions : graph_action_sequence option;
+  editors : Editor.t Id.Map.t;
+  actions : graph_actions option;
+  u_gen : Id.Gen.t;
 }
-
-let sexp_of_t (model : t) : Sexplib.Sexp.t =
-  Sexplib.(
-    Sexp.List
-      [
-        Editor.sexp_of_map model.editors;
-        sexp_of_option sexp_of_graph_action_sequence model.actions;
-      ])
-
-let t_of_sexp : Sexplib.Sexp.t -> t = function
-  | List [ editors_sexp; actions_sexp ] ->
-      let editors = Editor.map_of_sexp editors_sexp in
-      let actions =
-        Sexplib.Std.option_of_sexp graph_action_sequence_of_sexp actions_sexp
-      in
-      { editors; actions }
-  | _ -> failwith __LOC__
+[@@deriving sexp]
 
 let mk () : t =
-  let editor1 = Editor.mk () in
-  let editor2 = Editor.mk () in
+  let u_gen = Id.Gen.init in
+  let editor1, u_gen = Editor.mk u_gen in
+  let editor2, u_gen = Editor.mk u_gen in
   let editors =
-    Uuid.Map.empty
-    |> Uuid.Map.add editor1.id editor1
-    |> Uuid.Map.add editor2.id editor2
+    List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ]
+    |> Id.Map.of_seq
   in
-  { editors; actions = Some [] }
+  { editors; actions = Some []; u_gen }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
-let filter_editor_actions (globally_known : Graph_action.Set.t)
+let filter_editor_actions (globally_known : GraphAction.Set.t)
     (editor : Editor.t) : Editor.t =
-  let actions =
-    editor.actions
-    |> Graph_action.Set.filter (fun a ->
-           not (Graph_action.Set.mem a globally_known))
+  let local_actions =
+    GraphAction.Set.filter
+      (fun action -> not (GraphAction.Set.mem action globally_known))
+      editor.local_actions
   in
-  { editor with actions }
+  { editor with local_actions }
 
-let globally_known_actions (model : t) : Graph_action.Set.t =
+let globally_known_actions (model : t) : GraphAction.Set.t =
   let knowns =
-    Uuid.Map.bindings model.editors
+    Id.Map.bindings model.editors
     |> List.map snd
-    |> List.map (fun Editor.{ known_actions; _ } -> known_actions)
+    |> List.map (fun Editor.{ global_actions; _ } -> global_actions)
   in
-  List.fold_left Graph_action.Set.inter (List.hd knowns) knowns
+  List.fold_left GraphAction.Set.inter (List.hd knowns) knowns
 
 let remove_known_actions (model : t) : t =
   let known_actions = globally_known_actions model in
   let editors =
-    Uuid.Map.map (filter_editor_actions known_actions) model.editors
+    Id.Map.map (filter_editor_actions known_actions) model.editors
   in
   { model with editors }
+
+let update_editor (update : Editor.t -> Editor.t option) (editor : Editor.t)
+    (model : t) : t option =
+  let* editor = Id.Map.find_opt editor.id model.editors in
+  let+ editor = update editor in
+  let editors = Id.Map.add editor.id model.editors in
+  { model with editors }
+
+let update_editors (update : Editor.t -> Editor.t option)
+    (editors : Editor.t list) (model : t) : t option =
+  List.fold_left
+    (fun model_opt editor ->
+      let* model = model_opt in
+      update_editor (Editor.send graph_actions) editor model)
+    (Some model) editors
+
+let get_editor (editor_id : Editor.id) (model : t) : Editor.t option =
+  Id.Map.find_opt editor_id model.editors
+
+let get_editors (editor_ids : Editor.id list) (model : t) : Editor.t list option
+    =
+  editor_ids
+  |> List.map (fun editor_id -> get_editor editor_id model)
+  |> OptionUtil.of_list

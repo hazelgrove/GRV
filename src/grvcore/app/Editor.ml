@@ -1,69 +1,38 @@
+open OptionUtil.Syntax
+open Sexplib0.Sexp_conv
+
+type id = Id.t [@@deriving sexp]
+
 type t = {
-  id : Uuid.Id.t;
-  graph : Old_Graph.t;
-  cursor : Cursor.t;
-  actions : Graph_action.Set.t;
-  known_actions : Graph_action.Set.t;
+  id : id;
+  zgrove : ZGrove.t;
+  local_actions : GraphAction.Set.t;
+  global_actions : GraphAction.Set.t;
   show_ids : bool;
 }
+[@@deriving sexp]
 
-let sexp_of_t (editor : t) : Sexplib.Sexp.t =
-  Sexplib.Sexp.List
-    [
-      Uuid.Id.sexp_of_t editor.id;
-      Old_Graph.sexp_of_t editor.graph;
-      Cursor.sexp_of_t editor.cursor;
-      Sexplib.Std.sexp_of_list Graph_action.sexp_of_t
-        (Graph_action.Set.elements editor.actions);
-      Sexplib.Std.sexp_of_list Graph_action.sexp_of_t
-        (Graph_action.Set.elements editor.known_actions);
-      Sexplib.Std.sexp_of_bool editor.show_ids;
-    ]
+type map = t Id.Map.t [@@deriving sexp]
 
-let t_of_sexp : Sexplib.Sexp.t -> t = function
-  | Sexplib.Sexp.List
-      [
-        id_sexp;
-        graph_sexp;
-        cursor_sexp;
-        actions_sexp;
-        known_actions_sexp;
-        show_ids_sexp;
-      ] ->
-      let id = Uuid.Id.t_of_sexp id_sexp in
-      let graph = Old_Graph.t_of_sexp graph_sexp in
-      let cursor = Cursor.t_of_sexp cursor_sexp in
-      let actions =
-        Sexplib.Std.list_of_sexp Graph_action.t_of_sexp actions_sexp
-        |> Graph_action.Set.of_list
-      in
-      let known_actions =
-        Sexplib.Std.list_of_sexp Graph_action.t_of_sexp known_actions_sexp
-        |> Graph_action.Set.of_list
-      in
-      let show_ids = Sexplib.Std.bool_of_sexp show_ids_sexp in
-      { id; graph; cursor; actions; known_actions; show_ids }
-  | _ -> failwith __LOC__
+let mk (u_gen : Id.Gen.t) : t * Id.Gen.t =
+  let id, u_gen = Id.Gen.next u_gen in
+  let zgrove = ZGrove.empty in
+  let local_actions = GraphAction.Set.empty in
+  let global_actions = GraphAction.Set.empty in
+  ({ id; zgrove; local_actions; global_actions; show_ids = false }, u_gen)
 
-let sexp_of_map (editors : t Uuid.Map.t) : Sexplib.Sexp.t =
-  Uuid.Map.bindings editors
-  |> Sexplib.Std.sexp_of_list (fun (id, editor) ->
-         Sexplib.Sexp.List [ Uuid.Id.sexp_of_t id; sexp_of_t editor ])
+let move (move_action : UserAction.move) (editor : t) : t option =
+  let+ zgrove = ZGrove.move direction editor.zgrove in
+  { editor with zgrove }
 
-let map_of_sexp (sexp : Sexplib.Sexp.t) : t Uuid.Map.t =
-  sexp
-  |> Sexplib.Std.list_of_sexp (function
-       | Sexplib.Sexp.List [ id_sexp; editor_sexp ] ->
-           (Uuid.Id.t_of_sexp id_sexp, t_of_sexp editor_sexp)
-       | _ -> failwith __LOC__)
-  |> List.to_seq |> Uuid.Map.of_seq
+let edit (edit_action : UserAction.edit) (editor : t) : t option =
+  let+ zgrove = ZGrove.edit edit_action editor.zgrove in
+  { editor with zgrove }
 
-let mk () : t =
-  {
-    id = Uuid.Id.next ();
-    graph = Old_Graph.empty;
-    cursor = Cursor.root;
-    actions = Graph_action.Set.empty;
-    known_actions = Graph_action.Set.empty;
-    show_ids = false;
-  }
+(* let apply_graph_actions (editor : t) (graph_actions : GraphAction.t list) : t =
+  let graph = Grove.recomp (ZGrove.erase_cursor editor.zgrove) in
+  let graph = List.fold_left Graph.apply_graph_action graph graph_actions in
+  let grove =  *)
+
+let send (graph_actions : GraphAction.t list) (editor : t) : t =
+  List.fold_left apply_graph_action editor graph_actions

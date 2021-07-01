@@ -3,6 +3,7 @@ type t =
   | ZArrowT1 of Ingraph.t * t * Typ.t
   | ZArrowT2 of Ingraph.t * Typ.t * t
   | ZConflict of t * Typ.C.t
+[@@deriving sexp]
 
 let rec erase_cursor : t -> Typ.t = function
   | Cursor ty -> ty
@@ -11,9 +12,14 @@ let rec erase_cursor : t -> Typ.t = function
   | ZConflict (zty, conflict) ->
       Typ.Conflict (Typ.C.add (erase_cursor zty) conflict)
 
-let rec apply_action (action : UserAction.t) (ztyp : t) (u_gen : Id.Gen.t) :
+let rec follow_cursor : t -> Term.t = function
+  | Cursor typ -> Typ typ
+  | ZArrowT1 (_, ztyp, _) | ZArrowT2 (_, _, ztyp) | ZConflict (ztyp, _) ->
+      follow_cursor ztyp
+
+let rec edit (edit_action : UserAction.edit) (ztyp : t) (u_gen : Id.Gen.t) :
     (GraphAction.t list * Id.Gen.t) option =
   match ztyp with
-  | Cursor typ -> Typ.apply_action action typ u_gen
+  | Cursor typ -> Typ.edit edit_action typ u_gen
   | ZArrowT1 (_, ztyp, _) | ZArrowT2 (_, _, ztyp) | ZConflict (ztyp, _) ->
-      apply_action action ztyp u_gen
+      edit edit_action ztyp u_gen

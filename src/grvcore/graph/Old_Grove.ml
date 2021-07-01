@@ -210,12 +210,12 @@ let%test_module "Old_Graph.decompose" =
 
         let%test "deleted" =
           check_decompose
-            Old_Graph.(empty |> add e01 Deleted)
+            Old_Graph.(empty |> add e01 Minus)
             ~deleted:[ Tree.vertex v1 [] ]
 
         let%test "reachable" =
           check_decompose
-            Old_Graph.(empty |> add e01 Created)
+            Old_Graph.(empty |> add e01 Plus)
             ~reachable:
               (Tree.vertex v0
                  [ (Root_root_root, [ (e01.id, Tree.vertex v1 []) ]) ])
@@ -225,8 +225,7 @@ let%test_module "Old_Graph.decompose" =
       (module struct
         let%test "multiparented" =
           check_decompose
-            Old_Graph.(
-              empty |> add e01 Created |> add e12 Created |> add e12' Created)
+            Old_Graph.(empty |> add e01 Plus |> add e12 Plus |> add e12' Plus)
             ~multiparented:[ Tree.vertex v2 [] ]
             ~reachable:
               (Tree.vertex v0
@@ -244,7 +243,7 @@ let%test_module "Old_Graph.decompose" =
 
         let%test "deleted e01" =
           check_decompose
-            Old_Graph.(empty |> add e01 Deleted |> add e12 Created)
+            Old_Graph.(empty |> add e01 Minus |> add e12 Plus)
             ~deleted:
               [
                 Tree.vertex v1
@@ -253,7 +252,7 @@ let%test_module "Old_Graph.decompose" =
 
         let%test "reachable e01 deleted e12" =
           check_decompose
-            Old_Graph.(empty |> add e01 Created |> add e12 Deleted)
+            Old_Graph.(empty |> add e01 Plus |> add e12 Minus)
             ~deleted:[ Tree.vertex v2 [] ]
             ~reachable:
               (Tree.vertex v0
@@ -261,7 +260,7 @@ let%test_module "Old_Graph.decompose" =
 
         let%test "reachable e01 e12" =
           check_decompose
-            Old_Graph.(empty |> add e01 Created |> add e12 Created)
+            Old_Graph.(empty |> add e01 Plus |> add e12 Plus)
             ~reachable:
               (Tree.vertex v0
                  [
@@ -276,8 +275,7 @@ let%test_module "Old_Graph.decompose" =
 
         let%test "wreaths" =
           check_decompose
-            Old_Graph.(
-              empty |> add e01 Deleted |> add e12 Created |> add e21 Created)
+            Old_Graph.(empty |> add e01 Minus |> add e12 Plus |> add e21 Plus)
             ~wreaths:
               [
                 Tree.vertex v1

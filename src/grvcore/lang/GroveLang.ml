@@ -1,3 +1,5 @@
+open Sexplib0.Sexp_conv
+
 type sort = Exp | Pat | Typ
 
 type constructor =
@@ -11,6 +13,7 @@ type constructor =
   | PatVar of string
   | TypArrow
   | TypNum
+[@@deriving sexp]
 
 let sort_of : constructor -> sort = function
   | Root | ExpVar _ | ExpLam | ExpApp | ExpNum _ | ExpPlus | ExpTimes -> Exp
@@ -21,7 +24,7 @@ let sorts_equal (k1 : constructor) (k2 : constructor) : bool =
   sort_of k1 = sort_of k2
 
 type position =
-  | Root
+  | RootRoot
   | LamParam
   | LamType
   | LamBody
@@ -33,9 +36,10 @@ type position =
   | TimesRight
   | ArrowArg
   | ArrowResult
+[@@deriving sexp]
 
 let default_position : constructor -> position option = function
-  | Root -> Some Root
+  | Root -> Some RootRoot
   | ExpVar _ -> None
   | ExpLam -> Some LamParam
   | ExpApp -> Some AppFun
@@ -53,7 +57,7 @@ module Arity = Set.Make (struct
 end)
 
 let arity : constructor -> Arity.t = function
-  | Root -> Arity.singleton (Root, Exp)
+  | Root -> Arity.singleton (RootRoot, Exp)
   | ExpVar _ -> Arity.empty
   | ExpLam -> Arity.of_list [ (LamParam, Pat); (LamType, Typ); (LamBody, Exp) ]
   | ExpApp -> Arity.of_list [ (AppFun, Exp); (AppArg, Exp) ]

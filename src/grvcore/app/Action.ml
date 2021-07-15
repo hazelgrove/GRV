@@ -1,28 +1,55 @@
-open OptionUtil.Syntax
+(* open OptionUtil.Syntax *)
 open Sexplib0.Sexp_conv
 
-type env =
-  | Record
-  | Report
-  | Stop
-  | Replay of string
-  | Dump
-  | Load of string
-  | Clone of Editor.id
-  | Drop of Editor.id
-  | ToggleIds of Editor.id
-[@@deriving sexp]
+module ModelAction = struct
+  type t = Record | Report | Stop | Replay of string | Dump | Load of string
+  [@@deriving sexp]
+end
+
+module EditorAction = struct
+  type t =
+    | Send of GraphAction.t list * Editor.id list
+    | Clone of Editor.id
+    | Drop of Editor.id
+    | ToggleIds of Editor.id
+  [@@deriving sexp]
+end
+
+module UserAction = struct
+  type direction = Up | Down | Left | Right [@@deriving sexp]
+
+  type t =
+    | Move of direction
+    | Select of Vertex.id
+    | Construct of GroveLang.Constructor.t
+    | Delete
+    | Reposition of Vertex.t * GroveLang.Position.t
+  [@@deriving sexp]
+end
 
 type t' =
-  | Move of UserAction.move
-  | Edit of UserAction.edit
-  | Send of GraphAction.t list * Editor.id list
-  | Env of env
+  | ModelAction of ModelAction.t
+  | EditorAction of EditorAction.t
+  | UserAction of UserAction.t
 [@@deriving sexp]
 
 type t = { editor_id : Editor.id; action : t' } [@@deriving sexp]
 
-let apply (model : Model.t) (action : t) (_state : State.t)
+let apply (model : Model.t) (_action : t) (_state : State.t)
+    ~schedule_action:(_ : t -> unit) : Model.t =
+  model
+
+(*
+
+ModelAction: top-level / global actions in the Grove UI (stuff that works on the incr_dom model), e.g., EditorAction
+EditorAction: per-editor actions; something that operates on a particular editor (editor_id), e.g., clone
+UserAction: things that operate on the grove and potentially emits graph edits
+Comms: Send
+
+perform_user_action : ZGrove -> UserAction -> ZGrove
+*)
+
+(* let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
   Option.value
     (match action.action with
@@ -31,7 +58,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
     | Send (graph_actions, editor_ids) ->
         let* editors = Model.get_editors editor_ids model in
         Model.update_editors (Editor.send graph_actions) editors model)
-    ~default:model
+    ~default:model *)
 
 (* Option.value (let* editor = Id.Map.find_opt action.editor_id model.editors in
    let update =
@@ -77,10 +104,10 @@ let apply (model : Model.t) (action : t) (_state : State.t)
     (Some model) actions *)
 
 (* let apply_move (model : Model.t) (editor_id : Uuid.Id.t) (move_action : move) :
-    Model.t Option.t =
+    Model.t option =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let cursor : Cursor.t = editor.cursor in
-  let cursor : Cursor.t Option.t =
+  let cursor : Cursor.t option =
     match move_action with
     | Left ->
         let%map.Util.Option position =
@@ -117,7 +144,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   { model with editors } *)
 
 (* let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
-    Model.t Option.t =
+    Model.t option =
   let%bind.Util.Option editor = Uuid.Map.find_opt editor_id model.editors in
   let children =
     Old_Graph.child_edges editor.graph editor.cursor.vertex
@@ -182,7 +209,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
   if move_in then apply_move model editor_id Down else Some model *)
 
 (* let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
-    Model.t Option.t =
+    Model.t option =
   match comm_action with
   | Send (edit_actions, editor_ids) ->
       let%map.Util.Option editors =
@@ -212,7 +239,7 @@ let apply (model : Model.t) (action : t) (_state : State.t)
       in
       Model.remove_known_actions model *)
 
-(* let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
+(* let apply_env (model : Model.t) (env_action : env) : Model.t option =
   match env_action with
   | Record -> (
       match model.actions with

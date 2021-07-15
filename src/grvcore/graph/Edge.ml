@@ -4,7 +4,7 @@ module T = struct
   type t = {
     id : id;
     source : Vertex.t;
-    position : GroveLang.position;
+    position : GroveLang.Position.t;
     target : Vertex.t;
   }
   [@@deriving sexp]
@@ -12,7 +12,7 @@ end
 
 include T
 
-let mk (u_gen : Id.Gen.t) (source : Vertex.t) (position : GroveLang.position)
+let mk (u_gen : Id.Gen.t) (source : Vertex.t) (position : GroveLang.Position.t)
     (target : Vertex.t) : t * Id.Gen.t =
   let id, u_gen = Id.Gen.next u_gen in
   ({ id; source; position; target }, u_gen)

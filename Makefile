@@ -8,7 +8,7 @@ deps:
 		dune utop ocamlformat odoc \
 		incr_dom js_of_ocaml ppx_deriving ppx_let ppx_sexp_conv sexplib
 
-dev:
+dev: src/grvweb/*.css
 	dune build @src/fmt --auto-promote || true
 	dune build --profile dev
 	dune build @doc

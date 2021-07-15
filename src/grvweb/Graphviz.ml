@@ -1,4 +1,4 @@
-let vertex_color (graph : Old_Graph.t) (cursor : Cursor.t)
+(* let vertex_color (graph : Graph.t) (cursor : Cursor.t)
     (vertex : Old_Vertex.t) : string =
   let parents = Old_Graph.parent_edges graph vertex in
   let source_is_cursor (edge : Old_Edge.t) =
@@ -7,17 +7,17 @@ let vertex_color (graph : Old_Graph.t) (cursor : Cursor.t)
   if vertex = Old_Vertex.root then Color.black
   else if Old_Edge.Set.is_empty parents then Color.white
   else if Old_Edge.Set.exists source_is_cursor parents then Color.purple
-  else Color.white
+  else Color.white *)
 
-let draw_position (position : Lang.Position.t) : string =
+(* let draw_position (position : Lang.Position.t) : string =
   let name = Lang.Position.short_name position in
-  Format.sprintf "<%s> %s" name name
+  Format.sprintf "<%s> %s" name name *)
 
-let draw_vertex_children (vertex : Old_Vertex.t) : string =
-  Lang.Position.child_positions vertex.value
-  |> List.map draw_position |> String.concat "|"
+(* let draw_vertex_children (vertex : Vertex.t) : string =
+  GroveLang.arity vertex.constructor
+  |> fst |> List.map draw_position |> String.concat "|" *)
 
-let draw_vertex (graph : Old_Graph.t) (cursor : Cursor.t)
+(* let draw_vertex (graph : Old_Graph.t) (cursor : Cursor.t)
     (vertex : Old_Vertex.t) : string =
   let id = Uuid.Id.to_string vertex.id in
   Format.sprintf
@@ -28,9 +28,9 @@ let draw_vertex (graph : Old_Graph.t) (cursor : Cursor.t)
     Color.(
       if Old_Graph.parent_edges graph vertex |> Old_Edge.Set.cardinal < 2 then
         black
-      else orange)
+      else orange) *)
 
-let draw_edge (graph : Old_Graph.t) (live : Old_Edge.Set.t) (edge : Old_Edge.t)
+(* let draw_edge (graph : Old_Graph.t) (live : Old_Edge.Set.t) (edge : Old_Edge.t)
     : string =
   let source_id = Uuid.Id.to_string edge.value.source.vertex.id in
   let target_id = Uuid.Id.to_string edge.value.target.id in
@@ -54,9 +54,9 @@ let draw_edge (graph : Old_Graph.t) (live : Old_Edge.Set.t) (edge : Old_Edge.t)
   Format.sprintf
     {|n%s:%s -> n%s [color=%s,label="%s",edgeURL="#",edgetooltip="id: %s\nsource: %s\nposition: %s\ntarget: %s",labeltooltip="id: %s\nsource: %s\nposition: %s\ntarget: %s"]|}
     source_id field target_id color edge_id edge_id source_id position target_id
-    edge_id source_id position target_id
+    edge_id source_id position target_id *)
 
-let maybe_draw_cursor_hole (graph : Old_Graph.t) (cursor : Cursor.t) :
+(* let maybe_draw_cursor_hole (graph : Old_Graph.t) (cursor : Cursor.t) :
     string list * string list =
   if
     Old_Edge.Set.is_empty
@@ -72,9 +72,9 @@ let maybe_draw_cursor_hole (graph : Old_Graph.t) (cursor : Cursor.t) :
           (Uuid.Id.to_string cursor.vertex.id)
           (Lang.Position.short_name cursor.position);
       ] )
-  else ([], [])
+  else ([], []) *)
 
-let draw_graph (graph : Old_Graph.t) (cursor : Cursor.t) : string =
+(* let draw_graph (graph : Old_Graph.t) (cursor : Cursor.t) : string =
   let nodes =
     Old_Graph.vertexes graph |> Old_Vertex.Set.elements
     |> List.map (draw_vertex graph cursor)
@@ -91,8 +91,8 @@ let draw_graph (graph : Old_Graph.t) (cursor : Cursor.t) : string =
    {rank=min; n0 [shape=point]};
    |}
   ^ String.concat ";\n" (nodes @ hole_node @ edges @ hole_edge)
-  ^ "}"
+  ^ "}" *)
 
-let draw (editor : Editor.t) : unit =
-  draw_graph editor.graph editor.cursor
-  |> String.escaped |> Js.draw_viz editor.id
+let draw (_editor : Editor.t) : unit = ()
+(* draw_graph editor.graph editor.cursor
+   |> String.escaped |> Js.draw_viz editor.id *)

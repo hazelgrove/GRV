@@ -12,7 +12,7 @@ module rec T : sig
     | Multiparent of Edge.t
     | Unicycle of Edge.t
     | Conflict of C.t
-    | Hole of Vertex.t * GroveLang.position
+    | Hole of Vertex.t * GroveLang.Position.t
   [@@deriving sexp]
 
   val compare : t -> t -> int
@@ -27,7 +27,7 @@ end = struct
     | Multiparent of Edge.t
     | Unicycle of Edge.t
     | Conflict of C.t
-    | Hole of Vertex.t * GroveLang.position
+    | Hole of Vertex.t * GroveLang.Position.t
   [@@deriving sexp]
 
   let compare = compare
@@ -37,7 +37,9 @@ and C : (Conflict.S with type elt = T.t) = Conflict.Make (T)
 
 include T
 
-let constructor : t -> GroveLang.constructor option = function
+let equal (exp1 : t) (exp2 : t) : bool = exp1 = exp2
+
+let constructor : t -> GroveLang.Constructor.t option = function
   | Var (_, name) -> Some (ExpVar name)
   | Lam (_, _, _, _) -> Some ExpLam
   | App (_, _, _) -> Some ExpApp
@@ -58,6 +60,39 @@ let ingraph : t -> Ingraph.t option = function
       Some (Ingraph.singleton edge EdgeState.Plus)
   | Conflict _ | Hole (_, _) -> None
 
+let rec is_root (exp : t) : bool =
+  match exp with
+  | Var (_, _)
+  | Lam (_, _, _, _)
+  | App (_, _, _)
+  | Num (_, _)
+  | Plus (_, _, _)
+  | Times (_, _, _)
+  | Multiparent _ | Unicycle _ -> (
+      match ingraph exp with
+      | None -> false
+      | Some ingraph ->
+          let is_root' (edge : Edge.t) = Vertex.is_root edge.source in
+          Option.is_some
+            (ingraph |> Ingraph.edges |> Edge.Set.find_first_opt is_root'))
+  | Conflict conflict -> Option.is_some (C.find_first_opt is_root conflict)
+  | Hole (vertex, position) ->
+      Vertex.is_root vertex && GroveLang.Position.is_root position
+
+let rec id (exp : t) : Vertex.id option =
+  match exp with
+  | Var (ingraph, _)
+  | Lam (ingraph, _, _, _)
+  | App (ingraph, _, _)
+  | Num (ingraph, _)
+  | Plus (ingraph, _, _)
+  | Times (ingraph, _, _) ->
+      Some ingraph.invertex.id
+  | Multiparent _ | Unicycle _ | Hole (_, _) -> None
+  | Conflict conflict ->
+      let* exp1 = C.min_elt_opt conflict in
+      id exp1
+
 let rec decomp (graph : Graph.t) (edge : Edge.t) : t option =
   match edge.target.constructor with
   | ExpVar x ->
@@ -65,32 +100,32 @@ let rec decomp (graph : Graph.t) (edge : Edge.t) : t option =
       Var (ingraph, x)
   | ExpLam ->
       let* ingraph = Ingraph.of_vertex edge.target graph in
-      let* q = Pat.decomp' graph edge GroveLang.LamParam in
-      let* t = Typ.decomp' graph edge GroveLang.LamType in
-      let+ e = decomp' graph edge GroveLang.LamBody in
+      let* q = Pat.decomp' graph edge GroveLang.Position.LamParam in
+      let* t = Typ.decomp' graph edge GroveLang.Position.LamType in
+      let+ e = decomp' graph edge GroveLang.Position.LamBody in
       Lam (ingraph, q, t, e)
   | ExpApp ->
       let* ingraph = Ingraph.of_vertex edge.target graph in
-      let* e1 = decomp' graph edge GroveLang.AppFun in
-      let+ e2 = decomp' graph edge GroveLang.AppArg in
+      let* e1 = decomp' graph edge GroveLang.Position.AppFun in
+      let+ e2 = decomp' graph edge GroveLang.Position.AppArg in
       App (ingraph, e1, e2)
   | ExpNum n ->
       let+ ingraph = Ingraph.of_vertex edge.target graph in
       Num (ingraph, n)
   | ExpPlus ->
       let* ingraph = Ingraph.of_vertex edge.target graph in
-      let* e1 = decomp' graph edge GroveLang.AppFun in
-      let+ e2 = decomp' graph edge GroveLang.AppArg in
+      let* e1 = decomp' graph edge GroveLang.Position.AppFun in
+      let+ e2 = decomp' graph edge GroveLang.Position.AppArg in
       Plus (ingraph, e1, e2)
   | ExpTimes ->
       let* ingraph = Ingraph.of_vertex edge.target graph in
-      let* e1 = decomp' graph edge GroveLang.AppFun in
-      let+ e2 = decomp' graph edge GroveLang.AppArg in
+      let* e1 = decomp' graph edge GroveLang.Position.AppFun in
+      let+ e2 = decomp' graph edge GroveLang.Position.AppArg in
       Times (ingraph, e1, e2)
   | Root | PatVar _ | TypArrow | TypNum -> None
 
-and decomp' (graph : Graph.t) (edge : Edge.t) (position : GroveLang.position) :
-    t option =
+and decomp' (graph : Graph.t) (edge : Edge.t) (position : GroveLang.Position.t)
+    : t option =
   let outedges = Graph.outedges edge.target position graph in
   match Edge.Set.cardinal outedges with
   | 0 -> Some (Hole (edge.target, position))
@@ -137,7 +172,7 @@ let rec recomp : t -> Graph.t = function
       |> List.concat |> Graph.of_list
   | Hole (_, _) -> Graph.empty
 
-let construct (constructor : GroveLang.constructor) (exp : t) (u_gen : Id.Gen.t)
+(* let construct (constructor : GroveLang.constructor) (exp : t) (u_gen : Id.Gen.t)
     : (GraphAction.t list * Id.Gen.t) option =
   match exp with
   | Conflict _ -> None (* handled by apply_action *)
@@ -254,4 +289,4 @@ let edit (action : UserAction.edit) (exp : t) (u_gen : Id.Gen.t) :
       match action with
       | Construct constructor -> construct constructor exp u_gen
       | Delete -> delete exp u_gen
-      | Relocate (vertex, position) -> relocate vertex position exp u_gen)
+      | Relocate (vertex, position) -> relocate vertex position exp u_gen) *)

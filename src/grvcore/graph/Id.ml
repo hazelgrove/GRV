@@ -10,6 +10,10 @@ include OrderedType
 
 let root : t = 0
 
+let is_root (u : t) : bool = u = root
+
+let to_string : t -> string = Int.to_string
+
 module Gen = struct
   type id = t
 

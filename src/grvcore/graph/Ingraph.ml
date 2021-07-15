@@ -2,6 +2,14 @@ open OptionUtil.Syntax
 
 type t = { invertex : Vertex.t; graph : Graph.t } [@@deriving sexp]
 
+let inconstructor (ingraph : t) : GroveLang.Constructor.t =
+  ingraph.invertex.constructor
+
+let inposition (ingraph : t) : GroveLang.Position.t option =
+  match Graph.bindings ingraph.graph with
+  | (edge, _) :: _ -> Some edge.position
+  | [] -> None
+
 let singleton (edge : Edge.t) (state : EdgeState.t) : t =
   let invertex = edge.target in
   let graph = Graph.singleton edge state in
@@ -21,7 +29,7 @@ let of_vertex (vertex : Vertex.t) (graph : Graph.t) : t option =
 
 let edges (ingraph : t) : Edge.Set.t = Graph.edges ingraph.graph
 
-let sources (ingraph : t) : (Vertex.t * GroveLang.position) list =
+let sources (ingraph : t) : (Vertex.t * GroveLang.Position.t) list =
   edges ingraph |> Edge.Set.elements
   |> List.map (fun (edge : Edge.t) -> (edge.source, edge.position))
 

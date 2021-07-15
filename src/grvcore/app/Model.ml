@@ -3,7 +3,7 @@ open Sexplib0.Sexp_conv
 
 type t = {
   editors : Editor.t Id.Map.t;
-  actions : graph_actions option;
+  actions : GraphAction.Set.t option;
   u_gen : Id.Gen.t;
 }
 [@@deriving sexp]
@@ -16,7 +16,7 @@ let mk () : t =
     List.to_seq [ (editor1.id, editor1); (editor2.id, editor2) ]
     |> Id.Map.of_seq
   in
-  { editors; actions = Some []; u_gen }
+  { editors; actions = Some GraphAction.Set.empty; u_gen }
 
 let cutoff (m1 : t) (m2 : t) : bool = m1 == m2
 
@@ -48,16 +48,16 @@ let update_editor (update : Editor.t -> Editor.t option) (editor : Editor.t)
     (model : t) : t option =
   let* editor = Id.Map.find_opt editor.id model.editors in
   let+ editor = update editor in
-  let editors = Id.Map.add editor.id model.editors in
+  let editors = Id.Map.add editor.id editor model.editors in
   { model with editors }
 
-let update_editors (update : Editor.t -> Editor.t option)
+(* let update_editors (update : Editor.t -> Editor.t option)
     (editors : Editor.t list) (model : t) : t option =
   List.fold_left
     (fun model_opt editor ->
       let* model = model_opt in
       update_editor (Editor.send graph_actions) editor model)
-    (Some model) editors
+    (Some model) editors *)
 
 let get_editor (editor_id : Editor.id) (model : t) : Editor.t option =
   Id.Map.find_opt editor_id model.editors

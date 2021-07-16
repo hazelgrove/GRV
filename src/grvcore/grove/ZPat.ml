@@ -9,6 +9,10 @@ let rec cursor_position : t -> GroveLang.Position.t option = function
       Ingraph.inposition ingraph
   | ZConflict (zpat, _) -> cursor_position zpat
 
+let rec cursor_sort : t -> GroveLang.Sort.t = function
+  | Cursor _ -> Pat
+  | ZConflict (zpat, _) -> cursor_sort zpat
+
 let rec erase_cursor : t -> Pat.t = function
   | Cursor p -> p
   | ZConflict (zp, conflict) ->
@@ -21,6 +25,36 @@ let rec follow_cursor : t -> GroveLang.Position.t list = function
 let rec id : t -> Vertex.id option = function
   | Cursor pat -> Pat.id pat
   | ZConflict (zpat1, _) -> id zpat1
+
+let rec recomp : t -> Graph.t * GraphCursor.t = function
+  | Cursor pat ->
+      let graph = Pat.recomp pat in
+      let graph_cursor =
+        let open GraphCursor in
+        match pat with
+        | Var (ingraph, _) -> OnVertex ingraph.invertex.id
+        | Multiparent edge | Unicycle edge ->
+            OnRef (edge.source.id, edge.position)
+        | Conflict conflict -> (
+            match Pat.C.choose conflict with
+            | Var (ingraph, _) -> (
+                match Ingraph.edges ingraph |> Edge.Set.elements with
+                | [] -> failwith ("impossible " ^ __LOC__)
+                | edge :: _ -> OnConflict (edge.source.id, edge.position))
+            | Unicycle edge -> OnConflict (edge.source.id, edge.position)
+            | Multiparent edge ->
+                InConflict (edge.source.id, edge.position, edge.target.id)
+            | Conflict _ | Hole (_, _) -> failwith ("impossible " ^ __LOC__))
+        | Hole (source, position) -> OnHole (source.id, position)
+      in
+      (graph, graph_cursor)
+  | ZConflict (zpat, conflict) ->
+      let graph =
+        let f pat graph = Graph.union2 (Pat.recomp pat) graph in
+        Pat.C.fold f conflict Graph.empty
+      in
+      let _, graph_cursor = recomp zpat in
+      (graph, graph_cursor)
 
 (* let move (move_action : UserAction.move) (zpat : t) : t option =
   let rec up : t -> t option = function

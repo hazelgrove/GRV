@@ -17,6 +17,11 @@ let rec cursor_position : t -> GroveLang.Position.t option = function
   | ZArrowT1 (_, ztyp, _) | ZArrowT2 (_, _, ztyp) | ZConflict (ztyp, _) ->
       cursor_position ztyp
 
+let rec cursor_sort : t -> GroveLang.Sort.t = function
+  | Cursor _ -> Typ
+  | ZArrowT1 (_, ztyp, _) | ZArrowT2 (_, _, ztyp) | ZConflict (ztyp, _) ->
+      cursor_sort ztyp
+
 let rec erase_cursor : t -> Typ.t = function
   | Cursor ty -> ty
   | ZArrowT1 (ingraph, zty1, ty2) -> Arrow (ingraph, erase_cursor zty1, ty2)
@@ -35,6 +40,46 @@ let rec id : t -> Vertex.id option = function
   | ZArrowT1 (ingraph, _, _) | ZArrowT2 (ingraph, _, _) ->
       Some ingraph.invertex.id
   | ZConflict (ztyp1, _) -> id ztyp1
+
+let rec recomp : t -> Graph.t * GraphCursor.t = function
+  | Cursor typ ->
+      let graph = Typ.recomp typ in
+      let graph_cursor =
+        let open GraphCursor in
+        match typ with
+        | Num ingraph | Arrow (ingraph, _, _) -> OnVertex ingraph.invertex.id
+        | Multiparent edge | Unicycle edge ->
+            OnRef (edge.source.id, edge.position)
+        | Conflict conflict -> (
+            match Typ.C.choose conflict with
+            | Num ingraph | Arrow (ingraph, _, _) -> (
+                match Ingraph.edges ingraph |> Edge.Set.elements with
+                | [] -> failwith ("impossible " ^ __LOC__)
+                | edge :: _ -> OnConflict (edge.source.id, edge.position))
+            | Unicycle edge -> OnConflict (edge.source.id, edge.position)
+            | Multiparent edge ->
+                InConflict (edge.source.id, edge.position, edge.target.id)
+            | Conflict _ | Hole (_, _) -> failwith ("impossible " ^ __LOC__))
+        | Hole (source, position) -> OnHole (source.id, position)
+      in
+      (graph, graph_cursor)
+  | ZArrowT1 (ingraph, ztyp1, typ2) ->
+      let typ1_graph, graph_cursor = recomp ztyp1 in
+      let typ2_graph = Typ.recomp typ2 in
+      let graph = Graph.union3 ingraph.graph typ1_graph typ2_graph in
+      (graph, graph_cursor)
+  | ZArrowT2 (ingraph, typ1, ztyp2) ->
+      let typ1_graph = Typ.recomp typ1 in
+      let typ2_graph, graph_cursor = recomp ztyp2 in
+      let graph = Graph.union3 ingraph.graph typ1_graph typ2_graph in
+      (graph, graph_cursor)
+  | ZConflict (ztyp, conflict) ->
+      let graph =
+        let f typ graph = Graph.union2 (Typ.recomp typ) graph in
+        Typ.C.fold f conflict Graph.empty
+      in
+      let _, graph_cursor = recomp ztyp in
+      (graph, graph_cursor)
 
 (* let rec edit (edit_action : UserAction.edit) (ztyp : t) (u_gen : Id.Gen.t) :
     (GraphAction.t list * Id.Gen.t) option =

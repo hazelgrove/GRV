@@ -40,6 +40,20 @@ let rec cursor_position : t -> GroveLang.Position.t option = function
   | ZConflict (zexp, _) ->
       cursor_position zexp
 
+let rec cursor_sort : t -> GroveLang.Sort.t = function
+  | Cursor _ -> Exp
+  | ZLamP (_, zpat, _, _) -> ZPat.cursor_sort zpat
+  | ZLamT (_, _, ztyp, _) -> ZTyp.cursor_sort ztyp
+  | ZLamE (_, _, _, zexp)
+  | ZAppE1 (_, zexp, _)
+  | ZAppE2 (_, _, zexp)
+  | ZPlusE1 (_, zexp, _)
+  | ZPlusE2 (_, _, zexp)
+  | ZTimesE1 (_, zexp, _)
+  | ZTimesE2 (_, _, zexp)
+  | ZConflict (zexp, _) ->
+      cursor_sort zexp
+
 let rec erase_cursor : t -> Exp.t = function
   | Cursor e -> e
   | ZLamP (ingraph, zpat, ty, body) ->
@@ -56,6 +70,79 @@ let rec erase_cursor : t -> Exp.t = function
   | ZConflict (_, conflict) -> Conflict conflict
 
 let is_root (zexp : t) : bool = zexp |> erase_cursor |> Exp.is_root
+
+let rec recomp : t -> Graph.t * GraphCursor.t = function
+  | Cursor exp ->
+      let graph = Exp.recomp exp in
+      let graph_cursor =
+        let open GraphCursor in
+        match exp with
+        | Var (ingraph, _)
+        | Lam (ingraph, _, _, _)
+        | App (ingraph, _, _)
+        | Num (ingraph, _)
+        | Plus (ingraph, _, _)
+        | Times (ingraph, _, _) ->
+            OnVertex ingraph.invertex.id
+        | Multiparent edge | Unicycle edge ->
+            OnRef (edge.source.id, edge.position)
+        | Conflict conflict -> (
+            match Exp.C.choose conflict with
+            | Var (ingraph, _)
+            | Lam (ingraph, _, _, _)
+            | App (ingraph, _, _)
+            | Num (ingraph, _)
+            | Plus (ingraph, _, _)
+            | Times (ingraph, _, _) -> (
+                match Ingraph.edges ingraph |> Edge.Set.elements with
+                | [] -> failwith ("impossible " ^ __LOC__)
+                | edge :: _ -> OnConflict (edge.source.id, edge.position))
+            | Unicycle edge -> OnConflict (edge.source.id, edge.position)
+            | Multiparent edge ->
+                InConflict (edge.source.id, edge.position, edge.target.id)
+            | Conflict _ | Hole (_, _) -> failwith ("impossible " ^ __LOC__))
+        | Hole (source, position) -> OnHole (source.id, position)
+      in
+      (graph, graph_cursor)
+  | ZLamP (ingraph, zpat, typ, exp) ->
+      let pat_graph, graph_cursor = ZPat.recomp zpat in
+      let typ_graph = Typ.recomp typ in
+      let exp_graph = Exp.recomp exp in
+      let graph = Graph.union4 ingraph.graph pat_graph typ_graph exp_graph in
+      (graph, graph_cursor)
+  | ZLamT (ingraph, pat, ztyp, exp) ->
+      let pat_graph = Pat.recomp pat in
+      let typ_graph, graph_cursor = ZTyp.recomp ztyp in
+      let exp_graph = Exp.recomp exp in
+      let graph = Graph.union4 ingraph.graph pat_graph typ_graph exp_graph in
+      (graph, graph_cursor)
+  | ZLamE (ingraph, pat, typ, zexp) ->
+      let pat_graph = Pat.recomp pat in
+      let typ_graph = Typ.recomp typ in
+      let exp_graph, graph_cursor = recomp zexp in
+      let graph = Graph.union4 ingraph.graph pat_graph typ_graph exp_graph in
+      (graph, graph_cursor)
+  | ZAppE1 (ingraph, zexp1, exp2)
+  | ZPlusE1 (ingraph, zexp1, exp2)
+  | ZTimesE1 (ingraph, zexp1, exp2) ->
+      let exp1_graph, graph_cursor = recomp zexp1 in
+      let exp2_graph = Exp.recomp exp2 in
+      let graph = Graph.union3 ingraph.graph exp1_graph exp2_graph in
+      (graph, graph_cursor)
+  | ZAppE2 (ingraph, exp1, zexp2)
+  | ZPlusE2 (ingraph, exp1, zexp2)
+  | ZTimesE2 (ingraph, exp1, zexp2) ->
+      let exp1_graph = Exp.recomp exp1 in
+      let exp2_graph, graph_cursor = recomp zexp2 in
+      let graph = Graph.union3 ingraph.graph exp1_graph exp2_graph in
+      (graph, graph_cursor)
+  | ZConflict (zexp, conflict) ->
+      let graph =
+        let f exp graph = Graph.union2 (Exp.recomp exp) graph in
+        Exp.C.fold f conflict Graph.empty
+      in
+      let _, graph_cursor = recomp zexp in
+      (graph, graph_cursor)
 
 (* let rec follow_cursor : t -> GroveLang.position list = function
   | Cursor _ -> []

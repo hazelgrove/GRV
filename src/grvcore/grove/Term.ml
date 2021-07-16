@@ -14,6 +14,11 @@ let ingraph : t -> Ingraph.t option = function
   | Pat pat -> Pat.ingraph pat
   | Typ typ -> Typ.ingraph typ
 
+let recomp : t -> Graph.t = function
+  | Exp e -> Exp.recomp e
+  | Pat q -> Pat.recomp q
+  | Typ ty -> Typ.recomp ty
+
 module OrderedType = struct
   type nonrec t = t
 
@@ -29,4 +34,8 @@ module Set = struct
   let t_of_sexp (sexp : Sexp.t) : t = Std.list_of_sexp t_of_sexp sexp |> of_list
 
   let find_root (terms : t) : elt option = find_first_opt is_root terms
+
+  let recomp (terms : t) : Graph.t =
+    let f term graph = Graph.union2 (recomp term) graph in
+    fold f terms Graph.empty
 end

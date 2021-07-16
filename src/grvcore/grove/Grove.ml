@@ -31,22 +31,17 @@ let decomp (graph : Graph.t) : t option =
   let+ unicycles = edges_to_term_set unicycle_edges in
   { noparents; multiparents; unicycles }
 
-let recomp_term : Term.t -> Graph.t = function
-  | Exp e -> Exp.recomp e
-  | Pat q -> Pat.recomp q
-  | Typ ty -> Typ.recomp ty
-
 let recomp ({ noparents; multiparents; unicycles } : t) : Graph.t =
   let noparent_bindings =
     Term.Set.elements noparents
-    |> List.map recomp_term |> List.map Graph.bindings |> List.concat
+    |> List.map Term.recomp |> List.map Graph.bindings |> List.concat
   in
   let multiparent_bindings =
     Term.Set.elements multiparents
-    |> List.map recomp_term |> List.map Graph.bindings |> List.concat
+    |> List.map Term.recomp |> List.map Graph.bindings |> List.concat
   in
   let unicycle_bindings =
     Term.Set.elements unicycles
-    |> List.map recomp_term |> List.map Graph.bindings |> List.concat
+    |> List.map Term.recomp |> List.map Graph.bindings |> List.concat
   in
   Graph.of_list (noparent_bindings @ multiparent_bindings @ unicycle_bindings)

@@ -21,6 +21,14 @@ let mk (u_gen : Id.Gen.t) : t * Id.Gen.t =
   let global_actions = GraphAction.Set.empty in
   ({ id; zgrove; local_actions; global_actions; show_ids = false }, u_gen)
 
+let apply_graph_actions (graph_actions : GraphAction.Set.t) (editor : t) : t =
+  let graph, graph_cursor = ZGrove.recomp editor.zgrove in
+  let graph, graph_cursor =
+    Graph.apply_actions graph_actions graph graph_cursor
+  in
+  let zgrove = ZGrove.decomp graph graph_cursor in
+  { editor with zgrove }
+
 (* let move (move_action : UserAction.move) (editor : t) : t option =
   let+ zgrove = ZGrove.move move_action editor.zgrove in
   { editor with zgrove }

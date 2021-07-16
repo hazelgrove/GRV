@@ -28,7 +28,8 @@ body > div > .Editors {
 }
 
 .ZGrove > .Inactive {
-    display: none;
+    /* display: none; */
+    background-color: lightgray;
 }
 
 .Cursor {

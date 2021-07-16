@@ -2,31 +2,35 @@ open OptionUtil.Syntax
 
 type t = ZExp of ZExp.t | ZPat of ZPat.t | ZTyp of ZTyp.t [@@deriving sexp]
 
-let cursor_position : t -> GroveLang.Position.t option = function
-  | ZExp zexp -> ZExp.cursor_position zexp
-  | ZPat zpat -> ZPat.cursor_position zpat
-  | ZTyp ztyp -> ZTyp.cursor_position ztyp
+let reduce (f : ZExp.t -> 'a) (g : ZPat.t -> 'a) (h : ZTyp.t -> 'a) (zterm : t)
+    : 'a =
+  match zterm with
+  | ZExp zexp -> f zexp
+  | ZPat zpat -> g zpat
+  | ZTyp ztyp -> h ztyp
 
-let erase_cursor : t -> Term.t = function
-  | ZExp zexp -> Exp (ZExp.erase_cursor zexp)
-  | ZPat zpat -> Pat (ZPat.erase_cursor zpat)
-  | ZTyp zty -> Typ (ZTyp.erase_cursor zty)
+let map (f : ZExp.t -> Exp.t) (g : ZPat.t -> Pat.t) (h : ZTyp.t -> Typ.t)
+    (zterm : t) : Term.t =
+  match zterm with
+  | ZExp zexp -> Exp (f zexp)
+  | ZPat zpat -> Pat (g zpat)
+  | ZTyp ztyp -> Typ (h ztyp)
 
-(* let follow_cursor : t -> GroveLang.position list = function
-  | ZExp zexp -> ZExp.follow_cursor zexp
-  | ZPat zpat -> ZPat.follow_cursor zpat
-  | ZTyp ztyp -> ZTyp.follow_cursor ztyp *)
+let cursor_position : t -> GroveLang.Position.t option =
+  reduce ZExp.cursor_position ZPat.cursor_position ZTyp.cursor_position
 
-(* let place_cursor (path : GroveLang.position list) (term : Term.t) : t =
-  match term with
-  | Exp zexp -> ZExp.place_cursor path zexp
-  | Pat zpat -> ZPat.place_cursor path zpat
-  | Typ ztyp -> ZTyp.place_cursor path ztyp *)
+let cursor_sort : t -> GroveLang.Sort.t =
+  reduce ZExp.cursor_sort ZPat.cursor_sort ZTyp.cursor_sort
 
-let id : t -> Vertex.id option = function
-  | ZExp zexp -> ZExp.id zexp
-  | ZPat zpat -> ZPat.id zpat
-  | ZTyp ztyp -> ZTyp.id ztyp
+let cursor_term : t -> Term.t =
+  map ZExp.erase_cursor ZPat.erase_cursor ZTyp.erase_cursor
+
+let erase_cursor : t -> Term.t = cursor_term
+
+let id : t -> Vertex.id option = reduce ZExp.id ZPat.id ZTyp.id
+
+let recomp : t -> Graph.t * GraphCursor.t =
+  reduce ZExp.recomp ZPat.recomp ZTyp.recomp
 
 (* let move (move_action : UserAction.move) (zterm : t) : t option =
   match zterm with
@@ -77,8 +81,18 @@ module Set = struct
   let cursor_position ((_, zterm) : t) : GroveLang.Position.t option =
     cursor_position zterm
 
+  let cursor_sort ((_, zterm) : t) : GroveLang.Sort.t = cursor_sort zterm
+
+  let cursor_term ((_, zterm) : t) : Term.t = cursor_term zterm
+
   let erase_cursor ((terms, zterm) : t) : Term.Set.t =
     Term.Set.add (erase_cursor zterm) terms
+
+  let recomp ((terms, zterm) : t) : Graph.t * GraphCursor.t =
+    let zterm_graph, graph_cursor = recomp zterm in
+    let terms_graph = Term.Set.recomp terms in
+    let graph = Graph.union2 zterm_graph terms_graph in
+    (graph, graph_cursor)
 
   (* let follow_cursor ((_, zterm) : t) :
        Vertex.id option * GroveLang.position list =

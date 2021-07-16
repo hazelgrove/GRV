@@ -87,7 +87,7 @@ let arity (k : Constructor.t) : Sort.t PositionMap.t =
   in
   bindings |> List.to_seq |> PositionMap.of_seq
 
-let validate_position (source : Constructor.t) (position : Position.t)
+let is_well_sorted (source : Constructor.t) (position : Position.t)
     (target : Constructor.t) : bool =
   let arity = arity source in
   match PositionMap.find_opt position arity with

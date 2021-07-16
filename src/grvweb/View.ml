@@ -2,18 +2,13 @@ module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
 
-let black (str : string) : Node.t =
-  Node.span [ Attr.classes [ "string" ] ] [ Node.text str ]
+let text (str : string) : Node.t =
+  Node.span [ Attr.classes [ "text" ] ] [ Node.text str ]
 
 let red (str : string) : Node.t =
-  Node.span [ Attr.classes [ "error" ] ] [ Node.text str ]
+  Node.span [ Attr.classes [ "red" ] ] [ Node.text str ]
 
-let parens (node : Node.t) : Node.t =
-  Node.span [] [ black "("; node; black ")" ]
-
-module Context = struct
-  type t = { tabindexes : int Id.Map.t; editor_id : Editor.id }
-end
+let parens (node : Node.t) : Node.t = Node.span [] [ text "("; node; text ")" ]
 
 (* let cursor_node (node : Node.t) : Node.t =
   Node.span [ Attr.class_ "cursor" ] [ node ] *)
@@ -274,11 +269,11 @@ end
         ];
     ] *)
 
-let view_pat (_ctx : Context.t) (_pat : Pat.t) : Node.t = Node.text "PAT"
+let view_pat (_ctx : ViewContext.t) (_pat : Pat.t) : Node.t = Node.text "PAT"
 
-let view_typ (_ctx : Context.t) (_typ : Typ.t) : Node.t = Node.text "TYP"
+let view_typ (_ctx : ViewContext.t) (_typ : Typ.t) : Node.t = Node.text "TYP"
 
-let rec view_exp (ctx : Context.t) (exp : Exp.t) : Node.t =
+let rec view_exp (ctx : ViewContext.t) (exp : Exp.t) : Node.t =
   let view_exp_var x =
     Node.div [ Attr.classes [ "Exp"; "Var" ] ] [ Node.text x ]
   in
@@ -289,7 +284,7 @@ let rec view_exp (ctx : Context.t) (exp : Exp.t) : Node.t =
     let exp_node = view_exp ctx exp' in
     Node.div
       [ Attr.classes [ "Exp"; "Lam" ] ]
-      [ black "λ"; pat_node; black ":"; typ_node; black "."; exp_node ]
+      [ text "λ"; pat_node; text ":"; typ_node; text "."; exp_node ]
   in
 
   let view_exp_app exp1 exp2 =
@@ -297,7 +292,7 @@ let rec view_exp (ctx : Context.t) (exp : Exp.t) : Node.t =
     let exp2_node = view_exp ctx exp2 in
     Node.div
       [ Attr.classes [ "Exp"; "App" ] ]
-      [ exp1_node; black " "; exp2_node ]
+      [ exp1_node; text " "; exp2_node ]
   in
 
   let view_exp_num n =
@@ -310,7 +305,7 @@ let rec view_exp (ctx : Context.t) (exp : Exp.t) : Node.t =
     let exp2_node = view_exp ctx exp2 in
     Node.div
       [ Attr.classes [ "Exp"; "Plus" ] ]
-      [ exp1_node; black "+"; exp2_node ]
+      [ exp1_node; text "+"; exp2_node ]
   in
 
   let view_exp_times exp1 exp2 =
@@ -318,21 +313,21 @@ let rec view_exp (ctx : Context.t) (exp : Exp.t) : Node.t =
     let exp2_node = view_exp ctx exp2 in
     Node.div
       [ Attr.classes [ "Exp"; "Times" ] ]
-      [ exp1_node; black "×"; exp2_node ]
+      [ exp1_node; text "×"; exp2_node ]
   in
 
   let view_exp_multiparent (edge : Edge.t) =
     let target_id = Id.to_string edge.target.id in
     Node.div
       [ Attr.classes [ "Exp"; "Multiparent" ] ]
-      [ red "⩛"; black target_id ]
+      [ red "⩛"; text target_id ]
   in
 
   let view_exp_unicycle (edge : Edge.t) =
     let target_id = Id.to_string edge.target.id in
     Node.div
       [ Attr.classes [ "Exp"; "Unicycle" ] ]
-      [ red "⟲"; black target_id ]
+      [ red "⟲"; text target_id ]
   in
 
   let view_exp_conflict conflict =
@@ -367,16 +362,19 @@ let rec view_exp (ctx : Context.t) (exp : Exp.t) : Node.t =
   | Conflict conflict -> view_exp_conflict conflict
   | Hole (vertex, position) -> view_exp_hole vertex position
 
-let view_term (_ctx : Context.t) (_term : Term.t) : Node.t = Node.text "TERM"
+let view_term (_ctx : ViewContext.t) (_term : Term.t) : Node.t =
+  Node.text "TERM"
 
-let view_term_set (_ctx : Context.t) (_terms : Term.Set.t) : Node.t =
+let view_term_set (_ctx : ViewContext.t) (_terms : Term.Set.t) : Node.t =
   Node.text "TERM_SET"
 
-let view_zpat (_ctx : Context.t) (_zpat : ZPat.t) : Node.t = Node.text "ZPAT"
+let view_zpat (_ctx : ViewContext.t) (_zpat : ZPat.t) : Node.t =
+  Node.text "ZPAT"
 
-let view_ztyp (_ctx : Context.t) (_ztyp : ZTyp.t) : Node.t = Node.text "ZTYP"
+let view_ztyp (_ctx : ViewContext.t) (_ztyp : ZTyp.t) : Node.t =
+  Node.text "ZTYP"
 
-let rec view_zexp (ctx : Context.t) (zexp : ZExp.t) : Node.t =
+let rec view_zexp (ctx : ViewContext.t) (zexp : ZExp.t) : Node.t =
   match zexp with
   | Cursor exp ->
       let attr = Attr.classes [ "Cursor" ] in
@@ -442,16 +440,16 @@ let rec view_zexp (ctx : Context.t) (zexp : ZExp.t) : Node.t =
       let attr = Attr.classes [ "ZConflict" ] in
       Node.div [ attr ] nodes
 
-let view_zterm (ctx : Context.t) (zterm : ZTerm.t) : Node.t =
+let view_zterm (ctx : ViewContext.t) (zterm : ZTerm.t) : Node.t =
   match zterm with
   | ZExp zexp -> view_zexp ctx zexp
   | ZPat zpat -> view_zpat ctx zpat
   | ZTyp ztyp -> view_ztyp ctx ztyp
 
-let view_zterm_set (_ctx : Context.t) (_zterms : ZTerm.Set.t) : Node.t =
+let view_zterm_set (_ctx : ViewContext.t) (_zterms : ZTerm.Set.t) : Node.t =
   Node.text "ZTERM_SET"
 
-let view_zgrove (ctx : Context.t) (zgrove : ZGrove.t) : Node.t =
+let view_zgrove (ctx : ViewContext.t) (zgrove : ZGrove.t) : Node.t =
   let root_opt = ZGrove.find_root_opt zgrove in
   let root_node =
     let classes, nodes =
@@ -515,21 +513,22 @@ let view_zgrove (ctx : Context.t) (zgrove : ZGrove.t) : Node.t =
     [ Attr.classes ("ZGrove" :: classes) ]
     [ root_node; noparents_node; multiparents_node; unicycles_node ]
 
-let view_editor (ctx : Context.t) (editor : Editor.t) : Node.t =
+let view_editor (ctx : ViewContext.t) (editor : Editor.t) : Node.t =
   let editor_cssid = "Editor" ^ Id.to_string editor.id in
   let label_node = Node.h2 [] [ Node.text editor_cssid ] in
   let code_node = view_zgrove ctx editor.zgrove in
   let classes = Attr.classes [ "Editor" ] in
   let cssid = Attr.id editor_cssid in
-  let tabindex =
+  let maybe_tabindex =
     match Id.Map.find_opt editor.id ctx.tabindexes with
-    | Some tabindex -> [ Attr.create "tabindex" (Id.to_string tabindex) ]
+    | Some tabindex -> [ Attr.create "tabindex" (Int.to_string tabindex) ]
     | None -> []
   in
-  let attrs = classes :: cssid :: tabindex in
+  let on_keydown = Attr.on_keydown (Input.on_keydown ctx) in
+  let attrs = classes :: cssid :: on_keydown :: maybe_tabindex in
   Node.div attrs [ label_node; code_node ]
 
-let view ~inject:(_ : Action.t -> Vdom.Event.t) (model : Model.t) : Node.t =
+let view ~(inject : Action.t -> Vdom.Event.t) (model : Model.t) : Node.t =
   let editor_ids, editors = model.editors |> Id.Map.bindings |> List.split in
   let tabindexes =
     List.init (List.length editors) (fun i -> i + 1)
@@ -538,7 +537,7 @@ let view ~inject:(_ : Action.t -> Vdom.Event.t) (model : Model.t) : Node.t =
   let header_node = Node.h1 [] [ Node.text "Grove" ] in
   let editor_nodes =
     let view' editor_id editor =
-      let ctx = Context.{ tabindexes; editor_id } in
+      let ctx = ViewContext.{ model; inject; editor_id; tabindexes } in
       view_editor ctx editor
     in
     List.map2 view' editor_ids editors

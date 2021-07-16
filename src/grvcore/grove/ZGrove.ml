@@ -26,21 +26,32 @@ let empty : t =
   let unicycles = Term.Set.empty in
   ZGroveTS1 { znoparents; multiparents; unicycles }
 
-let cursor_position : t -> GroveLang.Position.t option = function
-  | ZGroveTS1 { znoparents; _ } -> ZTerm.Set.cursor_position znoparents
-  | ZGroveTS2 { zmultiparents; _ } -> ZTerm.Set.cursor_position zmultiparents
-  | ZGroveTS3 { zunicycles; _ } -> ZTerm.Set.cursor_position zunicycles
+let reduce (f : ZTerm.Set.t -> 'a) (zgrove : t) : 'a =
+  match (zgrove : t) with
+  | ZGroveTS1 { znoparents; _ } -> f znoparents
+  | ZGroveTS2 { zmultiparents; _ } -> f zmultiparents
+  | ZGroveTS3 { zunicycles; _ } -> f zunicycles
 
-let erase_cursor : t -> Grove.t = function
+let map (f : ZTerm.Set.t -> Term.Set.t) (zgrove : t) : Grove.t =
+  match zgrove with
   | ZGroveTS1 { znoparents; multiparents; unicycles } ->
-      let noparents = ZTerm.Set.erase_cursor znoparents in
+      let noparents = f znoparents in
       { noparents; multiparents; unicycles }
   | ZGroveTS2 { noparents; zmultiparents; unicycles } ->
-      let multiparents = ZTerm.Set.erase_cursor zmultiparents in
+      let multiparents = f zmultiparents in
       { noparents; multiparents; unicycles }
   | ZGroveTS3 { noparents; multiparents; zunicycles } ->
-      let unicycles = ZTerm.Set.erase_cursor zunicycles in
+      let unicycles = f zunicycles in
       { noparents; multiparents; unicycles }
+
+let cursor_position : t -> GroveLang.Position.t option =
+  reduce ZTerm.Set.cursor_position
+
+let cursor_sort : t -> GroveLang.Sort.t = reduce ZTerm.Set.cursor_sort
+
+let cursor_term : t -> Term.t = reduce ZTerm.Set.cursor_term
+
+let erase_cursor : t -> Grove.t = map ZTerm.Set.erase_cursor
 
 let find_vertex (vertex_id : Vertex.id) (zgrove : t) : Vertex.t option =
   zgrove |> erase_cursor |> Grove.recomp |> Graph.find_vertex vertex_id
@@ -68,7 +79,33 @@ let find_root_opt : t -> ZTerm.Root.t option = function
           let+ zunicycles = ZTerm.Set.place_cursor path unicycles in
           ZGroveTS3 { noparents; multiparents; zunicycles }) *)
 
-let recomp (zgrove : t) : Graph.t = Grove.recomp (erase_cursor zgrove)
+let recomp (zgrove : t) : Graph.t * GraphCursor.t =
+  (* Grove.recomp (erase_cursor zgrove) *)
+  match zgrove with
+  | ZGroveTS1 { znoparents; multiparents; unicycles } ->
+      let noparents_graph, graph_cursor = ZTerm.Set.recomp znoparents in
+      let multiparents_graph = Term.Set.recomp multiparents in
+      let unicycles_graph = Term.Set.recomp unicycles in
+      let graph =
+        Graph.union3 noparents_graph multiparents_graph unicycles_graph
+      in
+      (graph, graph_cursor)
+  | ZGroveTS2 { noparents; zmultiparents; unicycles } ->
+      let noparents_graph = Term.Set.recomp noparents in
+      let multiparents_graph, graph_cursor = ZTerm.Set.recomp zmultiparents in
+      let unicycles_graph = Term.Set.recomp unicycles in
+      let graph =
+        Graph.union3 noparents_graph multiparents_graph unicycles_graph
+      in
+      (graph, graph_cursor)
+  | ZGroveTS3 { noparents; multiparents; zunicycles } ->
+      let noparents_graph = Term.Set.recomp noparents in
+      let multiparents_graph = Term.Set.recomp multiparents in
+      let unicycles_graph, graph_cursor = ZTerm.Set.recomp zunicycles in
+      let graph =
+        Graph.union3 noparents_graph multiparents_graph unicycles_graph
+      in
+      (graph, graph_cursor)
 
 (* let move (move_action : UserAction.move) (zgrove : t) : t option =
   match zgrove with

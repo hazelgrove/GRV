@@ -44,7 +44,7 @@ let remove_known_actions (model : t) : t =
   in
   { model with editors }
 
-let update_editor (update : Editor.t -> Editor.t option) (editor : Editor.t)
+let update_editor (editor : Editor.t) (update : Editor.t -> Editor.t option)
     (model : t) : t option =
   let* editor = Id.Map.find_opt editor.id model.editors in
   let+ editor = update editor in

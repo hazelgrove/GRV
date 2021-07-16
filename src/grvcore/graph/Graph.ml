@@ -9,6 +9,14 @@ let t_of_sexp = Edge.Map.t_of_sexp EdgeState.t_of_sexp
 
 type binding = Edge.t * EdgeState.t
 
+let union2 = union (fun _ _ a -> Some a)
+
+let union3 (graph1 : t) (graph2 : t) (graph3 : t) : t =
+  union2 graph1 graph2 |> union2 graph3
+
+let union4 (graph1 : t) (graph2 : t) (graph3 : t) (graph4 : t) : t =
+  union3 graph1 graph2 graph3 |> union2 graph4
+
 let edges : t -> Edge.Set.t = keys
 
 let vertices (graph : t) : Vertex.Set.t =

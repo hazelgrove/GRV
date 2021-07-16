@@ -1,4 +1,4 @@
-(* open OptionUtil.Syntax *)
+open OptionUtil.Syntax
 open Sexplib0.Sexp_conv
 
 module ModelAction = struct
@@ -35,9 +35,81 @@ type t' =
 
 type t = { editor_id : Editor.id; action : t' } [@@deriving sexp]
 
-let apply (model : Model.t) (_action : t) (_state : State.t)
+(* module ActionContext = struct
+  type nonrec t = { model : Model.t; editor_id : Editor.id; action : t' }
+
+  let editor_opt (ctx : t) : Editor.t option =
+    Id.Map.find_opt ctx.editor_id ctx.model.editors
+
+  let cursor_sort (ctx : t) : GroveLang.Sort.t option =
+    let+ editor = editor_opt ctx in
+    ZGrove.cursor_sort editor.zgrove
+
+  let cursor_term (ctx : t) : Term.t option =
+    let+ editor = editor_opt ctx in
+    ZGrove.cursor_term editor.zgrove
+end *)
+
+(* let perform_user_action (ctx : ActionContext.t) (user_action : UserAction.t) :  *)
+
+let translate (user_action : UserAction.t) (editor : Editor.t)
+    (u_gen : Id.Gen.t) : (GraphAction.Set.t * Id.Gen.t) option =
+  match user_action with
+  | Move Up -> None
+  | Move Down -> None
+  | Move Left -> None
+  | Move Right -> None
+  | Select _ -> None
+  | Construct k -> (
+      match ZGrove.cursor_term editor.zgrove with
+      | Exp (Hole (source, position))
+      | Pat (Hole (source, position))
+      | Typ (Hole (source, position)) ->
+          if GroveLang.is_well_sorted source.constructor position k then
+            let target, u_gen = Vertex.mk u_gen k in
+            let edge, u_gen = Edge.mk u_gen source position target in
+            Some (GraphAction.Set.singleton (Plus, edge), u_gen)
+          else ( ?? )
+      | _ -> ( ??))
+  | Delete -> None
+  | Reposition (_, _) -> None
+
+let apply (model : Model.t) (action : t) (_state : State.t)
     ~schedule_action:(_ : t -> unit) : Model.t =
-  model
+  print_endline "ACTION";
+  let { editor_id; action } = action in
+  match Id.Map.find_opt editor_id model.editors with
+  | None -> model
+  | Some editor -> (
+      match action with
+      | ModelAction _ -> model
+      | EditorAction _ -> model
+      | UserAction user_action -> (
+          match translate user_action editor model.u_gen with
+          | None -> model
+          | Some (graph_actions, u_gen) ->
+              let editor = Editor.apply_graph_actions graph_actions editor in
+              let local_actions =
+                GraphAction.Set.union graph_actions editor.local_actions
+              in
+              let editor = { editor with local_actions } in
+              let editors = Id.Map.add editor.id editor model.editors in
+              { model with editors; u_gen }))
+(* (
+   match user_action with
+   | Move Up -> model
+   | Move Down -> model
+   | Move Left -> model
+   | Move Right -> model
+   | Select _ -> model
+   | Construct k -> (
+       match ActionContext.cursor_term ctx with
+       | Exp (Hole (v_s, p_s))
+       | Pat (Hole (v_s, p_s))
+       | Typ (Hole (v_s, p_s)) ->
+           if GroveLang.is_well_sorted k_s p_s k then ( ?? ) else ( ?? ))
+   | Delete -> model
+   | Reposition (_, _) -> model)) *)
 
 (*
 

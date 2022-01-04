@@ -1,0 +1,6 @@
+{
+    "ocaml.sandbox": {
+        "kind": "opam",
+        "switch": "devtools-4.12.1"
+    }
+}

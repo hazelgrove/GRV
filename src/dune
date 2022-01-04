@@ -1,0 +1,32 @@
+(include_subdirs unqualified)
+
+(alias
+ (name default)
+ (deps
+  (source_tree www)))
+
+(library
+ (name impl)
+ (libraries virtual_dom)
+ (modules
+  (:standard \ Main))
+ (wrapped false))
+
+(executable
+ (name main)
+ (modules Main)
+ (libraries impl bonsai.web)
+ (modes js)
+ (js_of_ocaml
+  (flags
+   (:include js-of-ocaml-flags-%{profile})))
+ (preprocess
+  (pps js_of_ocaml-ppx ppx_sexp_conv)))
+
+(rule
+ (write-file
+  js-of-ocaml-flags-dev
+  "(:standard --no-inline --debug-info --source-map)"))
+
+(rule
+ (write-file js-of-ocaml-flags-release "(:standard)"))

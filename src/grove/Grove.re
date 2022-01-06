@@ -56,7 +56,7 @@ module Make =
         | None => failwith(__LOC__ ++ ": impossible")
         | Some(root_vertex) =>
           root_vertex == out_edge.target
-            ? T.CycleRoot(edge) : decompose_edge(out_edge)
+            ? T.NodeRef(CycleRoot, edge) : decompose_edge(out_edge)
         }
       | _ => T.MultiChildConflict(out_edges |> List.map(decompose_edge))
       };
@@ -94,8 +94,8 @@ module Make =
       | Node(ast_node) => ast_node.parents
       | MultiChildConflict(children) =>
         children |> List.map(recompose_term) |> G.concat
-      | MultiParentConflict(edge) => G.of_list([(edge, Plus)])
-      | CycleRoot(edge) => G.of_list([(edge, Plus)])
+      | NodeRef(MultiParentConflict, edge) => G.of_list([(edge, Plus)])
+      | NodeRef(CycleRoot, edge) => G.of_list([(edge, Plus)])
       | Hole(_) => G.empty;
     let recompose_terms = (terms: list(term)): graph =>
       terms |> List.map(term => term |> recompose_term) |> G.concat;

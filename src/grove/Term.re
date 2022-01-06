@@ -5,14 +5,17 @@ module type T = {
   type graph;
   type position_map('t);
 
+  type ref_type =
+    | MultiParentConflict
+    | CycleRoot;
+
   type t =
-    | Node(ast_node)
+    | Node(node)
+    | NodeRef(ref_type, edge)
     | MultiChildConflict(list(t))
-    | MultiParentConflict(edge)
-    | CycleRoot(edge)
     | Hole(source)
 
-  and ast_node = {
+  and node = {
     vertex,
     parents: graph,
     children: position_map(list(t)),
@@ -39,14 +42,17 @@ module Make =
   type graph = G.t;
   type position_map('t) = P.t('t);
 
+  type ref_type =
+    | MultiParentConflict
+    | CycleRoot;
+
   type t =
-    | Node(ast_node)
+    | Node(node)
+    | NodeRef(ref_type, edge)
     | MultiChildConflict(list(t))
-    | MultiParentConflict(edge)
-    | CycleRoot(edge)
     | Hole(source)
 
-  and ast_node = {
+  and node = {
     vertex,
     parents: graph,
     children: position_map(list(t)),

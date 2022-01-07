@@ -10,7 +10,9 @@
  (libraries virtual_dom)
  (modules
   (:standard \ Main))
- (wrapped false))
+ (wrapped false)
+ (preprocess
+  (pps ppx_sexp_conv)))
 
 (executable
  (name main)

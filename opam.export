@@ -1,5 +1,4 @@
 opam-version: "2.0"
-compiler: ["ocaml.4.12.1"]
 roots: [
   "bonsai.v0.14.0"
   "ocaml.4.12.1"
@@ -7,6 +6,7 @@ roots: [
   "ocamlformat.0.20.1"
   "ocamlformat-rpc.0.20.1"
   "odig.0.0.7"
+  "ppx_deriving.5.2.1"
   "reason.3.7.0"
 ]
 installed: [
@@ -88,6 +88,7 @@ installed: [
   "ppx_compare.v0.14.0"
   "ppx_custom_printf.v0.14.1"
   "ppx_derivers.1.2.1"
+  "ppx_deriving.5.2.1"
   "ppx_enumerate.v0.14.0"
   "ppx_expect.v0.14.2"
   "ppx_fields_conv.v0.14.2"

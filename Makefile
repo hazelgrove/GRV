@@ -1,4 +1,4 @@
-HTML_DIR=_build/default/src/www
+HTML_DIR=_build/default/src/grvweb/www
 HTML_FILE=$(HTML_DIR)/index.html
 
 all: dev

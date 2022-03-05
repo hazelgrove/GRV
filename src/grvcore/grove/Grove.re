@@ -15,15 +15,15 @@ module type T = {
 module Make =
        (
          L: Lang.T,
-         V: Vertex.T with type constructor = L.constructor,
-         E: Edge.T with type position = L.position and type vertex = V.t,
+         V: Vertex.T with type constructor = L.Constructor.t,
+         E: Edge.T with type position = L.Position.t and type vertex = V.t,
          G:
            Graph.T with
              type vertex = V.t and
              type source = E.source and
              type edge = E.t and
              type edge_set = E.Set.t,
-         P: PositionMap.T with type position = L.position,
+         P: PositionMap.T with type position = L.Position.t,
          T:
            Term.T with
              type vertex = V.t and
@@ -66,7 +66,7 @@ module Make =
       let parents = graph |> G.in_adjacent_bindings(edge.target) |> G.of_list;
       let children =
         edge.target.constructor
-        |> L.arity
+        |> L.Constructor.arity
         |> List.map(((position, _)) => {
              let source = E.{position, vertex: edge.target};
              let children =

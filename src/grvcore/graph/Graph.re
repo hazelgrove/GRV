@@ -1,8 +1,3 @@
-type edge_state =
-  | Bot
-  | Plus
-  | Minus;
-
 module type T = {
   type vertex;
   type source;
@@ -12,16 +7,16 @@ module type T = {
   type t;
 
   let empty: t;
-  let of_list: list((edge, edge_state)) => t;
+  let of_list: list((edge, Edge_state.t)) => t;
   let concat: list(t) => t;
-  let bindings: t => list((edge, edge_state));
-  let find: (edge, t) => edge_state;
+  let bindings: t => list((edge, Edge_state.t));
+  let find: (edge, t) => Edge_state.t;
   let edges: t => list(edge);
   let plus_edges: t => list(edge);
   let root_edges: t => (list(edge), list(edge), list(edge));
   let children: (vertex, t) => list(edge);
-  let in_adjacent_bindings: (vertex, t) => list((edge, edge_state));
-  let out_adjacent_bindings: (source, t) => list((edge, edge_state));
+  let in_adjacent_bindings: (vertex, t) => list((edge, Edge_state.t));
+  let out_adjacent_bindings: (source, t) => list((edge, Edge_state.t));
   let in_adjacent_plus_edges: (vertex, t) => list(edge);
   let out_adjacent_plus_edges: (source, t) => list(edge);
   let ancestors: (~seen: edge_set=?, vertex, t) => edge_set;
@@ -32,20 +27,27 @@ module type T = {
 module Make =
        (
          L: Lang.T,
-         V: Vertex.T with type constructor = L.constructor,
-         E: Edge.T with type position = L.position and type vertex = V.t,
+         V: Vertex.T with type constructor = L.Constructor.t,
+         E: Edge.T with type position = L.Position.t and type vertex = V.t,
        )
-       : T => {
+
+         : (
+           T with
+             type vertex = V.t and
+             type source = E.source and
+             type edge = E.t and
+             type edge_set = E.Set.t
+       ) => {
   type vertex = E.vertex;
   type source = E.source;
   type edge = E.t;
   type edge_set = E.Set.t;
 
-  type t = E.Map.t(edge_state);
+  type t = E.Map.t(Edge_state.t);
 
   let empty: t = E.Map.empty;
 
-  let of_list = (bindings: list((edge, edge_state))): t =>
+  let of_list = (bindings: list((edge, Edge_state.t))): t =>
     bindings |> List.to_seq |> E.Map.of_seq;
 
   let concat = (graphs: list(t)): t =>
@@ -55,11 +57,11 @@ module Make =
     |> List.to_seq
     |> E.Map.of_seq;
 
-  let bindings = (graph: t): list((edge, edge_state)) =>
+  let bindings = (graph: t): list((edge, Edge_state.t)) =>
     E.Map.bindings(graph);
 
-  let find = (edge: edge, graph: t): edge_state =>
-    graph |> E.Map.find_opt(edge) |> Option.value(~default=Bot);
+  let find = (edge: edge, graph: t): Edge_state.t =>
+    graph |> E.Map.find_opt(edge) |> Option.value(~default=Edge_state.Bot);
 
   let edges = (graph: t): list(edge) =>
     graph |> E.Map.bindings |> List.map(fst);
@@ -72,13 +74,13 @@ module Make =
        );
 
   let in_adjacent_bindings =
-      (target: vertex, graph: t): list((edge, edge_state)) =>
+      (target: vertex, graph: t): list((edge, Edge_state.t)) =>
     graph
     |> bindings
     |> List.filter(((edge: edge, _)) => target == edge.target);
 
   let out_adjacent_bindings =
-      (source: source, graph: t): list((edge, edge_state)) =>
+      (source: source, graph: t): list((edge, Edge_state.t)) =>
     graph
     |> bindings
     |> List.filter(((edge: edge, _)) => source == edge.source);
@@ -87,7 +89,7 @@ module Make =
     graph
     |> in_adjacent_bindings(target)
     |> List.filter_map(((edge, edge_state)) =>
-         edge_state == Plus ? Some(edge) : None
+         edge_state == Edge_state.Plus ? Some(edge) : None
        );
 
   let out_adjacent_plus_edges = (source: source, graph: t): list(edge) =>
@@ -103,7 +105,7 @@ module Make =
       graph
       |> E.Map.bindings
       |> List.fold_left(
-           (in_degrees, (edge: edge, edge_state)) =>
+           (in_degrees, (edge: edge, edge_state: Edge_state.t)) =>
              switch (edge_state) {
              | Bot => failwith(__LOC__ ++ ": impossible")
              | Plus =>

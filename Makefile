@@ -21,7 +21,7 @@ release:
 
 test:
 	dune build @src/fmt --auto-promote || true
-	dune runtest || true
+	dune runtest -f || true
 
 clean:
 	dune clean

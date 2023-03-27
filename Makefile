@@ -5,8 +5,8 @@ all: dev
 
 deps:
 	opam install \
-		dune utop ocamlformat odoc \
-		incr_dom js_of_ocaml ppx_deriving ppx_let ppx_sexp_conv sexplib
+		dune utop ocamlformat.0.18.0 odoc \
+		incr_dom.v0.14.0 js_of_ocaml.3.9.0 ppx_deriving ppx_let ppx_sexp_conv sexplib
 
 dev:
 	dune build @src/fmt --auto-promote || true
@@ -44,6 +44,9 @@ win-chrome:
 
 win-firefox:
 	"/mnt/c/Program Files (x86)/Mozilla Firefox/firefox.exe" "$(HTML_DIR)/index.html"
+
+open:
+	open "$(HTML_DIR)/index.html"
 
 repl:
 	dune utop src/grvcore

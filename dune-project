@@ -1,4 +1,5 @@
-(lang dune 2.0.0)
+(lang dune 2.0) 
+; Changed from 2.0.0
 (name GRV)
 
 (generate_opam_files true)

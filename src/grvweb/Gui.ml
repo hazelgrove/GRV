@@ -1,8 +1,9 @@
 module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
+module Attrs = Virtual_dom.Vdom.Attrs
 
-type context = { inject : Action.t -> Vdom.Event.t; editor : Editor.t }
+type context = { inject : Action.t -> unit Vdom.Effect.t; editor : Editor.t }
 
 let clicks_to (ctx : context) (cursor : Cursor.t) : Attr.t =
   Attr.on_click (fun event ->
@@ -49,9 +50,9 @@ let base_attrs ~(classes : string list) ?(disabled : bool = false)
   @ if disabled then [ Attr.disabled ] else []
 
 let apply_action (ctx : context) (action : Action.t' option)
-    (tabindexes : int Uuid.Map.t) : Vdom.Event.t =
+    (tabindexes : int Uuid.Map.t) : unit Vdom.Effect.t =
   match action with
-  | None -> Vdom.Event.Ignore
+  | None -> Vdom.Effect.Ignore
   | Some action ->
       Js.focus
         ("editor" ^ Int.to_string (Uuid.Map.find ctx.editor.id tabindexes));
@@ -62,21 +63,27 @@ let text_input ?(classes : string list = []) ?(disabled : bool = false)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Js.set_input id "";
   Node.input
-    (base_attrs (Some id) ~classes ~disabled
-    @ [
-        Attr.on_change (fun _ (value : string) ->
-            match value with
-            | "" -> Vdom.Event.Ignore
-            | str -> apply_action ctx (on_change str) tabindexes);
-      ])
+    ~attr:
+      (Attr.many
+         (base_attrs (Some id) ~classes ~disabled
+         @ [
+             Attr.on_change (fun _ (value : string) ->
+                 match value with
+                 | "" -> Vdom.Effect.Ignore
+                 | str -> apply_action ctx (on_change str) tabindexes);
+           ]))
     []
 
 let button ?(classes : string list = []) ?(disabled : bool = false)
     ~(on_click : unit -> Action.t' option) (ctx : context) (label : string)
     (tabindexes : int Uuid.Map.t) : Node.t =
   Node.button
-    (base_attrs None ~classes ~disabled
-    @ [ Attr.on_click (fun _ -> apply_action ctx (on_click ()) tabindexes) ])
+    ~attr:
+      (Attr.many
+         (base_attrs None ~classes ~disabled
+         @ [
+             Attr.on_click (fun _ -> apply_action ctx (on_click ()) tabindexes);
+           ]))
     [ Node.text label ]
 
 let none_button ~(on_click : unit -> unit) (ctx : context) (label : string)
@@ -95,7 +102,7 @@ let button_text_input ?(classes : string list = []) ?(disabled : bool option)
     (id : string) (tabindexes : int Uuid.Map.t) : Node.t =
   let disabled = Option.value disabled ~default:false in
   Node.div
-    (base_attrs (Some id) ~classes ~disabled)
+    ~attr:(Attr.many (base_attrs (Some id) ~classes ~disabled))
     [
       button ctx label tabindexes ~disabled ~on_click;
       text_input ctx id tabindexes ~disabled ~on_change;
@@ -136,27 +143,29 @@ let select ?(classes : string list = []) ?(multi : bool = true)
   in
   let select_item (i : int) (item : 'a) : Node.t =
     Node.div
-      (base_attrs None ~classes ~disabled:false
-      @ [
-          Attr.on_click (fun _ ->
-              if multi then Js.toggle_item id i else Js.select_item id i;
-              Vdom.Event.Ignore);
-        ])
+      ~attr:
+        (Attr.many
+           (base_attrs None ~classes ~disabled:false
+           @ [
+               Attr.on_click (fun _ ->
+                   if multi then Js.toggle_item id i else Js.select_item id i;
+                   Vdom.Effect.Ignore);
+             ]))
       (view_item item)
   in
   let classes, heading =
     match label with
     | None -> (classes, [])
     | Some label when String.contains label ' ' ->
-        (classes, [ Node.h1 [] [ Node.text label ] ])
-    | Some label -> (classes @ [ label ], [ Node.h1 [] [ Node.text label ] ])
+        (classes, [ Node.h1 [ Node.text label ] ])
+    | Some label -> (classes @ [ label ], [ Node.h1 [ Node.text label ] ])
   in
   Node.div
-    [ Attr.classes (classes @ [ "select" ]) ]
+    ~attr:(Attr.many [ Attr.classes (classes @ [ "select" ]) ])
     (heading
     @ [
         Node.div
-          [ Attr.id id; Attr.class_ "selectItems" ]
+          ~attr:(Attr.many [ Attr.id id; Attr.class_ "selectItems" ])
           (List.mapi select_item items);
       ])
 
@@ -187,17 +196,17 @@ let teleport (ctx : context) (id : string) : unit -> Action.t' option =
               | Some edge -> Some (Move (Select edge.value.source))
               | None -> None)))
 
-let break : Node.t = Node.div [ Attr.class_ "break" ] []
+let break : Node.t = Node.div ~attr:(Attr.class_ "break") []
 
 let panel ?(classes : string list = []) ?(label : string option)
     (nodes : Node.t list) : Node.t =
   let heading =
     match label with
-    | Some label -> [ Node.h1 [] [ Node.text label ] ]
+    | Some label -> [ Node.h1 [ Node.text label ] ]
     | None -> []
   in
   Node.div
-    (base_attrs None ~classes:(classes @ [ "panel" ]))
+    ~attr:(Attr.many (base_attrs None ~classes:(classes @ [ "panel" ])))
     (heading @ [ break ] @ nodes)
 
 let select_panel ?(classes : string list = []) ?(multi : bool = true)
@@ -212,5 +221,5 @@ let select_panel ?(classes : string list = []) ?(multi : bool = true)
     | Some label -> select id items view_item ~multi ~default ~label
   in
   Node.div
-    [ Attr.classes (classes @ [ "selector" ]) ]
+    ~attr:(Attr.classes (classes @ [ "selector" ]))
     ([ selector ] @ [ break ] @ nodes)

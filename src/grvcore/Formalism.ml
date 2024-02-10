@@ -6,19 +6,12 @@ end
 
 module Position = struct
   type lam = Param | Type | Body
-
   type app = Fun | Arg
-
   type plus = Left | Right
-
   type times = Left | Right
-
   type arrow = Arg | Result
-
   type exp = Lam of lam | App of app | Plus of plus | Times of times
-
   type typ = Arrow of arrow
-
   type t = Root | Exp of exp | Typ of typ
 
   let sort : t -> Sort.t = function Root | Exp _ -> Exp | Typ _ -> Typ
@@ -32,11 +25,8 @@ end)
 
 module Constructor = struct
   type exp = Var of string | Lam | App | Num of int | Plus | Times
-
   type pat = Var of string
-
   type typ = Arrow | Num
-
   type t = Root | Exp of exp | Pat of pat | Typ of typ
 
   let sort : t -> Sort.t = function

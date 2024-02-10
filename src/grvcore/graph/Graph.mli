@@ -62,5 +62,4 @@ val vertex : t -> Uuid.Id.t -> Vertex.t option
 (** {1 S-Expression Conversions} *)
 
 val sexp_of_t : t -> Sexplib.Sexp.t
-
 val t_of_sexp : Sexplib.Sexp.t -> t

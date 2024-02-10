@@ -1,7 +1,5 @@
 type t = Vertex of Vertex.t * children Position_map.t | Ref of Vertex.t
-
 and children = child list
-
 and child = { edge_id : Uuid.Id.t; tree : t }
 
 let child (edge_id : Uuid.Id.t) (tree : t) : child = { edge_id; tree }

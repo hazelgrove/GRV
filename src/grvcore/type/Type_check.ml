@@ -2,7 +2,6 @@ open Type
 module Let_syntax = Error.Let_syntax
 
 let error = Error.error
-
 let return = Error.return
 
 type type_env = Type.t Env.t

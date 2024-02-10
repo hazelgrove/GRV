@@ -7,8 +7,13 @@
   (:standard \ Lang_gen))
  (libraries sexplib)
  (preprocess
-  (pps ppx_deriving.show ppx_deriving.eq ppx_deriving.ord ppx_sexp_conv
-    ppx_let ppx_inline_test))
+  (pps
+   ppx_deriving.show
+   ppx_deriving.eq
+   ppx_deriving.ord
+   ppx_sexp_conv
+   ppx_let
+   ppx_inline_test))
  (wrapped false)
  (inline_tests))
 

@@ -29,28 +29,18 @@ end
 *)
 
 (* TODO: is where a way to modularize these? Exhaustiveness checks failed when I
-tried this. *)
+   tried this. *)
 
 type root (* TODO?: = Root *)
-
 type root_root = Root_root
-
 type id (* TODO?: = Id *)
-
 type id_id = Id_id of string
-
 type exp (* TODO?: = Exp *)
-
 type exp_lam = Exp_lam
-
 type exp_app = Exp_app
-
 type exp_var = Exp_var
-
 type typ (* TODO?: = Typ *)
-
 type typ_app = Typ_app
-
 type typ_var = Typ_var
 
 (* TODO: some way to "kind-check" uses of ctor versus sort *)
@@ -124,11 +114,11 @@ let target : 'ctor 'sort. 'sort edge -> 'sort sort_vertex =
  fun (Edge { target; _ }) -> target
 
 (* There is no `source` function to match `target`, since that would require an
-existential for the parent's constructor.  Instead, use a pattern match on
-`Edge`. *)
+   existential for the parent's constructor.  Instead, use a pattern match on
+   `Edge`. *)
 (* let source : 'ctor 'sort. 'sort edge -> ('ctor, 'sort) sort_of_child * 'ctor ctor_vertex
-    =
- fun _ -> failwith __LOC__ *)
+      =
+   fun _ -> failwith __LOC__ *)
 
 let vertexes_from :
       'ctor 'sort.

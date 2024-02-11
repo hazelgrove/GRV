@@ -1,15 +1,10 @@
 (* TODO: generate keybindings from this? *)
 
 type sort_name = string
-
 type constructor_name = string
-
 type position_name = string
-
 type typ = string
-
 type graphviz_string_of = string
-
 type show_string_of = string
 
 type show =
@@ -21,7 +16,6 @@ type show =
 type arg = typ * graphviz_string_of
 
 type sort = (sort_name * constructor list) Lazy.t
-
 and position = position_name * sort
 
 and constructor = {

@@ -146,14 +146,14 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
     | Restore vertex ->
         let edge : Edge.t = Edge.mk editor.cursor vertex in
         (false, [ Graph_action.{ state = Created; edge } ])
-    | DropEdge edge_id -> (
+    | DropEdge edge_id ->
         ( false,
           match
             Graph.edges editor.graph
             |> Edge.Set.find_first_opt (fun edge -> edge.id = edge_id)
           with
           | Some edge -> [ Graph_action.{ state = Deleted; edge } ]
-          | None -> [] ))
+          | None -> [] )
   in
   let editor = List.fold_right apply_graph_action graph_actions editor in
   let editors = Uuid.Map.add editor_id editor model.editors in

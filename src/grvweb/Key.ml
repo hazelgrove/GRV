@@ -82,19 +82,19 @@ let base (editor : Editor.t) (event : Dom_html.keyboardEvent Js.t) :
   | ArrowRight -> Some (Move Right)
   | _ -> None
 
-let dispatch ~(inject : Action.t -> Vdom.Event.t) (model : Model.t)
+let dispatch ~(inject : Action.t -> unit Vdom.Effect.t) (model : Model.t)
     (editor : Editor.t) (tabindexes : int Uuid.Map.t)
-    (event : Dom_html.keyboardEvent Js.t) : Vdom.Event.t =
+    (event : Dom_html.keyboardEvent Js.t) : unit Vdom.Effect.t =
   let handle =
     match Js.(to_bool event##.shiftKey, to_bool event##.ctrlKey) with
     | false, false -> base editor
     | true, false -> shift
     | false, true -> ctrl model editor tabindexes
-    | _, _ -> fun _ : Action.t' Option.t -> None
+    | _, _ -> ( fun _ : Action.t' Option.t -> None)
   in
   match handle event with
   | Some action ->
       Js.claim_event event;
       Js.focus ("editor" ^ Uuid.Id.to_string editor.id);
       inject { editor_id = editor.id; action }
-  | None -> Vdom.Event.Ignore
+  | None -> Vdom.Effect.Ignore

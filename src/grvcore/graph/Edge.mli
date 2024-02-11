@@ -15,7 +15,6 @@ val mk : Cursor.t -> Vertex.t -> t
 (** {1 Collections} *)
 
 module Map : Map.S with type key = t
-
 module Set : Set.S with type elt = t
 
 val partition_set : Set.t -> Vertex.t -> Set.t * Set.t
@@ -29,5 +28,4 @@ val union_sets : Set.t list -> Set.t
 (** {1 String Conversions} *)
 
 val to_string : t -> string
-
 val set_to_string : Set.t -> string

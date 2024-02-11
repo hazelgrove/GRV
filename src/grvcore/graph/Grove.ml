@@ -187,19 +187,12 @@ let%test_module "Graph.decompose" =
        false)
 
     let v0 = Vertex.root
-
     let v1 = Vertex.mk Exp_plus
-
     let v2 = Vertex.mk Exp_times
-
     let e01 = Edge.mk Cursor.{ vertex = v0; position = Root_root_root } v1
-
     let e12 = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_left } v2
-
     let e12' = Edge.mk Cursor.{ vertex = v1; position = Exp_plus_right } v2
-
     let e21 = Edge.mk Cursor.{ vertex = v2; position = Exp_times_left } v1
-
     let%test "empty graph" = check_decompose Graph.empty
 
     let%test_module "one vertex" =

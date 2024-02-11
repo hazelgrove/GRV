@@ -4,7 +4,6 @@ open Edge.Map
 type t = Edge_state.t Edge.Map.t
 
 let empty = Edge.Map.empty
-
 let add = add
 
 let apply_action (graph : t) (action : Graph_action.t) : t =

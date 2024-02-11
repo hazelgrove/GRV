@@ -1,7 +1,6 @@
 type t = Lang.Constructor.t Uuid.wrap [@@deriving sexp]
 
 let mk : Lang.Constructor.t -> t = Uuid.wrap
-
 let root : t = Uuid.well_known 0 Lang.Constructor.Root_root
 
 module OrderedType = struct
@@ -30,7 +29,6 @@ let set_to_string (vertexes : Set.t) : string =
 (* Some checks on our assumptions about how (vertex) sets work. *)
 
 let%test "empty set has cardinality 0" = Set.(cardinal empty) = 0
-
 let%test "empty set has no elements" = Set.(elements empty) = []
 
 let%test "singleton set has cardinality 1" =

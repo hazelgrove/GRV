@@ -1,5 +1,4 @@
 type error = { origin : string; vertex : Vertex.t; message : string }
-
 type 'a t = Success of 'a | Error of error list
 
 let error (origin : string) (vertex : Vertex.t) :

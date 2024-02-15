@@ -1,5 +1,7 @@
-BUILD_DIR=_build/default
-HTML_DIR=_build/default/src/grvweb/
+BUILD_DIR=$(shell pwd)/_build/default
+HTML_DIR=$(shell pwd)/_build/default/src/grvweb
+SERVER="http://0.0.0.0:8000/"
+
 
 all: dev
 
@@ -12,6 +14,7 @@ dev:
 	dune build @src/fmt --auto-promote || true
 	dune build --profile dev
 	dune build @doc
+	dune build src/grvweb/{main.bc.js,index.html,style.css,viz.js,lite.render.js}
 	@echo
 
 test: dev
@@ -47,6 +50,10 @@ win-firefox:
 
 open:
 	open "$(HTML_DIR)/index.html"
+
+serve:
+	cd $(HTML_DIR); python3 -m http.server 8000
+
 
 repl:
 	dune utop src/grvcore

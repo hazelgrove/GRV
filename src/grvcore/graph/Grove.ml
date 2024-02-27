@@ -2,7 +2,7 @@ type t = {
   multiparented : Tree.t list;
   deleted : Tree.t list;
   reachable : Tree.t;
-  wreaths : Tree.t list;
+  wreaths : Tree.t list; (* unicycles *)
 }
 
 type in_degree = One | Many
@@ -106,7 +106,6 @@ let rec traverse_vertexes ~(seen : Vertex.Set.t) ~(remaining : Vertex.Set.t)
         traverse_vertexes roots children ~seen ~remaining
       in
       (tree :: trees, seen, remaining)
-
 (* vertex -> vertex *)
 let rec walk_up ~(seen : Vertex.Set.t) (vertex : Vertex.t)
     (parents : Edge.Set.t Vertex.Map.t) : Vertex.t =

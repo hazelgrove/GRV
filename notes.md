@@ -18,6 +18,7 @@ Sundara Vishnu Satish -  `svishnus`
 
 - Language support: add sums and pairs
 - Pretty printing could be nice
+- Old build command `dune build src/grvweb/{main.bc.js,index.html,style.css,viz.js,lite.render.js}`
 
 ---
 

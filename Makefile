@@ -14,7 +14,7 @@ dev:
 	dune build @src/fmt --auto-promote || true
 	dune build --profile dev
 	dune build @doc
-	dune build src/grvweb/{main.bc.js,index.html,style.css,viz.js,lite.render.js}
+	dune build src/grvweb/{index.html,style.css}
 	@echo
 
 test: dev

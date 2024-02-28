@@ -2,7 +2,7 @@ type t = {
   multiparented : Tree.t list;
   deleted : Tree.t list;
   reachable : Tree.t;
-  wreaths : Tree.t list;
+  wreaths : Tree.t list; (* unicycles *)
 }
 
 type in_degree = One | Many

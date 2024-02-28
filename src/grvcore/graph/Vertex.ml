@@ -26,6 +26,9 @@ let set_to_string (vertexes : Set.t) : string =
  * Unit Tests
  ******************************************************************************)
 
+(* Some tests on how vertices work *)
+let%test "root vertex has id 0" = Uuid.Id.to_string root.id = "0"
+
 (* Some checks on our assumptions about how (vertex) sets work. *)
 
 let%test "empty set has cardinality 0" = Set.(cardinal empty) = 0

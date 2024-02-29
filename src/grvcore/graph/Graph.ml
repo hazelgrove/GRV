@@ -23,7 +23,6 @@ let apply_action (graph : t) (action : Graph_action.t) : t =
 let edges (graph : t) : Edge.Set.t =
   bindings graph |> List.map fst |> Edge.Set.of_list
 
-(* Implements judgment for*)
 let live_edges (graph : t) : Edge.Set.t =
   bindings graph
   |> List.filter (function _, Created -> true | _ -> false)

@@ -38,7 +38,7 @@ let child_edges (graph : t) (vertex : Vertex.t) (position : Lang.Position.t) :
          edge.value.source = Cursor.{ vertex; position })
 
 (* Vertex Queries *)
-
+(* TODO Document how these functions work in the PDF *)
 let (vertexes, live_vertexes) : (t -> Vertex.Set.t) * (t -> Vertex.Set.t) =
   let impl (edge_source : t -> Edge.Set.t) : t -> Vertex.Set.t =
    fun graph ->

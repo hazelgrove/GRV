@@ -4,6 +4,7 @@ type edit =
   | Create of Lang.Constructor.t
   | Destroy
   | Restore of Vertex.t
+  (* ! This is why the restore action requires vertex UUID *)
   | DropEdge of Uuid.Id.t
 [@@deriving sexp_of]
 

@@ -1,3 +1,4 @@
+(* Entrypoint to application, creates the environment with 2 editors *)
 let () =
   Incr_dom.Start_app.start
     (module App)

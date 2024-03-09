@@ -1,5 +1,7 @@
 include Js_of_ocaml.Js
 
+(* JS Utils to call helpers written in grvweb/index.html *)
+
 let claim_event (event : 'a t) : unit =
   Js_of_ocaml.Dom.preventDefault event;
   Js_of_ocaml.Dom_html.stopPropagation event

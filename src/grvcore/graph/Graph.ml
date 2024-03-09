@@ -23,7 +23,6 @@ let apply_action (graph : t) (action : Graph_action.t) : t =
 let edges (graph : t) : Edge.Set.t =
   bindings graph |> List.map fst |> Edge.Set.of_list
 
-(* Implements judgment for*)
 let live_edges (graph : t) : Edge.Set.t =
   bindings graph
   |> List.filter (function _, Created -> true | _ -> false)
@@ -39,7 +38,7 @@ let child_edges (graph : t) (vertex : Vertex.t) (position : Lang.Position.t) :
          edge.value.source = Cursor.{ vertex; position })
 
 (* Vertex Queries *)
-
+(* TODO Document how these functions work in the PDF *)
 let (vertexes, live_vertexes) : (t -> Vertex.Set.t) * (t -> Vertex.Set.t) =
   let impl (edge_source : t -> Edge.Set.t) : t -> Vertex.Set.t =
    fun graph ->

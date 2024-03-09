@@ -54,6 +54,9 @@ open:
 serve:
 	cd $(HTML_DIR); python3 -m http.server 8000
 
+doc:
+	pdflatex -output-directory=src/grvdoc src/grvdoc/master.tex
+
 
 repl:
 	dune utop src/grvcore

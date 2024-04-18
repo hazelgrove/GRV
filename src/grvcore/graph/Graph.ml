@@ -95,3 +95,29 @@ let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
            (Edge.t_of_sexp key_sexp, Edge_state.t_of_sexp value_sexp)
        | _ -> failwith __LOC__)
   |> List.to_seq |> of_seq
+
+(* TODO: Add tests to check if sexps work *)
+let%test "sexp_of_t" =
+  let root = Vertex.root in
+  let root_cursor = Cursor.root in
+  let edge = Edge.mk root_cursor root in
+  let graph = add edge Edge_state.Created empty in
+  let sexp = sexp_of_t graph in
+  let expected_sexp =
+    "((((id 1)(value((source((vertex((id 0)(value Root_root)))(position \
+     Root_root_root)))(target((id 0)(value Root_root))))))Created))"
+  in
+  (* Print sexp *)
+  Printf.printf "sexp: %s\n" (Sexplib.Sexp.to_string sexp);
+  Sexplib.Sexp.to_string sexp = expected_sexp
+
+let%test "t_of_sexp" =
+  let root = Vertex.root in
+  let root_cursor = Cursor.root in
+  let edge = Edge.mk root_cursor root in
+  let graph = add edge Edge_state.Created empty in
+  let sexp = sexp_of_t graph in
+  let expected_graph = t_of_sexp sexp in
+  print_endline
+    ("Sexp of graph" ^ Sexplib.Sexp.to_string (sexp_of_t expected_graph));
+  expected_graph = graph

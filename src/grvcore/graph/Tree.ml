@@ -2,12 +2,16 @@ type t = Vertex of Vertex.t * children Position_map.t | Ref of Vertex.t
 and children = child list
 and child = { edge_id : Uuid.Id.t; tree : t }
 
+(* Creates child out of UUID and Tree *)
 let child (edge_id : Uuid.Id.t) (tree : t) : child = { edge_id; tree }
 
+(* Takes in pairs of Lang Positions and (uuid, tree) list *)
+(* Returns map of children *)
 let child_map :
     (Lang.Position.t * (Uuid.Id.t * t) list) list -> children Position_map.t =
   List.fold_left
-    (fun children (position, child_specs) ->
+    (* child_spec is pair of UUID and tree *)
+      (fun children (position, child_specs) ->
       List.fold_left
         (fun children (edge_id, tree) ->
           Position_map.push position (child edge_id tree) children)
@@ -41,6 +45,6 @@ let rec to_string : t -> string = function
       in
       let id = Uuid.Id.to_string vertex.id in
       match children with
-      | "" -> Format.sprintf "Vertex(%s)" id
+      | "" -> Format.sprintf "Vertex(%s)" id (* Possibly empty set of children*)
       | _ -> Format.sprintf "Vertex(%s, %s)" id children)
   | Ref vertex -> "#" ^ Uuid.Id.to_string vertex.id

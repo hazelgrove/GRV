@@ -20,6 +20,9 @@ Sundara Vishnu Satish -  `svishnus`
 - Difference between `full.render.js` and `lite.render.js`
 - `Action.Load` and `Action.Dump` can be used to load captured graphs to and from sexps.
 - There is no editor evaluation yet, i.e for example function application does nothing
+- Really cool CRDT based editor - [Peritext](https://www.inkandswitch.com/peritext/)
+- The CRDT paper says that it's a CRDT if updates are commutative, finite, and eventually delivered
+- This diffTree paper is interesting. Their concepts are surprisingly similar to Grove (e.g., unique id annotations for ASTs and emergent unicycles), but they don't address hidden merges and  disappearing edits like we do because their ids are mutable and their edits don't commute
 
 ---
 

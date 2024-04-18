@@ -44,5 +44,7 @@ let toggle_item (id : string) (i : int) : unit =
 let select_item (id : string) (i : int) : unit =
   eval_to_unit @@ "selectItem('" ^ id ^ "', " ^ Int.to_string i ^ ")"
 
+(* TODO: Fix Load action *)
+(* ! Loading dumps errors out now *)
 let prompt (message : string) : string =
   eval_to_string @@ "window.prompt('" ^ message ^ "') || ''"

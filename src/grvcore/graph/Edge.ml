@@ -39,6 +39,7 @@ let set_to_string (edges : Set.t) : string =
 let%test "first edge: " =
   let root = Vertex.root in
   let root_cursor = Cursor.root in
+  let _ = Cursor.root |> Cursor.sexp_of_t |> Util.Sexp.print in
   let edge = mk root_cursor root in
   let edge_str = to_string edge in
   let _ = edge.id |> Uuid.Id.to_string |> print_endline in
@@ -46,3 +47,9 @@ let%test "first edge: " =
   && edge.value.source = root_cursor
   && edge.value.target = root
   && Uuid.Id.to_string edge.id = "1"
+  &&
+  let _ = "Edge string: " ^ edge_str |> print_endline in
+  true
+  &&
+  let _ = root |> Vertex.to_string |> print_endline in
+  true

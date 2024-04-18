@@ -4,6 +4,7 @@ type t = {
   multiparented : Tree.t list;
   deleted : Tree.t list;
   reachable : Tree.t;
+  (* Same as unicyles *)
   wreaths : Tree.t list;
 }
 (** A graph can be partitioned into four disjoint sets of [Tree.t]s *)

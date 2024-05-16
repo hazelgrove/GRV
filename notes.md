@@ -12,13 +12,17 @@ Sundara Vishnu Satish -  `svishnus`
 - Restore has too many steps
 - Unicyles are wreaths
 - Need to figure out what the editor actions are supposed to do
-
 - The boxes correctly detect when there is a multi-parent, multi-child, cycle, or unicycle issue
 - However, graphviz is hard to read in these situations
-
 - Language support: add sums and pairs
 - Pretty printing could be nice
 - Old build command `dune build src/grvweb/{main.bc.js,index.html,style.css,viz.js,lite.render.js}`
+- Difference between `full.render.js` and `lite.render.js`
+- `Action.Load` and `Action.Dump` can be used to load captured graphs to and from sexps.
+- There is no editor evaluation yet, i.e for example function application does nothing
+- Really cool CRDT based editor - [Peritext](https://www.inkandswitch.com/peritext/)
+- The CRDT paper says that it's a CRDT if updates are commutative, finite, and eventually delivered
+- This diffTree paper is interesting. Their concepts are surprisingly similar to Grove (e.g., unique id annotations for ASTs and emergent unicycles), but they don't address hidden merges and  disappearing edits like we do because their ids are mutable and their edits don't commute
 
 ---
 
@@ -26,8 +30,10 @@ Sundara Vishnu Satish -  `svishnus`
 
 - Rename `wreath` to `unicyle`
 - Review: TODO: in general detect when there are or were edits to something now deleted
+- Understand what the model cutoff means
 - Make the restore action smoother
 - Cut/copy/paste would be nice
+- Use `Action.Dump` to capture Graph output for test cases in the paper
 
 ---
 

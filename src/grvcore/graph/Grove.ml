@@ -34,6 +34,7 @@ let in_degree_map (live_edges : Edge.Set.t) : in_degree Vertex.Map.t =
               | Some (One | Many) -> Some Many))
        live_edges
 
+(* categorizes vertices based on in_degree *)
 let push_vertex (vertex : Vertex.t)
     ((multiv, univ, av) : Vertex.Set.t * Vertex.Set.t * Vertex.Set.t)
     (in_degrees : in_degree Vertex.Map.t) :
@@ -43,7 +44,8 @@ let push_vertex (vertex : Vertex.t)
   | Some One -> (multiv, Vertex.Set.add vertex univ, av)
   | None -> (multiv, univ, Vertex.Set.add vertex av)
 
-(* edges -> vertex sets *)
+(* all edges -> vertex sets *)
+(* uses push_vertex to partition *)
 let partition_vertexes (all_edges : Edge.Set.t)
     (in_degrees : in_degree Vertex.Map.t) :
     Vertex.Set.t * Vertex.Set.t * Vertex.Set.t =
@@ -121,11 +123,13 @@ let rec walk_up ~(seen : Vertex.Set.t) (vertex : Vertex.t)
         walk_up edge.value.source.vertex parents ~seen
 
 (* vertices -> trees *)
+(* unicyle traversal *)
 let rec wreath_traverse ~(seen : Vertex.Set.t) (remaining : Vertex.Set.t)
     (parents : Edge.Set.t Vertex.Map.t) (children : Edge.Set.t Vertex.Map.t) :
     Tree.t list =
   if Vertex.Set.is_empty remaining then []
   else
+    (* Find vertex with lowest ID *)
     let v0 = Vertex.Set.min_elt remaining in
     let root = walk_up v0 parents ~seen:remaining in
     let tree, seen, remaining =

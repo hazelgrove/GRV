@@ -4,6 +4,7 @@ type edit =
   | Create of Lang.Constructor.t
   | Destroy
   | Restore of Vertex.t
+  (* ! This is why the restore action requires vertex UUID *)
   | DropEdge of Uuid.Id.t
 [@@deriving sexp_of]
 
@@ -36,6 +37,7 @@ let apply_graph_action (graph_action : Graph_action.t) (editor : Editor.t) :
   let actions = Graph_action.Set.add graph_action editor.actions in
   { editor with graph; known_actions; actions }
 
+(* Adds new graph actions to existing sequence of graph actions *)
 let record_actions (model : Model.t) (editor_id : Uuid.Id.t)
     (graph_actions : Graph_action.t list) : Model.graph_action_sequence option =
   let%map.Util.Option actions = model.actions in

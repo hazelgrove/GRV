@@ -23,7 +23,6 @@ let apply_action (graph : t) (action : Graph_action.t) : t =
 let edges (graph : t) : Edge.Set.t =
   bindings graph |> List.map fst |> Edge.Set.of_list
 
-(* Implements judgment for*)
 let live_edges (graph : t) : Edge.Set.t =
   bindings graph
   |> List.filter (function _, Created -> true | _ -> false)
@@ -39,7 +38,7 @@ let child_edges (graph : t) (vertex : Vertex.t) (position : Lang.Position.t) :
          edge.value.source = Cursor.{ vertex; position })
 
 (* Vertex Queries *)
-
+(* TODO Document how these functions work in the PDF *)
 let (vertexes, live_vertexes) : (t -> Vertex.Set.t) * (t -> Vertex.Set.t) =
   let impl (edge_source : t -> Edge.Set.t) : t -> Vertex.Set.t =
    fun graph ->
@@ -96,3 +95,29 @@ let t_of_sexp (sexp : Sexplib.Sexp.t) : t =
            (Edge.t_of_sexp key_sexp, Edge_state.t_of_sexp value_sexp)
        | _ -> failwith __LOC__)
   |> List.to_seq |> of_seq
+
+(* TODO: Add tests to check if sexps work *)
+let%test "sexp_of_t" =
+  let root = Vertex.root in
+  let root_cursor = Cursor.root in
+  let edge = Edge.mk root_cursor root in
+  let graph = add edge Edge_state.Created empty in
+  let sexp = sexp_of_t graph in
+  let expected_sexp =
+    "((((id 1)(value((source((vertex((id 0)(value Root_root)))(position \
+     Root_root_root)))(target((id 0)(value Root_root))))))Created))"
+  in
+  (* Print sexp *)
+  Printf.printf "sexp: %s\n" (Sexplib.Sexp.to_string sexp);
+  Sexplib.Sexp.to_string sexp = expected_sexp
+
+let%test "t_of_sexp" =
+  let root = Vertex.root in
+  let root_cursor = Cursor.root in
+  let edge = Edge.mk root_cursor root in
+  let graph = add edge Edge_state.Created empty in
+  let sexp = sexp_of_t graph in
+  let expected_graph = t_of_sexp sexp in
+  print_endline
+    ("Sexp of graph" ^ Sexplib.Sexp.to_string (sexp_of_t expected_graph));
+  expected_graph = graph

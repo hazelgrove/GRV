@@ -263,7 +263,10 @@ let view_editor (model : Model.t) (ctx : Gui.context)
               Some (Env (Replay (Js.prompt "Replay Recording"))));
           Gui.some_button ctx "Dump" tabindexes (Env Dump);
           Gui.button ctx "Load" tabindexes ~on_click:(fun () ->
-              Some (Env (Load (Js.prompt "Load a Dump"))));
+              (* TODO : Remove debug printing *)
+              let loaded_dump = Js.prompt "Load a Dump" in
+              print_endline loaded_dump;
+              Some (Env (Load loaded_dump)));
         ];
       Gui.panel ~label:"Editor"
         [

@@ -59,3 +59,14 @@ let remove_known_actions (model : t) : t =
     Uuid.Map.map (filter_editor_actions known_actions) model.editors
   in
   { model with editors }
+
+let%test "sexp_tests" =
+  let model = mk () in
+  let sexp = sexp_of_t model in
+  let expected_sexp =
+    "(((1(1()((vertex((id 0)(value Root_root)))(position \
+     Root_root_root))()()false))(2(2()((vertex((id 0)(value \
+     Root_root)))(position Root_root_root))()()false)))(()))"
+  in
+  print_endline "testing model sexp stuff";
+  Sexplib.Sexp.to_string sexp = expected_sexp && t_of_sexp sexp = model

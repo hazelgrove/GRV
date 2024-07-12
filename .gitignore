@@ -61,3 +61,6 @@ setup.log
 /src/grvdoc/done
 /src/grvdoc/*.fls
 /src/grvdoc/*.fdb_latexmk
+
+# misc
+notes.md

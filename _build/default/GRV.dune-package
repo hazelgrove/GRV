@@ -1,0 +1,323 @@
+(lang dune 3.13)
+(name GRV)
+(sections (lib .) (libexec .) (doc ../../doc/GRV))
+(files
+ (lib
+  (META
+   core/Formalism.ml
+   core/Lang.ml
+   core/action.cmi
+   core/action.cmt
+   core/action.cmx
+   core/app/Action.ml
+   core/app/Editor.ml
+   core/app/Model.ml
+   core/app/State.ml
+   core/cursor.cmi
+   core/cursor.cmt
+   core/cursor.cmti
+   core/cursor.cmx
+   core/edge.cmi
+   core/edge.cmt
+   core/edge.cmti
+   core/edge.cmx
+   core/edge_state.cmi
+   core/edge_state.cmt
+   core/edge_state.cmti
+   core/edge_state.cmx
+   core/editor.cmi
+   core/editor.cmt
+   core/editor.cmx
+   core/env.cmi
+   core/env.cmt
+   core/env.cmx
+   core/error.cmi
+   core/error.cmt
+   core/error.cmx
+   core/formalism.cmi
+   core/formalism.cmt
+   core/formalism.cmx
+   core/graph.cmi
+   core/graph.cmt
+   core/graph.cmti
+   core/graph.cmx
+   core/graph/Cursor.ml
+   core/graph/Cursor.mli
+   core/graph/Edge.ml
+   core/graph/Edge.mli
+   core/graph/Edge_state.ml
+   core/graph/Edge_state.mli
+   core/graph/Graph.ml
+   core/graph/Graph.mli
+   core/graph/Graph_action.ml
+   core/graph/Graph_action.mli
+   core/graph/Grove.ml
+   core/graph/Grove.mli
+   core/graph/Position_map.ml
+   core/graph/Position_map.mli
+   core/graph/Tree.ml
+   core/graph/Tree.mli
+   core/graph/Vertex.ml
+   core/graph/Vertex.mli
+   core/graph_action.cmi
+   core/graph_action.cmt
+   core/graph_action.cmti
+   core/graph_action.cmx
+   core/grove.cmi
+   core/grove.cmt
+   core/grove.cmti
+   core/grove.cmx
+   core/grvcore.a
+   core/grvcore.cma
+   core/grvcore.cmxa
+   core/lang.cmi
+   core/lang.cmt
+   core/lang.cmx
+   core/model.cmi
+   core/model.cmt
+   core/model.cmx
+   core/position_map.cmi
+   core/position_map.cmt
+   core/position_map.cmti
+   core/position_map.cmx
+   core/state.cmi
+   core/state.cmt
+   core/state.cmx
+   core/tree.cmi
+   core/tree.cmt
+   core/tree.cmti
+   core/tree.cmx
+   core/type.cmi
+   core/type.cmt
+   core/type.cmx
+   core/type/Env.ml
+   core/type/Type.ml
+   core/type/Type_check.ml
+   core/type_check.cmi
+   core/type_check.cmt
+   core/type_check.cmx
+   core/util.cmi
+   core/util.cmt
+   core/util.cmx
+   core/util/Error.ml
+   core/util/Util.ml
+   core/util/Uuid.ml
+   core/util/Uuid.mli
+   core/uuid.cmi
+   core/uuid.cmt
+   core/uuid.cmti
+   core/uuid.cmx
+   core/vertex.cmi
+   core/vertex.cmt
+   core/vertex.cmti
+   core/vertex.cmx
+   dune-package
+   opam
+   web/App.ml
+   web/Color.ml
+   web/Graphviz.ml
+   web/Gui.ml
+   web/Js.ml
+   web/Key.ml
+   web/View.ml
+   web/app.cmi
+   web/app.cmt
+   web/app.cmx
+   web/color.cmi
+   web/color.cmt
+   web/color.cmx
+   web/graphviz.cmi
+   web/graphviz.cmt
+   web/graphviz.cmx
+   web/grvweb.a
+   web/grvweb.cma
+   web/grvweb.cmxa
+   web/gui.cmi
+   web/gui.cmt
+   web/gui.cmx
+   web/js.cmi
+   web/js.cmt
+   web/js.cmx
+   web/key.cmi
+   web/key.cmt
+   web/key.cmx
+   web/view.cmi
+   web/view.cmt
+   web/view.cmx))
+ (libexec (core/grvcore.cmxs web/grvweb.cmxs))
+ (doc (README.md)))
+(library
+ (name GRV.core)
+ (kind normal)
+ (archives (byte core/grvcore.cma) (native core/grvcore.cmxa))
+ (plugins (byte core/grvcore.cma) (native core/grvcore.cmxs))
+ (native_archives core/grvcore.a)
+ (requires
+  sexplib
+  ppx_sexp_conv.runtime-lib
+  sexplib0
+  ppx_here.runtime-lib
+  ppx_inline_test.config
+  ppx_inline_test.runtime-lib
+  ppx_deriving.runtime)
+ (modes byte native)
+ (modules
+  (unwrapped
+   (module
+    (obj_name action)
+    (visibility public)
+    (source (path Action) (impl (path core/app/Action.ml))))
+   (module
+    (obj_name cursor)
+    (visibility public)
+    (source
+     (path Cursor)
+     (intf (path core/graph/Cursor.mli))
+     (impl (path core/graph/Cursor.ml))))
+   (module
+    (obj_name edge)
+    (visibility public)
+    (source
+     (path Edge)
+     (intf (path core/graph/Edge.mli))
+     (impl (path core/graph/Edge.ml))))
+   (module
+    (obj_name edge_state)
+    (visibility public)
+    (source
+     (path Edge_state)
+     (intf (path core/graph/Edge_state.mli))
+     (impl (path core/graph/Edge_state.ml))))
+   (module
+    (obj_name editor)
+    (visibility public)
+    (source (path Editor) (impl (path core/app/Editor.ml))))
+   (module
+    (obj_name env)
+    (visibility public)
+    (source (path Env) (impl (path core/type/Env.ml))))
+   (module
+    (obj_name error)
+    (visibility public)
+    (source (path Error) (impl (path core/util/Error.ml))))
+   (module
+    (obj_name formalism)
+    (visibility public)
+    (source (path Formalism) (impl (path core/Formalism.ml))))
+   (module
+    (obj_name graph)
+    (visibility public)
+    (source
+     (path Graph)
+     (intf (path core/graph/Graph.mli))
+     (impl (path core/graph/Graph.ml))))
+   (module
+    (obj_name graph_action)
+    (visibility public)
+    (source
+     (path Graph_action)
+     (intf (path core/graph/Graph_action.mli))
+     (impl (path core/graph/Graph_action.ml))))
+   (module
+    (obj_name grove)
+    (visibility public)
+    (source
+     (path Grove)
+     (intf (path core/graph/Grove.mli))
+     (impl (path core/graph/Grove.ml))))
+   (module
+    (obj_name lang)
+    (visibility public)
+    (source (path Lang) (impl (path core/Lang.ml))))
+   (module
+    (obj_name model)
+    (visibility public)
+    (source (path Model) (impl (path core/app/Model.ml))))
+   (module
+    (obj_name position_map)
+    (visibility public)
+    (source
+     (path Position_map)
+     (intf (path core/graph/Position_map.mli))
+     (impl (path core/graph/Position_map.ml))))
+   (module
+    (obj_name state)
+    (visibility public)
+    (source (path State) (impl (path core/app/State.ml))))
+   (module
+    (obj_name tree)
+    (visibility public)
+    (source
+     (path Tree)
+     (intf (path core/graph/Tree.mli))
+     (impl (path core/graph/Tree.ml))))
+   (module
+    (obj_name type)
+    (visibility public)
+    (source (path Type) (impl (path core/type/Type.ml))))
+   (module
+    (obj_name type_check)
+    (visibility public)
+    (source (path Type_check) (impl (path core/type/Type_check.ml))))
+   (module
+    (obj_name util)
+    (visibility public)
+    (source (path Util) (impl (path core/util/Util.ml))))
+   (module
+    (obj_name uuid)
+    (visibility public)
+    (source
+     (path Uuid)
+     (intf (path core/util/Uuid.mli))
+     (impl (path core/util/Uuid.ml))))
+   (module
+    (obj_name vertex)
+    (visibility public)
+    (source
+     (path Vertex)
+     (intf (path core/graph/Vertex.mli))
+     (impl (path core/graph/Vertex.ml)))))))
+(library
+ (name GRV.web)
+ (kind normal)
+ (archives (byte web/grvweb.cma) (native web/grvweb.cmxa))
+ (plugins (byte web/grvweb.cma) (native web/grvweb.cmxs))
+ (native_archives web/grvweb.a)
+ (requires
+  GRV.core
+  incr_dom
+  ppx_sexp_conv.runtime-lib
+  sexplib0
+  ppx_here.runtime-lib
+  js_of_ocaml)
+ (modes byte native)
+ (modules
+  (unwrapped
+   (module
+    (obj_name app)
+    (visibility public)
+    (source (path App) (impl (path web/App.ml))))
+   (module
+    (obj_name color)
+    (visibility public)
+    (source (path Color) (impl (path web/Color.ml))))
+   (module
+    (obj_name graphviz)
+    (visibility public)
+    (source (path Graphviz) (impl (path web/Graphviz.ml))))
+   (module
+    (obj_name gui)
+    (visibility public)
+    (source (path Gui) (impl (path web/Gui.ml))))
+   (module
+    (obj_name js)
+    (visibility public)
+    (source (path Js) (impl (path web/Js.ml))))
+   (module
+    (obj_name key)
+    (visibility public)
+    (source (path Key) (impl (path web/Key.ml))))
+   (module
+    (obj_name view)
+    (visibility public)
+    (source (path View) (impl (path web/View.ml)))))))

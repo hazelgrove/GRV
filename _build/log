@@ -1,0 +1,23 @@
+# dune build src/grvweb/index.html src/grvweb/style.css
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Shared cache location: /Users/svishnus/.cache/dune/db
+# Workspace root: /Users/svishnus/svishnus-code/grove-popl-artifact/GRV-master
+# Auto-detected concurrency: 10
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; installed_env =
+#      map
+#        { "INSIDE_DUNE" :
+#            "/Users/svishnus/svishnus-code/grove-popl-artifact/GRV-master/_build/default"
+#        ; "OCAML_COLOR" : "always"
+#        ; "OPAMCOLOR" : "always"
+#        }
+#  ; instrument_with = []
+#  }
+$ /Users/svishnus/.opam/grv-test/bin/ocamlc.opt -config > /var/folders/g_/d2gl54_553bdfc1yggqts6f80000gn/T/dune_e818ef_output

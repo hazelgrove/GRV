@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Gui (GRV.Gui)</title><meta charset="utf-8"/><link rel="stylesheet" href="../../odoc.support/odoc.css"/><meta name="generator" content="odoc 2.4.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../../odoc.support/highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – <a href="../index.html">GRV</a> &#x00BB; Gui</nav><header class="odoc-preamble"><h1>Module <code><span>Gui</span></code></h1></header><div class="odoc-content"><div class="odoc-spec"><div class="spec module anchored" id="module-Vdom"><a href="#module-Vdom" class="anchor"></a><code><span><span class="keyword">module</span> Vdom</span><span> = <span class="xref-unresolved">Virtual_dom</span>.Vdom</span></code></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Node"><a href="#module-Node" class="anchor"></a><code><span><span class="keyword">module</span> Node</span><span> = <span class="xref-unresolved">Virtual_dom</span>.Vdom.Node</span></code></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Attr"><a href="#module-Attr" class="anchor"></a><code><span><span class="keyword">module</span> Attr</span><span> = <span class="xref-unresolved">Virtual_dom</span>.Vdom.Attr</span></code></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Attrs"><a href="#module-Attrs" class="anchor"></a><code><span><span class="keyword">module</span> Attrs</span><span> = <span class="xref-unresolved">Virtual_dom</span>.Vdom.Attrs</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-context"><a href="#type-context" class="anchor"></a><code><span><span class="keyword">type</span> context</span><span> = </span><span>{</span></code><ol><li id="type-context.inject" class="def record field anchored"><a href="#type-context.inject" class="anchor"></a><code><span>inject : <span><a href="../Action/index.html#type-t">Action.t</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Vdom</span>.Effect.t</span>;</span></code></li><li id="type-context.editor" class="def record field anchored"><a href="#type-context.editor" class="anchor"></a><code><span>editor : <a href="../Editor/index.html#type-t">Editor.t</a>;</span></code></li></ol><code><span>}</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-clicks_to"><a href="#val-clicks_to" class="anchor"></a><code><span><span class="keyword">val</span> clicks_to : <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="../Cursor/index.html#type-t">Cursor.t</a> <span class="arrow">&#45;&gt;</span></span> <span class="xref-unresolved">Attr</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-selected"><a href="#val-selected" class="anchor"></a><code><span><span class="keyword">val</span> selected : <span><span>bool list</span> <span class="arrow">&#45;&gt;</span></span> <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="type-var">'a0</span> list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-send"><a href="#val-send" class="anchor"></a><code><span><span class="keyword">val</span> send : <span><a href="../Model/index.html#type-t">Model.t</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="../Editor/index.html#type-t">Editor.t</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> <span class="xref-unresolved">Stdlib</span>.Option.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-restore"><a href="#val-restore" class="anchor"></a><code><span><span class="keyword">val</span> restore : <span><a href="../Editor/index.html#type-t">Editor.t</a> <span class="arrow">&#45;&gt;</span></span> <span><span class="xref-unresolved">Vertex</span>.Set.t <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> <span class="xref-unresolved">Stdlib</span>.Option.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-base_attrs"><a href="#val-base_attrs" class="anchor"></a><code><span><span class="keyword">val</span> base_attrs : 
+  <span><span class="label">classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?disabled</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span>string option</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="xref-unresolved">Attr</span>.t list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-apply_action"><a href="#val-apply_action" class="anchor"></a><code><span><span class="keyword">val</span> apply_action : 
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><a href="../Action/index.html#type-t'">Action.t'</a> option</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Vdom</span>.Effect.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-text_input"><a href="#val-text_input" class="anchor"></a><code><span><span class="keyword">val</span> text_input : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?disabled</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">on_change</span>:<span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-button"><a href="#val-button" class="anchor"></a><code><span><span class="keyword">val</span> button : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?disabled</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">on_click</span>:<span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-none_button"><a href="#val-none_button" class="anchor"></a><code><span><span class="keyword">val</span> none_button : 
+  <span><span class="label">on_click</span>:<span>(<span>unit <span class="arrow">&#45;&gt;</span></span> unit)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-some_button"><a href="#val-some_button" class="anchor"></a><code><span><span class="keyword">val</span> some_button : 
+  <span><span class="optlabel">?disabled</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="../Action/index.html#type-t'">Action.t'</a> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-button_text_input"><a href="#val-button_text_input" class="anchor"></a><code><span><span class="keyword">val</span> button_text_input : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?disabled</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">on_click</span>:<span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">on_change</span>:<span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-sorted_text_input"><a href="#val-sorted_text_input" class="anchor"></a><code><span><span class="keyword">val</span> sorted_text_input : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">on_change</span>:<span>(<span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="../Lang/Sort/index.html#type-t">Lang.Sort.t</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-sorted_button"><a href="#val-sorted_button" class="anchor"></a><code><span><span class="keyword">val</span> sorted_button : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">on_click</span>:<span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="../Lang/Sort/index.html#type-t">Lang.Sort.t</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-action_button"><a href="#val-action_button" class="anchor"></a><code><span><span class="keyword">val</span> action_button : 
+  <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><a href="../Lang/Sort/index.html#type-t">Lang.Sort.t</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>int <span class="xref-unresolved">Uuid</span>.Map.t</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>string option</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span>string <span class="arrow">&#45;&gt;</span></span> <a href="../Action/index.html#type-t'">Action.t'</a>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-select"><a href="#val-select" class="anchor"></a><code><span><span class="keyword">val</span> select : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?multi</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?default</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?label</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'a0</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="xref-unresolved">Node</span>.t list</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-teleport"><a href="#val-teleport" class="anchor"></a><code><span><span class="keyword">val</span> teleport : <span><a href="#type-context">context</a> <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="arrow">&#45;&gt;</span></span> <span><a href="../Action/index.html#type-t'">Action.t'</a> option</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-break"><a href="#val-break" class="anchor"></a><code><span><span class="keyword">val</span> break : <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-panel"><a href="#val-panel" class="anchor"></a><code><span><span class="keyword">val</span> panel : <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?label</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span><span class="xref-unresolved">Node</span>.t list</span> <span class="arrow">&#45;&gt;</span></span> <span class="xref-unresolved">Node</span>.t</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-select_panel"><a href="#val-select_panel" class="anchor"></a><code><span><span class="keyword">val</span> select_panel : 
+  <span><span class="optlabel">?classes</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?multi</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?default</span>:bool <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?label</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="type-var">'a</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span>(<span><span class="type-var">'a0</span> <span class="arrow">&#45;&gt;</span></span> <span><span class="xref-unresolved">Node</span>.t list</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span class="xref-unresolved">Node</span>.t list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="xref-unresolved">Node</span>.t</span></code></div></div></div></body></html>

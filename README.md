@@ -4,7 +4,7 @@
 
 ## Build Instructions
 
-1. Open `index.html` file to play around with Grove in your browser
+1. Run `make open` to play around with Grove in your browser
 
 ## Exploring Grove Workbench
 

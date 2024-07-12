@@ -1,0 +1,31 @@
+package "core" (
+  directory = "core"
+  description = ""
+  requires =
+  "ppx_deriving.runtime
+   ppx_here.runtime-lib
+   ppx_inline_test.config
+   ppx_inline_test.runtime-lib
+   ppx_sexp_conv.runtime-lib
+   sexplib
+   sexplib0"
+  archive(byte) = "grvcore.cma"
+  archive(native) = "grvcore.cmxa"
+  plugin(byte) = "grvcore.cma"
+  plugin(native) = "grvcore.cmxs"
+)
+package "web" (
+  directory = "web"
+  description = ""
+  requires =
+  "GRV.core
+   incr_dom
+   js_of_ocaml
+   ppx_here.runtime-lib
+   ppx_sexp_conv.runtime-lib
+   sexplib0"
+  archive(byte) = "grvweb.cma"
+  archive(native) = "grvweb.cmxa"
+  plugin(byte) = "grvweb.cma"
+  plugin(native) = "grvweb.cmxs"
+)

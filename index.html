@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+    <title>Grove</title>
+
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+    <!-- fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  </head>
+
+  <body spellcheck="false">
+    <div class="container" id="container"></div>
+    <script src="viz.js"></script>
+    <script src="lite.render.js"></script>
+    <script>
+      function drawViz(id, src) {
+          let viz = new Viz();
+          return viz.renderSVGElement(src)
+              .then(function(element) {
+                  let node = document.getElementById(id);
+                  node.replaceChild(element, node.childNodes[0]);
+              });
+      }
+
+      function refocus(id) {
+          let obj = document.getElementById(id);
+          obj && obj.focus();
+      }
+
+      function getInput(id) {
+          let obj = document.getElementById(id) || {value: ""};
+          return obj.value;
+      }
+
+      function setInput(id, val) {
+          let obj = document.getElementById(id) || {value: ""};
+          obj.value = val;
+      }
+
+      function toggleItem(id, k) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              let classes = obj.childNodes[k].classList;
+              if (classes.contains("selected")) {
+                  classes.remove("selected")
+              }
+              else {
+                  classes.add("selected")
+              }
+          }
+      }
+
+      function selectItem(id, k) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              clearSelection(id);
+              obj.childNodes[k].classList.add("selected");
+          }
+      }
+
+      function getSelection(id) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              return Array.from(obj.childNodes).map(function (item) {
+                  return item.classList.contains("selected");
+              });
+          }
+      }
+
+      function clearSelection(id) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              obj.childNodes.forEach(item => item.classList.remove("selected"));
+          }
+      }
+
+      function fillSelection(id) {
+          let obj = document.getElementById(id);
+          if (obj) {
+              obj.childNodes.forEach(item => item.classList.add("selected"));
+          }
+      }
+    </script>
+    <script src="main.bc.js"></script>
+  </body>
+</html>

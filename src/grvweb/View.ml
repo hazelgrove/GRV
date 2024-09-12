@@ -5,16 +5,16 @@ module Attr = Virtual_dom.Vdom.Attr
 (* Vdom Node Constructors *)
 
 let chars (str : string) : Node.t =
-  Node.span ~attr:(Attr.many [ Attr.class_ "chars" ]) [ Node.text str ]
+  Node.span ~attrs: [ Attr.class_ "chars" ] [ Node.text str ]
 
 let errs (str : string) : Node.t =
-  Node.span ~attr:(Attr.many [ Attr.class_ "errs" ]) [ Node.text str ]
+  Node.span ~attrs: [ Attr.class_ "errs" ] [ Node.text str ]
 
 let parenthesized (node : Node.t) : Node.t =
   Node.span [ chars "("; node; chars ")" ]
 
 let cursor_node (node : Node.t) : Node.t =
-  Node.span ~attr:(Attr.class_ "cursor") [ node ]
+  Node.span ~attrs:[(Attr.class_ "cursor")] [ node ]
 
 let maybe_cursor_node (editor : Editor.t) (parent : Cursor.t) (node : Node.t) :
     Node.t =
@@ -22,12 +22,12 @@ let maybe_cursor_node (editor : Editor.t) (parent : Cursor.t) (node : Node.t) :
 
 let ref_node (ctx : Gui.context) (parent : Cursor.t) (id : Uuid.Id.t) : Node.t =
   Node.span
-    ~attr:(Attr.many [ Attr.class_ "vertex"; Gui.clicks_to ctx parent ])
+    ~attrs:[ Attr.class_ "vertex"; Gui.clicks_to ctx parent ]
     [ Node.text ("#" ^ Uuid.Id.to_string id) ]
 
 let hole_node (ctx : Gui.context) (parent : Cursor.t) : Node.t =
   Node.span
-    ~attr:(Attr.many [ Attr.class_ "hole"; Gui.clicks_to ctx parent ])
+    ~attrs:[ Attr.class_ "hole"; Gui.clicks_to ctx parent ]
     [ chars "□" ]
 
 let rec tree_node ?(parent : Cursor.t = Cursor.root) ?(at_top : bool = true)
@@ -40,7 +40,7 @@ let rec tree_node ?(parent : Cursor.t = Cursor.root) ?(at_top : bool = true)
 and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
     (children : Tree.children Position_map.t) (at_top : bool) : Node.t =
   let node =
-    Node.span ~attr:(Gui.clicks_to ctx parent)
+    Node.span ~attrs:[(Gui.clicks_to ctx parent)]
       (Lang.show chars chars
          (fun position ->
            match Position_map.get position children with
@@ -56,13 +56,13 @@ and vertex_node (ctx : Gui.context) (parent : Cursor.t) (vertex : Vertex.t)
   in
   let decorated_node =
     if ctx.editor.show_ids && not (vertex = Vertex.root) then
-      Node.span ~attr:(Attr.class_ "vertex")
+      Node.span ~attrs:[(Attr.class_ "vertex")]
         [
           Node.create "sub" [ Node.text (Uuid.Id.to_string vertex.id ^ "(") ];
           node;
           Node.create "sub" [ Node.text ")" ];
         ]
-    else Node.span ~attr:(Attr.class_ "vertex") [ node ]
+    else Node.span ~attrs:[(Attr.class_ "vertex")] [ node ]
   in
   if at_top || parent.position = Root_root_root then decorated_node
   else
@@ -79,7 +79,7 @@ and conflict_node (ctx : Gui.context) (parent : Cursor.t)
       child_specs
   in
   Node.span
-    ~attr:(Attr.many [ Attr.class_ "conflict"; Gui.clicks_to ctx parent ])
+    ~attrs:[ Attr.class_ "conflict"; Gui.clicks_to ctx parent ]
     ([ errs "{ " ] @ Util.List.intersperse (errs " | ") nodes @ [ errs " }" ])
   |> maybe_cursor_node ctx.editor parent
 
@@ -92,7 +92,7 @@ let graph_panel (ctx : Gui.context) (id : string) (tabindexes : int Uuid.Map.t)
     : Node.t =
   Gui.panel ~label:"Graph"
     [
-      Node.div ~attr:(Attr.id ("graph" ^ id)) [ Node.span [] ];
+      Node.div ~attrs:[(Attr.id ("graph" ^ id))] [ Node.span [] ];
       Gui.break;
       Node.div
         [
@@ -190,8 +190,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
   let decomp, children = Grove.decompose ctx.editor.graph in
   Graphviz.draw ctx.editor;
   Node.div
-    ~attr:
-      (Attr.many
+    ~attrs:
          [
            Attr.id ("editor" ^ id);
            Attr.class_ "editor";
@@ -199,7 +198,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
              (Int.to_string (Uuid.Map.find ctx.editor.id tabindexes));
            Attr.on_keydown
              (Key.dispatch model ctx.editor tabindexes ~inject:ctx.inject);
-         ])
+         ]
     [
       (* MAIN CODE VIEW *)
       tree_node ctx decomp.reachable;
@@ -207,7 +206,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
       Gui.break;
       cursor_panel ctx;
       graph_panel ctx id tabindexes;
-      Node.div ~attr:(Attr.class_ "selectors")
+      Node.div ~attrs:[(Attr.class_ "selectors")]
         [
           actions_panel ctx id;
           send_actions_panel model ctx id tabindexes;
@@ -281,7 +280,7 @@ let view ~(inject : Action.t -> unit Vdom.Effect.t) (model : Model.t) : Node.t =
     List.combine editor_ids positions |> List.to_seq |> Uuid.Map.of_seq
   in
   Node.div
-    ~attr:(Attr.create "tabindex" "-1")
+    ~attrs:[(Attr.create "tabindex" "-1")]
     (List.map
        (fun editor -> view_editor model { inject; editor } tabindexes)
        editors)

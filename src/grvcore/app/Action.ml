@@ -10,7 +10,9 @@ type edit =
 open Sexplib0.Sexp_conv
 
 (* TODO: Make `Send` be to a specific editor *)
-type comm = Send of Graph_action.t list * Uuid.Id.t list [@@deriving sexp_of]
+type comm = 
+  | Send of Graph_action.t list * Uuid.Id.t list
+  | Message of Graph_action.t list [@@deriving sexp_of]
 
 type env =
   | Record
@@ -163,6 +165,7 @@ let apply_edit (model : Model.t) (editor_id : Uuid.Id.t) (edit_action : edit) :
 
 let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
     Model.t Option.t =
+  print_endline("Hello 2");
   match comm_action with
   | Send (edit_actions, editor_ids) ->
       let%map.Util.Option editors =
@@ -191,6 +194,23 @@ let apply_comm (model : Model.t) (editor_id : Uuid.Id.t) (comm_action : comm) :
           model editors
       in
       Model.remove_known_actions model
+  | Message edit_actions -> 
+    let model =
+      List.fold_left
+        (fun (model : Model.t) (editor : Editor.t) ->
+          let editor =
+            List.fold_right apply_graph_action edit_actions editor
+          in
+          let editors =
+            Uuid.Map.remove editor.id model.editors
+            |> Uuid.Map.add editor.id editor
+          in
+          let model = Model.{ model with editors } in
+          let actions = record_actions model editor_id edit_actions in
+          { model with actions })
+        model (Uuid.Map.bindings model.editors |> List.rev_map snd)
+    in
+    Some (Model.remove_known_actions model)
 
 let apply_env (model : Model.t) (env_action : env) : Model.t Option.t =
   match env_action with

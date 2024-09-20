@@ -1,3 +1,5 @@
+open Sexplib0.Sexp_conv
+
 module Vdom = Virtual_dom.Vdom
 module Node = Virtual_dom.Vdom.Node
 module Attr = Virtual_dom.Vdom.Attr
@@ -21,7 +23,7 @@ let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
       let actions : Graph_action.t list =
         Graph_action.Set.elements editor.actions |> selected selection
       in
-      let editor_ids : Uuid.Id.t list =
+      let _editor_ids : Uuid.Id.t list =
         Uuid.Map.bindings model.editors
         |> List.rev_map snd
         |> selected (Js.get_selection ("editors" ^ Uuid.Id.to_string editor.id))
@@ -29,7 +31,19 @@ let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
       in
       Js.fill_selection ("actions" ^ Uuid.Id.to_string editor.id);
       Js.send_actions actions;
-      Some (Comm (Send (actions, editor_ids)))
+      None
+      (*Some (Comm (Send (actions, editor_ids)))*)
+
+let receive (actions : Graph_action.t list) :  Action.t' Option.t =
+      print_endline("Hello");
+      (Some (Comm (Message actions)))
+(* PAUSE PLACE - trying to do update from received message *)
+
+let _ =
+  Js.export "myLib"
+    (object%js
+      method receiveActions action_list = receive (list_of_sexp Graph_action.t_of_sexp (Sexplib.Sexp.of_string action_list))
+    end)
 
 let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :
     Action.t' Option.t =

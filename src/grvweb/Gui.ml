@@ -28,6 +28,7 @@ let send (model : Model.t) (editor : Editor.t) : Action.t' Option.t =
         |> List.map (fun (editor : Editor.t) -> editor.id)
       in
       Js.fill_selection ("actions" ^ Uuid.Id.to_string editor.id);
+      Js.send_actions actions;
       Some (Comm (Send (actions, editor_ids)))
 
 let restore (editor : Editor.t) (deleted : Vertex.Set.t) (vertex_id : string) :

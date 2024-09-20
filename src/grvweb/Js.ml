@@ -1,4 +1,6 @@
 include Js_of_ocaml.Js
+open Sexplib0.Sexp_conv
+
 
 let claim_event (event : 'a t) : unit =
   Js_of_ocaml.Dom.preventDefault event;
@@ -44,3 +46,9 @@ let select_item (id : string) (i : int) : unit =
 
 let prompt (message : string) : string =
   eval_to_string @@ "window.prompt('" ^ message ^ "') || ''"
+
+let create_connection () : unit = 
+    Unsafe.fun_call (Unsafe.js_expr "createConnection") [||]
+
+let send_actions (actions : Graph_action.t list) : unit = 
+    Unsafe.fun_call (Unsafe.js_expr "sendActions") [| (sexp_of_list Graph_action.sexp_of_t actions)  |> Sexplib.Sexp.to_string |> Unsafe.inject |]

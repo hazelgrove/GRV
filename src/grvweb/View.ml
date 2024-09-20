@@ -266,6 +266,7 @@ let view_editor (model : Model.t) (ctx : Gui.context)
         ];
       Gui.panel ~label:"Editor"
         [
+          Gui.none_button ~on_click:(fun () -> Js.create_connection ()) ctx "Connect" tabindexes;
           Gui.some_button ctx "Clone" tabindexes (Env (Clone ctx.editor.id));
           Gui.some_button ctx "Drop" tabindexes (Env (Drop ctx.editor.id))
             ~disabled:(Uuid.Map.cardinal model.editors < 2);
